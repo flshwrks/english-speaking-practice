@@ -36,6 +36,8 @@ export function MyRecording({ sessionId, seq }: { sessionId: number; seq: number
 }
 
 export function PurgeOldAudio() {
-  useEffect(() => void purgeOldUtterances(), []);
+  useEffect(() => {
+    void purgeOldUtterances();
+  }, []);
   return null;
 }

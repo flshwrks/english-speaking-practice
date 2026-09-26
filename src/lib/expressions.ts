@@ -68,15 +68,31 @@ export async function getPicked(picks: ExpressionPick[]) {
   });
 }
 
-/** 出題の記録: セッションとの紐付けと queued → new */
-export function markShownQueries(sessionId: number, picks: ExpressionPick[]) {
-  return [
-    db().insert(t.sessionExpressions).values(picks.map((p) => ({ sessionId, expressionId: p.id, role: p.role }))),
-    db()
-      .update(t.expressions)
-      .set({ status: "new" })
-      .where(and(inArray(t.expressions.id, picks.map((p) => p.id)), eq(t.expressions.status, "queued"))),
-  ] as const;
+/** 開始時: 出題した表現をセッションに紐付ける（状態はまだ変えない） */
+export function attachToSession(sessionId: number, picks: ExpressionPick[]) {
+  return db().insert(t.sessionExpressions).values(picks.map((p) => ({ sessionId, expressionId: p.id, role: p.role })));
+}
+
+/**
+ * 会話が成立して終了したときだけ queued → new にする。
+ * 開始直後に閉じた・落ちたセッションでは表現を消費せず、次回また出題される。
+ */
+export function markShownQuery(sessionId: number) {
+  return db()
+    .update(t.expressions)
+    .set({ status: "new" })
+    .where(
+      and(
+        eq(t.expressions.status, "queued"),
+        inArray(
+          t.expressions.id,
+          db()
+            .select({ id: t.sessionExpressions.expressionId })
+            .from(t.sessionExpressions)
+            .where(eq(t.sessionExpressions.sessionId, sessionId)),
+        ),
+      ),
+    );
 }
 
 /** セッションで出題した表現とその結果 */

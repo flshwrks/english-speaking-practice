@@ -42,7 +42,10 @@ export function LiveSession({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remaining, status]);
 
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" }), [turns.length]);
+  // 波かっこ必須: 新しいブラウザでは scrollIntoView が Promise を返し、それを後片付け関数として返すと React が落ちる
+  useEffect(() => {
+    bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [turns.length]);
 
   const begin = async (force = false) => {
     setBudgetBlocked(false);

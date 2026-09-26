@@ -43,3 +43,5 @@ next-env.d.ts
 
 # 週次レビューの書き出し（個人データ。要約は DB に保存される）
 /reviews
+
+.vercel

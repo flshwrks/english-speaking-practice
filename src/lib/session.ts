@@ -14,7 +14,7 @@ import {
   VOICE,
   type RealtimeUsage,
 } from "./config";
-import { getPicked, markShownQueries, type ExpressionPick } from "./expressions";
+import { attachToSession, getPicked, markShownQuery, type ExpressionPick } from "./expressions";
 import { budgetStatus, buildInstructions, getCurrentCurriculum, getProfile } from "./lesson";
 import { getScenario } from "./scenarios";
 
@@ -66,7 +66,7 @@ export async function startSession(input: { scenarioId: string; picks: Expressio
     .insert(t.sessions)
     .values({ scenarioId: scenario.id, level: profile.level })
     .returning({ id: t.sessions.id });
-  if (expressions.length) await db().batch(markShownQueries(session.id, expressions));
+  if (expressions.length) await attachToSession(session.id, expressions);
 
   return { ok: true, sessionId: session.id, clientSecret, maxMinutes: settings().sessionMaxMinutes };
 }
@@ -98,6 +98,7 @@ export async function finishSession(
   };
   const hasSpeech = userTurns.some((x) => x.text.trim());
 
+  if (hasSpeech) await markShownQuery(sessionId);
   await d
     .update(t.sessions)
     .set({
