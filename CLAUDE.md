@@ -10,3 +10,5 @@
 - 週次レビューは `/weekly-review` スキル（`.claude/skills/weekly-review/`）
 - 会話中の AI は訂正しない方針。FB はすべて会話後（`src/lib/analysis.ts`）
 - 料金の単価は `src/lib/config.ts` の `PRICING`。モデルを変えたら単価も更新する
+- 本番: https://english-speaking-practice-neon.vercel.app （Vercel: flshwrks-projects/english-speaking-practice、GitHub: flshwrks/english-speaking-practice の master に push で自動デプロイ）。関数リージョンは DB（Neon, シンガポール）に合わせて `sin1`
+- 環境変数を変えたら `vercel env add <NAME> production --force` → 再デプロイ
