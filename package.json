@@ -11,7 +11,8 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/seed.ts",
     "review:export": "tsx scripts/review-export.ts",
-    "review:import": "tsx scripts/review-import.ts"
+    "review:import": "tsx scripts/review-import.ts",
+    "check": "tsx scripts/check-env.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

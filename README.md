@@ -19,6 +19,8 @@
 
 ## セットアップ
 
+画面操作を含む詳しい手順は [docs/SETUP_GUIDE.md](docs/SETUP_GUIDE.md) を参照。キーを入れたら `npm run check` で接続を確認できる。
+
 1. 依存関係を入れる
    ```bash
    npm install
