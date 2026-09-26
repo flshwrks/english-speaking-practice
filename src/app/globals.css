@@ -1,26 +1,69 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
+  --fg: #1d1c1a;
+  --muted: #6b6861;
+  --line: #e4e1da;
+  --accent: #2f5bd3;
+  --accent-fg: #ffffff;
+  --accent-soft: #e6ecfb;
+  --good: #1f8a4c;
+  --warn: #b7791f;
+  --bad: #c2412d;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #121211;
+    --surface: #1b1b19;
+    --surface-2: #252522;
+    --fg: #ecebe7;
+    --muted: #9c998f;
+    --line: #34332f;
+    --accent: #7b9cf5;
+    --accent-fg: #0e1320;
+    --accent-soft: #1f2940;
+    --good: #5ccb8a;
+    --warn: #e0b154;
+    --bad: #f08a76;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-geist-sans), "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-line bg-surface p-4;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 font-medium text-accent-fg transition hover:opacity-90 disabled:opacity-50;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm transition hover:bg-surface-2 disabled:opacity-50;
+  }
+  .label {
+    @apply text-xs font-medium tracking-wide text-muted uppercase;
+  }
 }
