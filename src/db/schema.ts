@@ -10,7 +10,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { ExpressionCategory, FeedbackCategory, Register } from "../lib/categories";
+import type { ExpressionCategory, ExpressionKind, FeedbackCategory, Register } from "../lib/categories";
 
 export type { FeedbackCategory };
 
@@ -22,19 +22,21 @@ export const profile = pgTable("profile", {
   interests: text("interests").notNull().default(""),
   /** 会話難易度 1〜10 */
   level: integer("level").notNull().default(6),
+  /** 全体カリキュラム（12週サイクル）の開始日。この日を含む週が Week 1 */
+  programStart: date("program_start").notNull().defaultNow(),
+  /** 週次レビューで「同じ週を繰り返す」を選んだ累計週数（その分だけ進行を遅らせる） */
+  weekOffset: integer("week_offset").notNull().default(0),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** 週次レビューで書き込むカリキュラム */
+/** 全体カリキュラムの週ごとの上書き（週次レビューで指定した項目だけを、その週だけ差し替える。null は「差し替えない」） */
 export const curriculum = pgTable("curriculum", {
   id: serial("id").primaryKey(),
   weekStart: date("week_start").notNull(),
-  theme: text("theme").notNull(),
-  focus: text("focus").notNull().default(""),
-  /** 推奨シナリオ ID */
-  scenarioIds: jsonb("scenario_ids").$type<string[]>().notNull().default([]),
-  /** 表現カテゴリ（新規表現の補充に使う） */
-  categories: jsonb("categories").$type<string[]>().notNull().default([]),
+  theme: text("theme"),
+  focus: text("focus"),
+  scenarioIds: jsonb("scenario_ids").$type<string[]>(),
+  categories: jsonb("categories").$type<ExpressionCategory[]>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -68,10 +70,10 @@ export const expressions = pgTable(
     category: text("category").$type<ExpressionCategory>().notNull().default("general"),
     /** casual / neutral / formal */
     register: text("register").$type<Register>().notNull().default("neutral"),
+    kind: text("kind").$type<ExpressionKind>().notNull().default("phrase"),
     /** seed / review / feedback */
     source: text("source").notNull().default("seed"),
     status: text("status").$type<ExpressionStatus>().notNull().default("queued"),
-    curriculumId: integer("curriculum_id"),
     intervalDays: real("interval_days").notNull().default(0),
     nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

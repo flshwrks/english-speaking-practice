@@ -92,7 +92,7 @@ export function getScenario(id: string) {
 }
 
 /** 表示するシナリオとおすすめ。初回はレベル診断、以降は今週のカリキュラムの推奨 */
-export function scenarioMenu(completedSessions: number, curriculumScenarioIds: string[] = []) {
+export function scenarioMenu(completedSessions: number, curriculumScenarioIds: string[]) {
   const first = completedSessions === 0;
   return {
     scenarios: SCENARIOS.filter((s) => first || !s.onboarding),

@@ -14,7 +14,7 @@ export default async function NewSessionPage({
   const scenario = getScenario((await searchParams).scenario ?? "");
   if (!scenario) notFound();
   // 出題はここで1回だけ決め、開始時にその ID を渡す
-  const expressions = await pickTodaysExpressions(scenario, await getCurrentCurriculum());
+  const expressions = await pickTodaysExpressions(scenario, (await getCurrentCurriculum()).curriculum);
 
   return (
     <Page>
@@ -23,11 +23,11 @@ export default async function NewSessionPage({
 
       <LiveSession
         scenarioId={scenario.id}
-        expressions={expressions.map((e) => ({ id: e.id, role: e.role, text: e.text, meaning: e.meaning }))}
+        expressions={expressions.map((e) => ({ id: e.id, role: e.role, kind: e.kind, text: e.text, meaning: e.meaning }))}
       >
         <h2 className="label mb-2">今日の表現</h2>
         <p className="mb-3 text-sm text-muted">
-          会話の中で使ってみましょう。AI が使いやすい流れを作ります。
+          フレーズと単語・熟語を、会話の中で使ってみましょう。AI が使いやすい流れを作ります。
         </p>
         <div className="grid gap-3">
           {expressions.map((e) => (

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useRealtimeSession } from "@/lib/client/use-realtime-session";
+import { EXPRESSION_KIND_LABEL, type ExpressionKind } from "@/lib/categories";
 import type { ExpressionPick } from "@/lib/expressions";
 
 export function LiveSession({
@@ -11,7 +12,7 @@ export function LiveSession({
   children,
 }: {
   scenarioId: string;
-  expressions: (ExpressionPick & { text: string; meaning: string })[];
+  expressions: (ExpressionPick & { kind: ExpressionKind; text: string; meaning: string })[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -88,6 +89,7 @@ export function LiveSession({
         <ul className="mt-2 flex flex-col gap-1 text-sm">
           {expressions.map((e) => (
             <li key={e.id}>
+              <span className="mr-1 text-xs text-muted">[{EXPRESSION_KIND_LABEL[e.kind]}]</span>
               <b>{e.text}</b> <span className="text-muted">— {e.meaning}</span>
             </li>
           ))}

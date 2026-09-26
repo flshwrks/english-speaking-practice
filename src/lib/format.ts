@@ -1,5 +1,7 @@
 import type { WordAssessment } from "@/db/schema";
 
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
 /** 日本時間の日付。short は「9/26」、それ以外は「2026/9/26」 */
 export function formatDateJst(d: Date, style: "short" | "full" = "short") {
   return d.toLocaleDateString(

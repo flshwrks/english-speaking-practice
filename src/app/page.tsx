@@ -2,11 +2,12 @@ import { connection } from "next/server";
 import { count, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { db, t } from "@/db";
-import { Page } from "@/components/ui";
-import { budgetStatus, getCurrentCurriculum, getProfile, isReviewDue } from "@/lib/lesson";
+import { Badge, Page } from "@/components/ui";
+import { budgetStatus, getCurrentCurriculum, isReviewDue } from "@/lib/lesson";
 import type { SessionStatus } from "@/db/schema";
 import { formatDateJst } from "@/lib/format";
 import { getScenario, scenarioMenu } from "@/lib/scenarios";
+import { SYLLABUS } from "@/lib/syllabus";
 
 const STATUS_TEXT: Record<Exclude<SessionStatus, "done">, string> = {
   analyzing: "分析中",
@@ -16,8 +17,7 @@ const STATUS_TEXT: Record<Exclude<SessionStatus, "done">, string> = {
 
 export default async function Home() {
   await connection(); // 個人データを毎回 DB から読むため静的生成しない
-  const [profile, curriculum, budget, reviewDue, recent, [{ n: sessionCount }]] = await Promise.all([
-    getProfile(),
+  const [{ profile, curriculum }, budget, reviewDue, recent, [{ n: sessionCount }]] = await Promise.all([
     getCurrentCurriculum(),
     budgetStatus(),
     isReviewDue(),
@@ -35,7 +35,7 @@ export default async function Home() {
     db().select({ n: count() }).from(t.sessions).where(eq(t.sessions.status, "done")),
   ]);
 
-  const { scenarios, recommended } = scenarioMenu(sessionCount, curriculum?.scenarioIds);
+  const { scenarios, recommended } = scenarioMenu(sessionCount, curriculum.scenarioIds);
   const pct = Math.min(100, (budget.spentJpy / budget.budgetJpy) * 100);
 
   return (
@@ -43,6 +43,7 @@ export default async function Home() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold">Speaking Practice</h1>
         <nav className="flex gap-2">
+          <Link href="/curriculum" className="btn">カリキュラム</Link>
           <Link href="/expressions" className="btn">表現</Link>
           <Link href="/progress" className="btn">成長記録</Link>
           <Link href="/profile" className="btn">プロフィール</Link>
@@ -52,22 +53,18 @@ export default async function Home() {
       {reviewDue && (
         <div className="mb-4 rounded-xl border border-warn/40 bg-warn/10 p-4 text-sm">
           <b>週次レビューの時期です。</b> Claude Code で <code className="rounded bg-surface-2 px-1">/weekly-review</code>{" "}
-          を実行すると、今週の振り返りと来週のカリキュラムを作れます。
+          を実行すると、1週間の振り返りと来週の調整ができます（しなくてもカリキュラムは自動で進みます）。
         </div>
       )}
 
       <section className="card mb-4">
-        <div className="label">今週のテーマ</div>
-        {curriculum ? (
-          <>
-            <div className="mt-1 text-lg font-semibold">{curriculum.theme}</div>
-            {curriculum.focus && <p className="mt-1 text-sm text-muted">{curriculum.focus}</p>}
-          </>
-        ) : (
-          <p className="mt-1 text-sm text-muted">
-            まだカリキュラムがありません。まずはレベル診断か好きなシナリオから始めましょう。
-          </p>
-        )}
+        <div className="label">
+          Week {curriculum.week}/{SYLLABUS.length}・{curriculum.phase}
+          {curriculum.cycle > 1 && `・${curriculum.cycle}周目`}
+          {curriculum.overrideId && "・今週は調整あり"}
+        </div>
+        <div className="mt-1 text-lg font-semibold">{curriculum.theme}</div>
+        <p className="mt-1 text-sm text-muted">{curriculum.focus}</p>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted">
           <span>会話の難易度: <b className="text-fg">{profile.level}</b>/10</span>
           <span>完了セッション: <b className="text-fg">{sessionCount}</b></span>
@@ -102,7 +99,7 @@ export default async function Home() {
             <div className="flex items-center gap-2 font-medium">
               {s.title}
               {recommended.has(s.id) && (
-                <span className="rounded bg-accent-soft px-1.5 py-0.5 text-xs text-accent">おすすめ</span>
+                <Badge>おすすめ</Badge>
               )}
             </div>
             <p className="mt-1 text-sm text-muted">{s.brief}</p>

@@ -31,3 +31,8 @@ export function scoreColor(score: number | null | undefined) {
   if (score >= 65) return "text-warn";
   return "text-bad";
 }
+
+/** 「おすすめ」「今週」などの小さなラベル */
+export function Badge({ children }: { children: React.ReactNode }) {
+  return <span className="rounded bg-accent-soft px-1.5 py-0.5 text-xs text-accent">{children}</span>;
+}

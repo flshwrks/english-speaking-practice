@@ -1,4 +1,4 @@
-/** 初期データ投入: 表現集とプロフィール。何度実行しても重複しない。 */
+/** 初期データ投入: 表現集（フレーズ・単語/熟語）とプロフィール。何度実行しても重複しない。 */
 import { config } from "dotenv";
 config({ path: ".env.local" });
 
@@ -8,7 +8,8 @@ import { db, t } from "@/db";
 import { ExpressionInput } from "@/lib/expressions";
 
 async function main() {
-  const expressions = z.array(ExpressionInput).parse(JSON.parse(readFileSync("data/expressions.json", "utf-8")));
+  const load = (file: string) => z.array(ExpressionInput).parse(JSON.parse(readFileSync(file, "utf-8")));
+  const expressions = [...load("data/expressions.json"), ...load("data/vocabulary.json")];
   const inserted = await db()
     .insert(t.expressions)
     .values(expressions.map((e) => ({ ...e, source: "seed", status: "queued" as const })))

@@ -15,7 +15,7 @@ import {
   type RealtimeUsage,
 } from "./config";
 import { attachToSession, getPicked, markShownQuery, type ExpressionPick } from "./expressions";
-import { budgetStatus, buildInstructions, getCurrentCurriculum, getProfile } from "./lesson";
+import { budgetStatus, buildInstructions, getCurrentCurriculum } from "./lesson";
 import { getScenario } from "./scenarios";
 
 /** Realtime API の一時トークンを発行する。ブラウザにはこれだけを渡し、API キーはサーバーに置く */
@@ -51,16 +51,15 @@ export async function startSession(input: { scenarioId: string; picks: Expressio
   const scenario = getScenario(input.scenarioId);
   if (!scenario) return { ok: false, reason: "unknown_scenario" };
 
-  const [budget, profile, curriculum, expressions] = await Promise.all([
+  const [budget, { profile, curriculum }, expressions] = await Promise.all([
     budgetStatus(),
-    getProfile(),
     getCurrentCurriculum(),
     getPicked(input.picks),
   ]);
   if (budget.exceeded && !input.force) return { ok: false, reason: "budget" };
 
   const clientSecret = await createClientSecret(
-    buildInstructions({ profile, scenario, expressions, focus: curriculum?.focus ?? null }),
+    buildInstructions({ profile, scenario, expressions, focus: curriculum.focus }),
   );
   const [session] = await db()
     .insert(t.sessions)

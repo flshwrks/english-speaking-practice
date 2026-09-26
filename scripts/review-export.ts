@@ -11,25 +11,36 @@ import { count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/db";
 import { sessionTargets } from "@/lib/expressions";
 import { isoDateJst, targetMark } from "@/lib/format";
-import { getCurrentCurriculum, getProfile } from "@/lib/lesson";
+import { getCurriculumFor } from "@/lib/lesson";
 import { getScenario, SCENARIOS } from "@/lib/scenarios";
+import { addDays, SYLLABUS } from "@/lib/syllabus";
 
 const days = Number(process.argv[process.argv.indexOf("--days") + 1]) || 7;
 
 async function main() {
   const d = db();
   const since = sql`now() - make_interval(days => ${days})`;
-  const [profile, curriculum, sessions, patterns, statusCounts, queuedByCategory, [lastReview]] = await Promise.all([
-    getProfile(),
-    getCurrentCurriculum(),
+  const todayJst = isoDateJst(new Date());
+  const [
+    {
+      profile,
+      weeks: [curriculum, next],
+    },
+    sessions,
+    patterns,
+    statusCounts,
+    queuedByCategory,
+    [lastReview],
+  ] = await Promise.all([
+    getCurriculumFor([todayJst, addDays(todayJst, 7)]),
     d.select().from(t.sessions).where(gte(t.sessions.startedAt, since)).orderBy(t.sessions.startedAt),
     d.select().from(t.errorPatterns).where(eq(t.errorPatterns.resolved, false)).orderBy(desc(t.errorPatterns.count)).limit(20),
     d.select({ status: t.expressions.status, n: count() }).from(t.expressions).groupBy(t.expressions.status),
     d
-      .select({ category: t.expressions.category, n: count() })
+      .select({ category: t.expressions.category, kind: t.expressions.kind, n: count() })
       .from(t.expressions)
       .where(eq(t.expressions.status, "queued"))
-      .groupBy(t.expressions.category),
+      .groupBy(t.expressions.category, t.expressions.kind),
     d.select().from(t.weeklyReviews).orderBy(desc(t.weeklyReviews.createdAt)).limit(1),
   ]);
   const ids = sessions.map((s) => s.id);
@@ -41,7 +52,7 @@ async function main() {
     : [[], []];
 
   const done = sessions.filter((s) => s.status === "done");
-  const today = isoDateJst(new Date());
+  const today = todayJst;
   const md = `# 週次レビュー用データ（${today}, 直近${days}日）
 
 ## プロフィール
@@ -54,8 +65,13 @@ async function main() {
 ${lastReview ? `- ${lastReview.weekStart}: ${lastReview.summary}
 - ユーザーの声: ${lastReview.userComment || "（なし）"}` : "（なし）"}
 
-## 現在のカリキュラム
-${curriculum ? `- 週: ${curriculum.weekStart}\n- テーマ: ${curriculum.theme}\n- 重点: ${curriculum.focus}\n- シナリオ: ${curriculum.scenarioIds.join(", ")}\n- カテゴリ: ${curriculum.categories.join(", ")}` : "（未設定）"}
+## カリキュラム
+- 今週: Week ${curriculum.week}/${SYLLABUS.length}（${curriculum.phase}, ${curriculum.cycle}周目, ${curriculum.weekStart}〜）${curriculum.overrideId ? "※調整あり" : ""}${profile.weekOffset ? `（累計 ${profile.weekOffset} 週繰り返し）` : ""}
+  - テーマ: ${curriculum.theme}
+  - 重点: ${curriculum.focus}
+  - シナリオ: ${curriculum.scenarioIds.join(", ")} / カテゴリ: ${curriculum.categories.join(", ")}
+- 来週（${next.weekStart}〜, 自動で進む予定）: Week ${next.week} ${next.theme}${next.overrideId ? " ※調整あり" : ""}
+  - シナリオ: ${next.scenarioIds.join(", ")} / カテゴリ: ${next.categories.join(", ")}
 
 ## セッション（${done.length}件完了 / ${sessions.length}件）
 ${done
@@ -92,7 +108,7 @@ ${targetResults.map((r) => `- ${targetMark(r.used, r.correct)} ${r.text}${r.comm
 ${statusCounts.map((c) => `- ${c.status}: ${c.n}`).join("\n")}
 
 出題待ち（queued）のカテゴリ別件数:
-${queuedByCategory.map((c) => `- ${c.category}: ${c.n}`).join("\n")}
+${queuedByCategory.map((c) => `- ${c.category} / ${c.kind}: ${c.n}`).join("\n")}
 
 ## 利用可能なシナリオ ID
 ${SCENARIOS.map((s) => `- ${s.id}: ${s.title}`).join("\n")}

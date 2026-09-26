@@ -1,8 +1,11 @@
-import { asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/db";
 import type { Expression } from "./expressions";
 import { levelGuidance, type Scenario } from "./scenarios";
+import { EXPRESSION_KIND_PROMPT, EXPRESSION_KINDS } from "./categories";
 import { settings, usdToJpy } from "./config";
+import { DAY_MS, isoDateJst } from "./format";
+import { addDays, mondayOf, SYLLABUS, syllabusPosition, type SyllabusPosition } from "./syllabus";
 
 type Profile = typeof t.profile.$inferSelect;
 type ProfilePatch = Partial<Pick<Profile, "about" | "goals" | "interests" | "level">>;
@@ -22,18 +25,70 @@ export function updateProfileQuery(patch: ProfilePatch) {
   return db().insert(t.profile).values({ id: 1, ...set }).onConflictDoUpdate({ target: t.profile.id, set });
 }
 
-export async function getCurrentCurriculum() {
-  const [c] = await db()
+type Override = typeof t.curriculum.$inferSelect;
+
+/** 指定した週（月曜の日付）の上書きをまとめて取得する */
+async function getOverrides(weekStarts: string[]) {
+  const rows = await db()
     .select()
     .from(t.curriculum)
-    .where(lte(t.curriculum.weekStart, sql`CURRENT_DATE`))
-    .orderBy(desc(t.curriculum.weekStart), desc(t.curriculum.id))
-    .limit(1);
-  return c ?? null;
+    .where(inArray(t.curriculum.weekStart, weekStarts))
+    .orderBy(asc(t.curriculum.id));
+  return new Map(rows.map((r) => [r.weekStart, r])); // 同じ週は新しい行が勝つ
 }
-export type Curriculum = NonNullable<Awaited<ReturnType<typeof getCurrentCurriculum>>>;
 
-const REVIEW_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+/** 全体カリキュラムの週に、上書きで指定された項目（null 以外）だけを重ねる。週の内容を決める唯一の場所 */
+function resolveWeek(base: SyllabusPosition, override: Override | undefined) {
+  return {
+    ...base,
+    overrideId: override?.id ?? null,
+    theme: override?.theme ?? base.theme,
+    focus: override?.focus ?? base.focus,
+    scenarioIds: override?.scenarioIds ?? base.scenarioIds,
+    categories: override?.categories ?? base.categories,
+  };
+}
+export type Curriculum = ReturnType<typeof resolveWeek>;
+
+/** 指定した日付それぞれの週の内容（プロフィールと上書きは1回ずつだけ読む） */
+export async function getCurriculumFor(dates: string[]) {
+  const weekStarts = dates.map(mondayOf);
+  const [profile, overrides] = await Promise.all([getProfile(), getOverrides(weekStarts)]);
+  return {
+    profile,
+    weeks: dates.map((date, i) => resolveWeek(syllabusPosition(profile, date), overrides.get(weekStarts[i]))),
+  };
+}
+
+/**
+ * 今の周の Week 1〜12（一覧表示用）。週番号は全体カリキュラムの順のまま、
+ * 日付は「今後は繰り返しなしで進む」前提の予定日で、上書きを探すのに使う。
+ */
+export async function getCycleWeeks() {
+  const profile = await getProfile();
+  const current = syllabusPosition(profile, isoDateJst(new Date()));
+  // 開始日より前（開始待ち）のときは、開始週を Week 1 とする
+  const fromCurrent = addDays(current.weekStart, -(current.week - 1) * 7);
+  const start = addDays(mondayOf(profile.programStart), profile.weekOffset * 7);
+  const week1 = current.cycle === 1 && start > fromCurrent ? start : fromCurrent;
+  const dates = SYLLABUS.map((_, i) => addDays(week1, i * 7));
+  const overrides = await getOverrides(dates);
+  return {
+    profile,
+    currentWeek: current.week,
+    weeks: SYLLABUS.map((w, i) =>
+      resolveWeek({ ...w, week: i + 1, cycle: current.cycle, weekStart: dates[i] }, overrides.get(dates[i])),
+    ),
+  };
+}
+
+/** 今週の内容とプロフィール */
+export async function getCurrentCurriculum() {
+  const { profile, weeks } = await getCurriculumFor([isoDateJst(new Date())]);
+  return { profile, curriculum: weeks[0] };
+}
+
+const REVIEW_INTERVAL_MS = 7 * DAY_MS;
 
 /** 最後の週次レビュー（なければ最初のセッション）から7日以上たっているか */
 export async function isReviewDue() {
@@ -67,10 +122,14 @@ export async function topErrorPatterns(limit = 8) {
 export function buildInstructions(opts: {
   profile: Profile;
   scenario: Scenario;
-  expressions: Pick<Expression, "text" | "scene">[];
-  focus: string | null;
+  expressions: Pick<Expression, "text" | "scene" | "kind">[];
+  focus: string;
 }) {
   const { profile, scenario, expressions, focus } = opts;
+  const targets = EXPRESSION_KINDS.map((kind) => {
+    const items = expressions.filter((e) => e.kind === kind).map((e) => `- "${e.text}" (${e.scene})`);
+    return `${EXPRESSION_KIND_PROMPT[kind]}:\n${items.join("\n") || "- (none)"}`;
+  }).join("\n");
   return `# Role
 ${scenario.role}
 
@@ -78,7 +137,7 @@ ${scenario.role}
 A Japanese business professional practicing spoken English for future overseas projects.
 ${profile.about ? `About them: ${profile.about}` : ""}
 ${profile.interests ? `Interests: ${profile.interests}` : ""}
-${focus ? `This week's focus: ${focus}` : ""}
+This week's focus: ${focus}
 
 # How to speak
 - ${levelGuidance(profile.level)}
@@ -89,7 +148,7 @@ ${focus ? `This week's focus: ${focus}` : ""}
 - Start the conversation yourself with a natural opening line for this situation.
 
 # Target expressions
-The learner wants to practice these expressions today:
-${expressions.map((e) => `- "${e.text}" (${e.scene})`).join("\n")}
-Naturally create situations where each expression would fit (for example, make a proposal they could push back on). Never say the expressions yourself, never mention the list, and never prompt them to use a specific phrase.`;
+The learner wants to practice these today.
+${targets}
+Naturally create situations where each one would fit (for example, make a proposal they could push back on, or ask about something where the word is the natural choice). Never say them yourself, never mention the list, and never prompt them to use a specific word or phrase.`;
 }

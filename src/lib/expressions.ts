@@ -3,14 +3,14 @@ import { and, asc, eq, inArray, isNotNull, lte, notInArray, sql } from "drizzle-
 import { z } from "zod";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES } from "@/db/schema";
-import { EXPRESSION_CATEGORIES, REGISTERS } from "./categories";
+import { EXPRESSION_CATEGORIES, EXPRESSION_KINDS, REGISTERS, type ExpressionKind } from "./categories";
+import { DAY_MS } from "./format";
 import type { Curriculum } from "./lesson";
 import type { Scenario } from "./scenarios";
 
 export type Expression = typeof t.expressions.$inferSelect;
 export type ExpressionPick = { id: number; role: "new" | "review" };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** 表現集（seed）と週次レビューの JSON で共通の入力形式 */
 export const ExpressionInput = z.object({
@@ -20,15 +20,30 @@ export const ExpressionInput = z.object({
   scene: z.string().default(""),
   category: z.enum(EXPRESSION_CATEGORIES).default("general"),
   register: z.enum(REGISTERS).default("neutral"),
+  kind: z.enum(EXPRESSION_KINDS).default("phrase"),
 });
 
+/** 1レッスンで出題する数 */
+const NEW_PER_KIND = { phrase: 2, word: 2 } as const;
+
 /**
- * 今日の表現を3つ選ぶ: 新規2つ＋復習1つ（復習がなければ新規3つ）。
- * 新規は「今週のカリキュラムで追加 → シナリオのカテゴリ（先頭優先）→ 今週のカテゴリ → 登録順」。
+ * 今日の表現を選ぶ: 新しいフレーズ2つ＋新しい単語・熟語2つ＋復習1つ（出題日が来たものがあれば）。
+ * 新規は「今週の週次レビューで追加 → シナリオのカテゴリ（先頭優先）→ 今週のカテゴリ → 登録順」。
  */
-export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curriculum | null) {
-  const categories = [...new Set([...scenario.categories, ...(curriculum?.categories ?? [])])];
-  const [[review], queued] = await Promise.all([
+export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curriculum) {
+  const categories = [...new Set([...scenario.categories, ...curriculum.categories])];
+  const queued = (kind: ExpressionKind) =>
+    db()
+      .select()
+      .from(t.expressions)
+      .where(and(eq(t.expressions.status, "queued"), eq(t.expressions.kind, kind)))
+      .orderBy(
+        sql`case when ${t.expressions.source} = 'review' and ${t.expressions.createdAt} >= ${curriculum.weekStart}::date then 0 else 1 end`,
+        sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`,
+        asc(t.expressions.id),
+      )
+      .limit(NEW_PER_KIND[kind]);
+  const [[review], phrases, words] = await Promise.all([
     db()
       .select()
       .from(t.expressions)
@@ -41,19 +56,11 @@ export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curr
       )
       .orderBy(asc(t.expressions.nextReviewAt))
       .limit(1),
-    db()
-      .select()
-      .from(t.expressions)
-      .where(eq(t.expressions.status, "queued"))
-      .orderBy(
-        sql`case when ${t.expressions.curriculumId} = ${curriculum?.id ?? -1} then 0 else 1 end`,
-        sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`,
-        asc(t.expressions.id),
-      )
-      .limit(3),
+    queued("phrase"),
+    queued("word"),
   ]);
   return [
-    ...queued.slice(0, review ? 2 : 3).map((e) => ({ ...e, role: "new" as const })),
+    ...[...phrases, ...words].map((e) => ({ ...e, role: "new" as const })),
     ...(review ? [{ ...review, role: "review" as const }] : []),
   ];
 }

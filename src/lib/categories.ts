@@ -48,6 +48,13 @@ export const EXPRESSION_CATEGORY_LABEL: Record<ExpressionCategory, string> = {
   general: "その他",
 };
 
+/** phrase: 文・言い回し / word: 単語・句動詞・熟語・コロケーション */
+export const EXPRESSION_KINDS = ["phrase", "word"] as const;
+export type ExpressionKind = (typeof EXPRESSION_KINDS)[number];
+export const EXPRESSION_KIND_LABEL: Record<ExpressionKind, string> = { phrase: "フレーズ", word: "単語・熟語" };
+/** 会話 AI への指示文での見出し */
+export const EXPRESSION_KIND_PROMPT: Record<ExpressionKind, string> = { phrase: "Phrases", word: "Words and idioms" };
+
 export const REGISTERS = ["casual", "neutral", "formal"] as const;
 export type Register = (typeof REGISTERS)[number];
 export const REGISTER_LABEL: Record<Register, string> = { casual: "カジュアル", neutral: "", formal: "フォーマル" };
