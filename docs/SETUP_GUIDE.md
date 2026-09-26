@@ -9,7 +9,7 @@
 | 1 | Anthropic の API キーを用意する | 必須 | — |
 | 2 | Azure で Speech リソースを作る | 任意（なくても会話と文法FBは動く） | — |
 | 3 | `.env.local` にキーを書き込み、確認コマンドを実行 | 必須 | — |
-| 4 | Neon の DB を自分のアカウントに引き取る | 必須 | **2026-09-29 夜まで**（作成から約72時間） |
+| 4 | 本番用の DB を Vercel で作り、一時DBから切り替える | 必須 | 一時DBは 2026-09-29 夜ごろに消える |
 | 5 | 起動して最初の会話をする | — | — |
 | 6 | スマホで使えるようにする（Vercel にデプロイ） | 任意・後日でよい | — |
 
@@ -102,21 +102,22 @@ npm run check
 
 ---
 
-## 4. Neon の DB を自分のアカウントに引き取る（期限あり）
+## 4. 本番用の DB を Vercel で作る（一時DBからの切り替え）
 
-テスト用に作った DB は、**アカウントに紐付けないと約72時間（2026-09-29 夜ごろ）で消えます**。
+最初に作った一時DBは約72時間で消えます。また、Vercel 経由で管理されている Neon の組織には引き取り（Claim）できません。そこで、Vercel から DB を作り直します。一時DBには初期データしか入っていないので、失うものはありません。
 
-1. `.env.local` の `PUBLIC_POSTGRES_CLAIM_URL=` の右側の URL をブラウザで開く
-2. Neon にサインアップまたはログインする（GitHub アカウントで入るのが簡単）
-3. 画面の案内に従って **Claim**（引き取り）を押す
-4. これで自分の Neon の無料プランのプロジェクトになります。接続先は変わらないので、`.env.local` はそのままで構いません
+1. https://vercel.com/dashboard → **Storage** → **Create Database** → **Neon** → **Continue**
+2. Region は **Tokyo**（なければ Singapore）、Plan は **Free**、名前は `english-speaking` などにして **Create** を押す。Vercel プロジェクトとの紐付けはスキップしてかまいません
+3. 作成した DB の **.env.local** タブで `DATABASE_URL` の値（`postgresql://...`）をコピーする
+4. `.env.local` の `DATABASE_URL=` の右側を置き換え、`DATABASE_URL_DIRECT=` と `PUBLIC_POSTGRES_CLAIM_URL=` の行を削除する
+5. 表を作って初期データを入れる
+   ```bash
+   npm run db:push
+   npm run db:seed
+   ```
 
 ### 確認
-Neon のダッシュボード（https://console.neon.tech ）にプロジェクトが表示されていれば完了です。
-
-> 期限を過ぎて消えた場合は、Neon で新しいプロジェクトを作り、接続文字列を `.env.local` の `DATABASE_URL` に貼り替えてから、`npm run db:push` → `npm run db:seed` を実行してください。
-
----
+`npm run check` の DB の行が「✅ 接続OK（表現 108 件）」になれば完了です。
 
 ## 5. 起動して最初の会話をする
 
