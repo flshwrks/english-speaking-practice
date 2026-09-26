@@ -51,6 +51,9 @@
    | 価格レベル | まず **Free F0** を選ぶ（下の注意を参照） |
 
 4. **確認および作成 → 作成** を押し、1〜2分待って **リソースに移動** を選ぶ
+> **サインインで `AADSTS50020 ... does not exist in tenant 'Microsoft Services'` と出る場合**
+> そのMicrosoftアカウントにまだ Azure の契約がないのが原因です。シークレットウィンドウで https://azure.microsoft.com/ja-jp/free/ を開き、「無料で始める」から登録を最後まで済ませてから、Portal を開き直してください。Gmail アドレスがまだMicrosoftアカウントになっていない場合は、サインイン画面の「作成」から同じアドレスで作ります。登録が途中で止まった場合は https://signup.azure.com で再開できます。
+
 5. 左メニューの **キーとエンドポイント**（Keys and Endpoint）を開き、次の2つを控える
    - **キー 1**（32文字の英数字）
    - **場所/地域**（Location/Region）: `eastus` のような小文字の表記
