@@ -45,3 +45,4 @@ next-env.d.ts
 /reviews
 
 .vercel
+.claude/scheduled_tasks.lock

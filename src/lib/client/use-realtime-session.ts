@@ -53,6 +53,8 @@ export function useRealtimeSession() {
   // 交代の方法は画面表示用の state と、イベント処理から読む ref の両方に持つ（更新は setTurnWait だけ）。
   // 切り替えボタンは会話中にしか出ないので、保存値の読み込みでサーバー描画と食い違うことはない
   const [turnWait, setTurnWaitState] = useState<TurnWait>(loadTurnWait);
+  /** AI が音声を再生中か（画面の「AI が話しています」表示用） */
+  const [aiSpeaking, setAiSpeaking] = useState(false);
 
   const r = useRef({
     pc: null as RTCPeerConnection | null,
@@ -170,6 +172,13 @@ export function useRealtimeSession() {
       }
       case "conversation.item.input_audio_transcription.completed":
         patchTurn(ev.item_id, (t) => ({ ...t, text: ev.transcript ?? "" }));
+        break;
+      case "output_audio_buffer.started":
+        setAiSpeaking(true);
+        break;
+      case "output_audio_buffer.stopped":
+      case "output_audio_buffer.cleared":
+        setAiSpeaking(false);
         break;
       case "response.created":
         updateTurns((ts) => [...ts, { role: "assistant", text: "", ref: ev.response.id }]);
@@ -335,5 +344,21 @@ export function useRealtimeSession() {
 
   useEffect(() => () => void cleanup(), [cleanup]);
 
-  return { status, error, turns, maxMinutes, startedAt, turnWait, start, end, endTurn, setTurnWait };
+  /** 画面の音量メーター用（録音していなければ 0） */
+  const getLevel = useCallback(() => r.current.recorder?.level ?? 0, []);
+
+  return {
+    status,
+    error,
+    turns,
+    maxMinutes,
+    startedAt,
+    turnWait,
+    aiSpeaking,
+    start,
+    end,
+    endTurn,
+    setTurnWait,
+    getLevel,
+  };
 }

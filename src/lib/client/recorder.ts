@@ -26,6 +26,8 @@ export class UtteranceRecorder {
   /** これまでに書き込んだ総サンプル数（16kHz 換算, 単調増加） */
   private written = 0;
   private srcPos = 0;
+  /** 直近の入力音量（0〜1, 画面の音量メーター用） */
+  private lastLevel = 0;
 
   private constructor(private ctx: AudioContext) {}
 
@@ -43,6 +45,10 @@ export class UtteranceRecorder {
 
   /** 入力サンプルレートから 16kHz へ線形補間でリサンプリングしてリングに書き込む */
   private push(input: Float32Array) {
+    let sum = 0;
+    for (let i = 0; i < input.length; i++) sum += input[i] * input[i];
+    // 話し声が 0.3〜0.8 程度に収まるよう、RMS を持ち上げて 0〜1 に丸める
+    this.lastLevel = Math.min(1, Math.sqrt(sum / input.length) * 6);
     const step = this.ctx.sampleRate / SAMPLE_RATE;
     let pos = this.srcPos;
     while (pos < input.length - 1) {
@@ -57,6 +63,10 @@ export class UtteranceRecorder {
 
   get position() {
     return this.written;
+  }
+
+  get level() {
+    return this.lastLevel;
   }
 
   slice(from: number, to: number) {
