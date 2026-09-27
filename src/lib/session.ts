@@ -19,7 +19,8 @@ import {
   type RealtimeUsage,
 } from "./config";
 import { attachToSession, getPicked, markShownQuery, type ExpressionPick } from "./expressions";
-import { budgetStatus, buildInstructions, getCurrentCurriculum } from "./lesson";
+import { buildInstructions } from "./conversation-prompt";
+import { budgetStatus, getCurrentCurriculum } from "./lesson";
 import { plainExpressionText } from "./format";
 import { getScenario, speechSpeed } from "./scenarios";
 
