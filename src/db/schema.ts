@@ -27,8 +27,20 @@ export const profile = pgTable("profile", {
   programStart: date("program_start").notNull().defaultNow(),
   /** 週次レビューで「同じ週を繰り返す」を選んだ累計週数（その分だけ進行を遅らせる） */
   weekOffset: integer("week_offset").notNull().default(0),
+  /** 学習者モデル（会話後の分析で毎回更新する学習者像。次の分析の背景知識に使う） */
+  learnerModel: jsonb("learner_model").$type<LearnerModel>(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** 学習者像: どんな話し手か・強み・弱点・苦手な音。分析 AI が過去の会話を踏まえて書き直していく */
+export type LearnerModel = {
+  portrait: string;
+  strengths: string[];
+  weaknesses: string[];
+  sounds: string[];
+  /** 反映したセッション数 */
+  sessions: number;
+};
 
 /** 全体カリキュラムの週ごとの上書き（週次レビューで指定した項目だけを、その週だけ差し替える。null は「差し替えない」） */
 export const curriculum = pgTable("curriculum", {
@@ -172,7 +184,6 @@ export const feedbackItems = pgTable("feedback_items", {
   /** この指摘から覚えておくと再利用できる部分（「＋追加」で表現リストに入れられる） */
   keyExpression: jsonb("key_expression").$type<KeyExpression>(),
 });
-
 
 export const errorPatterns = pgTable("error_patterns", {
   key: text("key").primaryKey(),

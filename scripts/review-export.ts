@@ -61,6 +61,17 @@ async function main() {
 - 目標: ${profile.goals}
 - 興味: ${profile.interests}
 
+## 学習者モデル（会話ごとに分析 AI が更新）
+${
+  profile.learnerModel
+    ? `- 人物像: ${profile.learnerModel.portrait}
+- 強み: ${profile.learnerModel.strengths.join(" / ")}
+- 弱点: ${profile.learnerModel.weaknesses.join(" / ")}
+- 苦手な音: ${profile.learnerModel.sounds.join(" / ")}
+- 反映したセッション数: ${profile.learnerModel.sessions}`
+    : "（まだなし）"
+}
+
 ## 前回の週次レビュー
 ${lastReview ? `- ${lastReview.weekStart}: ${lastReview.summary}
 - ユーザーの声: ${lastReview.userComment || "（なし）"}` : "（なし）"}

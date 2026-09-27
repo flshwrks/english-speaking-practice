@@ -8,7 +8,7 @@ import { DAY_MS, isoDateJst } from "./format";
 import { addDays, mondayOf, SYLLABUS, syllabusPosition, type SyllabusPosition } from "./syllabus";
 
 type Profile = typeof t.profile.$inferSelect;
-type ProfilePatch = Partial<Pick<Profile, "about" | "goals" | "interests" | "level">>;
+type ProfilePatch = Partial<Pick<Profile, "about" | "goals" | "interests" | "level" | "learnerModel">>;
 
 export async function getProfile() {
   const [p] = await db().select().from(t.profile).where(eq(t.profile.id, 1));

@@ -4,13 +4,20 @@ import type { BatchItem } from "drizzle-orm/batch";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
-import type { SessionMetrics } from "@/db/schema";
+import type { LearnerModel, SessionMetrics } from "@/db/schema";
 import { ERROR_MIN_SEVERITY, FEEDBACK_CATEGORIES } from "./categories";
 import { PRICING, sessionCostUsd } from "./config";
 import { KeyExpression, markMasteredQuery, practicedExpressions, recordUseQueries, sessionTargets } from "./expressions";
 import { formatPhoneme, isWeakWord } from "./format";
 import { getProfile, topErrorPatterns, updateProfileQuery } from "./lesson";
 import { getScenario } from "./scenarios";
+
+const LearnerModelSchema = z.object({
+  portrait: z.string().describe("学習者像（日本語, 150字〜300字）: どんな話し手か、話し方の傾向・癖、伸びてきている点"),
+  strengths: z.array(z.string()).describe("安定して見られる強み。最大6つ。短い日本語"),
+  weaknesses: z.array(z.string()).describe("繰り返し見られる弱点（文法・語彙・構成・流暢さなど）。最大6つ。短い日本語"),
+  sounds: z.array(z.string()).describe("苦手な音・語・リズム（例: /r/→/l/（problem, really）, 語末子音の脱落）。最大6つ"),
+});
 
 const AnalysisSchema = z.object({
   summary: z.string().describe("セッション全体の講評（日本語, 2〜3文）"),
@@ -63,6 +70,10 @@ const AnalysisSchema = z.object({
     .enum(["up", "keep", "down"])
     .catch("keep")
     .describe("AI の会話難易度を次回どうするか。余裕があれば up、苦戦していれば down"),
+  // 形が崩れていても分析全体は捨てず、学習者モデルの更新だけ見送る
+  learnerModel: LearnerModelSchema.nullable()
+    .catch(null)
+    .describe("今回の会話を踏まえて更新した学習者モデル（全体を書き直して返す）"),
 });
 
 export type Analysis = z.infer<typeof AnalysisSchema>;
@@ -84,7 +95,11 @@ Principles:
   - kind: "word" for single words, phrasal verbs, idioms and collocations (usually 1-4 words); "phrase" for sentence-level frames.
   - category: pick the business situation where it is most useful; use "general" only when none fits.
 - Reuse existing pattern keys when the same kind of mistake recurs, so progress can be tracked.
-- All explanations must be in natural Japanese. English examples stay in English.`;
+- All explanations must be in natural Japanese. English examples stay in English.
+
+Learner model:
+- You may be given a learner model built from earlier sessions (portrait, strengths, weaknesses, weak sounds). Treat it as background knowledge about this person, like a coach who remembers them: when choosing top points and writing explanations, weigh habits that keep recurring, connect a mistake to their known tendency when that helps them understand it, and notice genuine improvement. Do not mention the model or say things like "your profile says"; just let it shape the feedback naturally.
+- Then return an updated learnerModel that merges this session's evidence into it: keep traits that still hold, revise or drop ones this session clearly contradicts, add new ones only when well supported (a single slip is not a weakness). Base sounds only on the pronunciation data. If there is no model yet, build the first one from this session.`;
 
 type Utterance = typeof t.utterances.$inferSelect;
 
@@ -104,6 +119,28 @@ function describeUtterance(u: Utterance | undefined) {
   }`;
 }
 
+function describeModel(m: LearnerModel) {
+  const list = (items: string[]) => (items.length ? items.map((x) => `- ${x}`).join("\n") : "- (none)");
+  return `Portrait: ${m.portrait}
+Strengths:
+${list(m.strengths)}
+Weaknesses:
+${list(m.weaknesses)}
+Weak sounds:
+${list(m.sounds)}`;
+}
+
+/** 分析結果の学習者モデルを保存用の形に（各リストは最大6つ） */
+function toLearnerModel(m: z.infer<typeof LearnerModelSchema>, sessions: number): LearnerModel {
+  return {
+    portrait: m.portrait,
+    strengths: m.strengths.slice(0, 6),
+    weaknesses: m.weaknesses.slice(0, 6),
+    sounds: m.sounds.slice(0, 6),
+    sessions,
+  };
+}
+
 export async function analyzeSession(sessionId: number) {
   const d = db();
   const [[session], profile, utterances, targets, patterns, practiced] = await Promise.all([
@@ -114,6 +151,7 @@ export async function analyzeSession(sessionId: number) {
     topErrorPatterns(30),
     practicedExpressions(sessionId),
   ]);
+  const model = profile.learnerModel;
   if (!session) throw new Error("session not found");
   const byseq = new Map(utterances.map((u) => [u.seq, u]));
   const scenario = getScenario(session.scenarioId);
@@ -132,6 +170,9 @@ ${scenario?.title ?? session.scenarioId}: ${scenario?.role ?? ""}
 # Learner profile
 ${profile.about || "(none)"}
 Current conversation difficulty: ${session.level}/10
+
+# Learner model (built from ${model?.sessions ?? 0} earlier sessions; background knowledge)
+${model ? describeModel(model) : "(none yet)"}
 
 # Existing mistake pattern keys
 ${patterns.map((p) => `- ${p.key}: ${p.label} (${p.count}x)`).join("\n") || "(none yet)"}
@@ -213,7 +254,14 @@ ${transcript}`;
         .onConflictDoNothing(),
     );
   }
-  if (levelDelta) writes.push(updateProfileQuery({ level: profile.level + levelDelta }));
+  if (levelDelta || a.learnerModel) {
+    writes.push(
+      updateProfileQuery({
+        ...(levelDelta ? { level: profile.level + levelDelta } : {}),
+        ...(a.learnerModel ? { learnerModel: toLearnerModel(a.learnerModel, (model?.sessions ?? 0) + 1) } : {}),
+      }),
+    );
+  }
 
   await d.batch([
     d
