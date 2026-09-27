@@ -5,8 +5,7 @@ import { LEARNING_STATUSES, type ExpressionStatus } from "@/db/schema";
 import { ExpressionCard } from "@/components/expression-card";
 import { fieldClass as field, Header, Page } from "@/components/ui";
 import { formatDateJst } from "@/lib/format";
-import { addExpressionAction, expressionAction } from "../actions";
-
+import { addManualExpression, expressionAction } from "../actions";
 
 const TABS: { key: string; label: string; statuses: readonly ExpressionStatus[] }[] = [
   { key: "learning", label: "練習中", statuses: LEARNING_STATUSES },
@@ -44,8 +43,7 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
       <Header title="表現リスト" />
       <details className="card mb-4">
         <summary className="cursor-pointer text-sm font-medium">＋ 表現を自分で追加する</summary>
-        <form action={addExpressionAction} className="mt-3 flex flex-col gap-2 text-sm">
-          <input type="hidden" name="source" value="manual" />
+        <form action={addManualExpression} className="mt-3 flex flex-col gap-2 text-sm">
           <input name="text" required placeholder="英語（例: iron out the details）" className={field} />
           <input name="meaning" required placeholder="意味（例: 細部を詰める）" className={field} />
           <input name="example" placeholder="例文（任意）" className={field} />

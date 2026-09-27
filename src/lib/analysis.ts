@@ -5,9 +5,9 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
 import type { SessionMetrics } from "@/db/schema";
-import { EXPRESSION_CATEGORIES, EXPRESSION_KINDS, FEEDBACK_CATEGORIES } from "./categories";
+import { ERROR_MIN_SEVERITY, FEEDBACK_CATEGORIES } from "./categories";
 import { PRICING, sessionCostUsd } from "./config";
-import { markMasteredQuery, practicedExpressions, recordUseQueries, sessionTargets } from "./expressions";
+import { KeyExpression, markMasteredQuery, practicedExpressions, recordUseQueries, sessionTargets } from "./expressions";
 import { formatPhoneme, isWeakWord } from "./format";
 import { getProfile, topErrorPatterns, updateProfileQuery } from "./lesson";
 import { getScenario } from "./scenarios";
@@ -20,7 +20,8 @@ const AnalysisSchema = z.object({
   items: z.array(
     z.object({
       seq: z.number().int().describe("該当する学習者発話の番号 U<n> の n"),
-      category: z.enum(FEEDBACK_CATEGORIES),
+      // 構造化出力でも enum・数値範囲は強制されないため、想定外の値は既定値に置き換える
+      category: z.enum(FEEDBACK_CATEGORIES).catch("naturalness"),
       original: z.string().describe("学習者の実際の発話（該当部分）"),
       improved: z.string().describe("ネイティブが自然に言う形"),
       explanation: z.string().describe("なぜそう言うのかの解説（日本語）"),
@@ -29,18 +30,13 @@ const AnalysisSchema = z.object({
         .int()
         .min(1)
         .max(3)
+        .catch(2)
         .describe("3=意味が通じない/誤解を招く, 2=明確な誤り, 1=誤りではないが、より的確・自然な言い方がある（言い換えの提案）"),
       patternKey: z.string().describe("ミスの型の snake_case キー。既存キーに当てはまるなら必ずそれを使う"),
       patternLabel: z.string().describe("ミスの型の短い日本語ラベル"),
-      keyExpression: z
-        .object({
-          text: z.string().describe("improved の中の、他の場面でも再利用できる部分（コロケーション・句動詞・言い回し）。文全体ではなく核になる部分"),
-          meaning: z.string().describe("日本語の意味"),
-          kind: z.enum(EXPRESSION_KINDS).describe("word=単語・句動詞・熟語・コロケーション（多くは1〜4語）/ phrase=文の型・言い回し"),
-          category: z.enum(EXPRESSION_CATEGORIES),
-        })
-        .nullable()
-        .describe("覚える価値のある表現。発音・抑揚の指摘や、覚える価値のないものは null"),
+      keyExpression: KeyExpression.nullable().describe(
+        "improved から取り出した、覚える価値のある表現。発音・抑揚の指摘や、覚える価値のないものは null",
+      ),
     }),
   ),
   targetExpressions: z.array(
@@ -56,19 +52,16 @@ const AnalysisSchema = z.object({
     .describe("復習リストの表現のうち、学習者が自発的に正しく使ったものの id"),
   suggestedExpressions: z
     .array(
-      z.object({
-        text: z.string(),
-        meaning: z.string().describe("日本語の意味"),
+      KeyExpression.extend({
         example: z.string(),
         scene: z.string().describe("使う場面（日本語）"),
-        category: z.enum(EXPRESSION_CATEGORIES),
-        kind: z.enum(EXPRESSION_KINDS).describe("word=単語・句動詞・熟語・コロケーション / phrase=文の型・言い回し"),
       }),
     )
     .describe("この会話の流れで使えると良かった、覚える価値の高い表現（items の keyExpression と重複しないもの）。フレーズと単語・熟語を合わせて最大6つ"),
-  estimatedCefr: z.enum(["A2", "B1", "B2", "C1", "C2"]),
+  estimatedCefr: z.enum(["A2", "B1", "B2", "C1", "C2"]).catch("B1"),
   levelAdjustment: z
     .enum(["up", "keep", "down"])
+    .catch("keep")
     .describe("AI の会話難易度を次回どうするか。余裕があれば up、苦戦していれば down"),
 });
 
@@ -175,7 +168,7 @@ ${transcript}`;
   const practicedIds = new Set(practiced.map((p) => p.id));
   const spontaneous = a.spontaneousExpressionIds.filter((id) => practicedIds.has(id));
   // ミスの型として数えるのは明確な誤り（重大度2以上）だけ。言い換えの提案は数えない
-  const patternsByKey = new Map(a.items.filter((i) => i.severity >= 2).map((i) => [i.patternKey, i]));
+  const patternsByKey = new Map(a.items.filter((i) => i.severity >= ERROR_MIN_SEVERITY).map((i) => [i.patternKey, i]));
   const levelDelta = { up: 1, keep: 0, down: -1 }[a.levelAdjustment];
 
   const writes: BatchItem<"pg">[] = [];
@@ -272,7 +265,7 @@ function computeMetrics(
     wpm: speakingSec > 0 ? Math.round(words.length / (speakingSec / 60)) : 0,
     lexicalDiversity: words.length ? Math.round((new Set(words).size / words.length) * 100) / 100 : 0,
     errorsPer100Words: words.length
-      ? Math.round((a.items.filter((i) => i.severity >= 2).length / words.length) * 1000) / 10
+      ? Math.round((a.items.filter((i) => i.severity >= ERROR_MIN_SEVERITY).length / words.length) * 1000) / 10
       : 0,
     accuracy: avg("accuracy"),
     fluency: avg("fluency"),

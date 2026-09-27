@@ -1,7 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { addExpression, applyExpressionAction, EXPRESSION_ACTIONS, type ExpressionAction } from "@/lib/expressions";
+import {
+  addExpression,
+  applyExpressionAction,
+  EXPRESSION_ACTIONS,
+  inferKind,
+  type ExpressionAction,
+} from "@/lib/expressions";
 import { updateProfileQuery } from "@/lib/lesson";
 import { requestAnalysis } from "@/lib/session";
 
@@ -14,26 +20,31 @@ export async function expressionAction(formData: FormData) {
   revalidatePath("/session/[id]", "page");
 }
 
-/** 表現を追加する（フィードバックの「＋追加」: 各項目は hidden、表現リストの手入力フォーム: 入力欄） */
-export async function addExpressionAction(formData: FormData) {
-  const get = (k: string) => String(formData.get(k) ?? "").trim() || undefined;
-  const text = get("text");
-  const meaning = get("meaning");
-  if (!text || !meaning) return;
+function revalidateExpressions() {
+  revalidatePath("/expressions");
+  revalidatePath("/session/[id]", "page");
+}
+
+/** FB の「覚える表現」を追加する（画面で bind した表現データをそのまま受け取る） */
+export async function addFeedbackExpression(expression: unknown) {
+  await addExpression(expression, "feedback");
+  revalidateExpressions();
+}
+
+/** 表現リストの手入力フォームから追加する。種類の指定がなければ語数で判定する */
+export async function addManualExpression(formData: FormData) {
+  const text = String(formData.get("text") ?? "");
+  const kind = String(formData.get("kind") ?? "");
   await addExpression(
     {
       text,
-      meaning,
-      example: get("example"),
-      scene: get("scene"),
-      category: get("category"),
-      // 種類の指定がなければ、3語以内を単語・熟語とみなす
-      kind: get("kind") ?? (text.split(/\s+/).length <= 3 ? "word" : "phrase"),
+      meaning: formData.get("meaning"),
+      example: formData.get("example") ?? undefined,
+      kind: kind || inferKind(text),
     },
-    formData.get("source") === "manual" ? "manual" : "feedback",
+    "manual",
   );
-  revalidatePath("/expressions");
-  revalidatePath("/session/[id]", "page");
+  revalidateExpressions();
 }
 
 export async function retryAnalysis(formData: FormData) {

@@ -11,17 +11,34 @@ import type { Scenario } from "./scenarios";
 export type Expression = typeof t.expressions.$inferSelect;
 export type ExpressionPick = { id: number; role: "new" | "review" };
 
+const KIND_DESCRIPTION = "word=単語・句動詞・熟語・コロケーション（多くは1〜4語）/ phrase=文の型・言い回し";
 
-/** 表現集（seed）と週次レビューの JSON で共通の入力形式 */
-export const ExpressionInput = z.object({
-  text: z.string().min(1),
-  meaning: z.string().min(1),
-  example: z.string().default(""),
-  scene: z.string().default(""),
+/**
+ * 覚える表現の核（FB の「覚える表現」と、分析の出力形式でも使う）。
+ * SDK の構造化出力は enum を制約として強制しない（説明文に移す）ため、想定外の値は既定値に置き換えて分析全体を失敗させない。
+ * 人が書く入力（ExpressionInput）では kind・category を上書きして厳密に検証する。
+ */
+export const KeyExpression = z.object({
+  text: z.string().trim().min(1).describe("他の場面でも再利用できる部分（コロケーション・句動詞・言い回し）。文全体ではなく核になる部分"),
+  meaning: z.string().trim().min(1).describe("日本語の意味"),
+  kind: z.enum(EXPRESSION_KINDS).describe(KIND_DESCRIPTION).catch("phrase"),
+  category: z.enum(EXPRESSION_CATEGORIES).catch("general"),
+});
+export type KeyExpression = z.infer<typeof KeyExpression>;
+
+/** 表現集（seed）・週次レビューの JSON・画面からの追加で共通の入力形式 */
+export const ExpressionInput = KeyExpression.extend({
+  example: z.string().trim().default(""),
+  scene: z.string().trim().default(""),
   category: z.enum(EXPRESSION_CATEGORIES).default("general"),
   register: z.enum(REGISTERS).default("neutral"),
   kind: z.enum(EXPRESSION_KINDS).default("phrase"),
 });
+
+/** 種類の指定がない手入力の表現: 4語以内なら単語・熟語、それより長ければフレーズ（分析の指示と同じ基準） */
+export function inferKind(text: string): ExpressionKind {
+  return text.trim().split(/\s+/).length <= 4 ? "word" : "phrase";
+}
 
 /** 1レッスンで出題する数 */
 const NEW_PER_KIND = { phrase: 2, word: 2 } as const;
@@ -177,9 +194,11 @@ export type ExpressionAction = (typeof EXPRESSION_ACTIONS)[number];
 /**
  * 表現リストに追加する（フィードバックの「＋追加」や手入力）。すでにあれば、提案中のものだけ出題待ちに上げる。
  */
-export function addExpression(input: unknown, source: "feedback" | "manual") {
-  const e = ExpressionInput.parse(input);
-  return db()
+export async function addExpression(input: unknown, source: "feedback" | "manual") {
+  const parsed = ExpressionInput.safeParse(input);
+  if (!parsed.success) return false;
+  const e = parsed.data;
+  await db()
     .insert(t.expressions)
     .values({ ...e, source, status: "queued" })
     .onConflictDoUpdate({
@@ -187,6 +206,7 @@ export function addExpression(input: unknown, source: "feedback" | "manual") {
       set: { status: "queued" },
       setWhere: eq(t.expressions.status, "suggested"),
     });
+  return true;
 }
 
 /** 画面からの手動操作: 提案を採用 / 習得済みにする / 削除 */

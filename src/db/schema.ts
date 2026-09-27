@@ -11,6 +11,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 import type { ExpressionCategory, ExpressionKind, FeedbackCategory, Register } from "../lib/categories";
+import type { KeyExpression } from "../lib/expressions";
 
 export type { FeedbackCategory };
 
@@ -172,12 +173,6 @@ export const feedbackItems = pgTable("feedback_items", {
   keyExpression: jsonb("key_expression").$type<KeyExpression>(),
 });
 
-export type KeyExpression = {
-  text: string;
-  meaning: string;
-  kind: ExpressionKind;
-  category: ExpressionCategory;
-};
 
 export const errorPatterns = pgTable("error_patterns", {
   key: text("key").primaryKey(),

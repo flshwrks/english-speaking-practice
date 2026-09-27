@@ -21,6 +21,10 @@ export const FEEDBACK_CATEGORY_LABEL: Record<FeedbackCategory, string> = {
   prosody: "抑揚・リズム",
 };
 
+/** 重大度（1〜3）のうち、明確な誤りとして扱う下限。1 は誤りではなく「より良い言い方」の提案 */
+export const ERROR_MIN_SEVERITY = 2;
+export const isUpgrade = (severity: number) => severity < ERROR_MIN_SEVERITY;
+
 export const EXPRESSION_CATEGORIES = [
   "meetings",
   "agreeing_disagreeing",

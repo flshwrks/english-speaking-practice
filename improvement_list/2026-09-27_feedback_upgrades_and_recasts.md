@@ -18,3 +18,11 @@
 ## 検証
 - 誤りを含むテスト音声で、AI が "So, you're saying Japanese companies are strong in manufacturing, but..." と言い直して返すことを確認
 - 分析で「manufacturing capabilities」「build an ecosystem」「expand overseas」などの言い換えと覚える表現が出て、「＋追加」で出題待ちに入ることを確認
+
+## /simplify による見直しと、見つかった不具合（同日）
+- 「覚える表現」の形を `KeyExpression`（lib/expressions.ts）1か所で定義し、DB の型・分析の出力形式・表現追加の入力で共有
+- 表現の追加を「FB からの追加（bind したデータを直接受け取る）」と「手入力」の2つのサーバー処理に分け、隠しフォーム項目と二重の入力検証をなくした。種類の自動判定は `inferKind`（4語以内=単語・熟語）
+- 「言い換えの提案（重大度1）」の判定を `isUpgrade` / `ERROR_MIN_SEVERITY` に集約
+- FB 画面の「追加済み」判定を他のクエリと並列に（1往復削減）。`.prettierrc`（printWidth 120）を追加
+- 不具合: Anthropic SDK の `zodOutputFormat` は enum・数値範囲を説明文に移すだけで強制しないため、AI が想定外の分類を返すと分析全体が失敗していた。AI 出力の enum・重大度に `.catch()` で既定値を設定し、分析を失敗させないようにした（人が書く入力は従来どおり厳密に検証）
+- 見送り: 出題優先度を source の値で判定するルールの定数化（影響が小さいため）
