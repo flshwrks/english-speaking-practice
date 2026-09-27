@@ -6,22 +6,11 @@ import { useRealtimeSession, type TurnWait } from "@/lib/client/use-realtime-ses
 import { EXPRESSION_KIND_LABEL, type ExpressionKind } from "@/lib/categories";
 import type { ExpressionPick } from "@/lib/expressions";
 
-const TURN_WAIT_KEY = "esp-turn-wait";
 const TURN_WAIT_OPTIONS: { value: TurnWait; label: string }[] = [
   { value: "manual", label: "手動" },
   { value: "low", label: "自動・長め" },
   { value: "medium", label: "自動・標準" },
 ];
-
-/** 前回選んだ交代の方法（既定は「手動」: 何秒考えても割り込まれない） */
-function loadTurnWait(): TurnWait {
-  try {
-    const v = localStorage.getItem(TURN_WAIT_KEY);
-    return TURN_WAIT_OPTIONS.some((o) => o.value === v) ? (v as TurnWait) : "manual";
-  } catch {
-    return "manual";
-  }
-}
 
 export function LiveSession({
   scenarioId,
@@ -33,8 +22,8 @@ export function LiveSession({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { status, error, turns, maxMinutes, startedAt, start, end, endTurn, setTurnWait } = useRealtimeSession();
-  const [turnWait, setTurnWaitState] = useState<TurnWait>(() => loadTurnWait());
+  const { status, error, turns, maxMinutes, startedAt, turnWait, start, end, endTurn, setTurnWait } =
+    useRealtimeSession();
   const [budgetBlocked, setBudgetBlocked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const bottom = useRef<HTMLDivElement>(null);
@@ -78,17 +67,9 @@ export function LiveSession({
     return () => window.removeEventListener("keydown", onKey);
   }, [status, endTurn]);
 
-  const changeTurnWait = (w: TurnWait) => {
-    setTurnWaitState(w);
-    setTurnWait(w);
-    try {
-      localStorage.setItem(TURN_WAIT_KEY, w);
-    } catch {}
-  };
-
   const begin = async (force = false) => {
     setBudgetBlocked(false);
-    const r = await start(scenarioId, expressions.map(({ id, role }) => ({ id, role })), { force, turnWait });
+    const r = await start(scenarioId, expressions.map(({ id, role }) => ({ id, role })), force);
     if (r.budgetExceeded) setBudgetBlocked(true);
   };
 
@@ -164,7 +145,7 @@ export function LiveSession({
               <button
                 key={o.value}
                 type="button"
-                onClick={() => changeTurnWait(o.value)}
+                onClick={() => setTurnWait(o.value)}
                 className={`btn px-2 py-1 text-xs ${turnWait === o.value ? "border-accent text-accent" : ""}`}
                 aria-pressed={turnWait === o.value}
               >

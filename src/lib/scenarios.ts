@@ -100,21 +100,35 @@ export function scenarioMenu(completedSessions: number, curriculumScenarioIds: s
   };
 }
 
-/** 難易度 1〜10 に応じた AI の話し方（語彙・文の長さ・質問の難しさ） */
-export function levelGuidance(level: number) {
-  if (level <= 3)
-    return "Use simple, common words and short sentences (under 12 words). Ask one simple question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.";
-  if (level <= 5)
-    return "Use clear, everyday business English and short sentences (under 15 words). Ask one question at a time; avoid idioms and slang. Give the learner time and encourage longer answers with gentle follow-ups.";
-  if (level <= 7)
-    return "Use natural business English with some common idioms. Ask follow-up questions that require explanations and challenge vague answers politely.";
-  return "Speak like a demanding native executive: dense vocabulary, idioms, ambiguity, and strong pushback. Expect precise, well-structured answers.";
-}
+/** 難易度 1〜10 の帯ごとの AI の話し方（語彙・文の長さ・質問の難しさ）と話す速度（Realtime API の speed, 1.0 が標準） */
+const LEVEL_BANDS = [
+  {
+    maxLevel: 3,
+    speed: 0.85,
+    guidance:
+      "Use simple, common words and short sentences (under 12 words). Ask one simple question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.",
+  },
+  {
+    maxLevel: 5,
+    speed: 0.9,
+    guidance:
+      "Use clear, everyday business English and short sentences (under 15 words). Ask one question at a time; avoid idioms and slang. Give the learner time and encourage longer answers with gentle follow-ups.",
+  },
+  {
+    maxLevel: 7,
+    speed: 1.0,
+    guidance:
+      "Use natural business English with some common idioms. Ask follow-up questions that require explanations and challenge vague answers politely.",
+  },
+  {
+    maxLevel: 10,
+    speed: 1.1,
+    guidance:
+      "Speak like a demanding native executive: dense vocabulary, idioms, ambiguity, and strong pushback. Expect precise, well-structured answers.",
+  },
+] as const;
 
-/** 難易度に応じた AI の話す速度（Realtime API の audio.output.speed, 1.0 が標準） */
-export function speechSpeed(level: number) {
-  if (level <= 3) return 0.85;
-  if (level <= 5) return 0.9;
-  if (level <= 7) return 1.0;
-  return 1.1;
-}
+const bandFor = (level: number) => LEVEL_BANDS.find((b) => level <= b.maxLevel) ?? LEVEL_BANDS[LEVEL_BANDS.length - 1];
+
+export const levelGuidance = (level: number) => bandFor(level).guidance;
+export const speechSpeed = (level: number) => bandFor(level).speed;

@@ -27,6 +27,15 @@ export const PRICING = {
 export const TRANSCRIBE_MODEL = "gpt-4o-transcribe";
 export const VOICE = "marin";
 
+/** AI に番を渡す方法。manual: 「話し終えた」を押すまで待つ / low・medium: 自動判定（semantic VAD）の待ち方 */
+export const TURN_WAITS = ["manual", "low", "medium"] as const;
+export type TurnWait = (typeof TURN_WAITS)[number];
+
+/** Realtime API の turn_detection 設定。手動は自動判定なし（null） */
+export function turnDetectionFor(wait: TurnWait) {
+  return wait === "manual" ? null : { type: "semantic_vad", eagerness: wait };
+}
+
 export function settings() {
   return {
     monthlyBudgetJpy: Number(process.env.MONTHLY_BUDGET_JPY ?? 3000),

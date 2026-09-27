@@ -2,22 +2,34 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Turn } from "@/db/schema";
-import type { RealtimeUsage } from "@/lib/config";
+import { turnDetectionFor, TURN_WAITS, type RealtimeUsage, type TurnWait } from "@/lib/config";
 import type { ExpressionPick } from "@/lib/expressions";
 import { saveUtterance } from "./audio-store";
 import { SAMPLE_RATE, toWav, UtteranceRecorder, voicedMs } from "./recorder";
+
+export type { TurnWait };
 
 /** ref は Realtime API の item_id / response_id */
 export type LiveTurn = Turn & { ref: string };
 
 type Status = "idle" | "connecting" | "live" | "ending" | "error";
-/** manual: 「話し終えた」を押すまで待つ / low・medium: 自動判定（semantic VAD）の待ち方 */
-export type TurnWait = "manual" | "low" | "medium";
 
 /** VAD の検出遅延ぶん、発話開始より前から切り出す */
 const PRE_ROLL = Math.round(SAMPLE_RATE * 1.2);
 const MIN_SPEECH_MS = 400;
 const MAX_CLIP = SAMPLE_RATE * 60;
+
+const TURN_WAIT_KEY = "esp-turn-wait";
+
+/** 前回選んだ交代の方法（既定は「手動」: 何秒考えても割り込まれない） */
+function loadTurnWait(): TurnWait {
+  try {
+    const v = localStorage.getItem(TURN_WAIT_KEY) ?? "";
+    return (TURN_WAITS as readonly string[]).includes(v) ? (v as TurnWait) : "manual";
+  } catch {
+    return "manual";
+  }
+}
 
 type NumTree = { [k: string]: number | NumTree | undefined };
 
@@ -38,27 +50,34 @@ export function useRealtimeSession() {
   const [turns, setTurns] = useState<LiveTurn[]>([]);
   const [maxMinutes, setMaxMinutes] = useState(15);
   const [startedAt, setStartedAt] = useState<number | null>(null);
+  // 交代の方法は画面表示用の state と、イベント処理から読む ref の両方に持つ（更新は setTurnWait だけ）。
+  // 切り替えボタンは会話中にしか出ないので、保存値の読み込みでサーバー描画と食い違うことはない
+  const [turnWait, setTurnWaitState] = useState<TurnWait>(loadTurnWait);
 
   const r = useRef({
     pc: null as RTCPeerConnection | null,
+    dc: null as RTCDataChannel | null,
     stream: null as MediaStream | null,
     recorder: null as UtteranceRecorder | null,
     turns: [] as LiveTurn[],
     usage: {} as NumTree,
     seq: 0,
-    dc: null as RTCDataChannel | null,
     turnWait: "manual" as TurnWait,
-    /** 自動モードで「話し終えた」を押し、自動判定を止めている間 true */
-    endingTurn: false,
-    /** 手動モード: 自分の番が始まった位置（録音のサンプル位置） */
+    /**
+     * 「話し終えた」を押してから AI 側で確定するまでの状態。
+     * auto: 自動判定を一時停止中（応答が始まったら戻す） / manual: 手動で確定した発話の番号（committed で会話に加える）
+     */
+    ending: null as null | { mode: "auto" } | { mode: "manual"; seq: number },
+    /** 手動モード: 自分の番が始まった位置（録音のサンプル位置）。AI 側の音声バッファもここで区切る */
     manualStart: 0,
-    /** 手動モードで確定したターンの仮 ID。committed で届く item_id と対応づける */
-    pendingManualRef: null as string | null,
-    alias: new Map<string, string>(),
     speech: new Map<string, { seq: number; startIdx: number; startMs: number; done?: boolean }>(),
     uploads: [] as Promise<unknown>[],
     sessionId: 0,
   });
+
+  useEffect(() => {
+    r.current.turnWait = turnWait;
+  }, [turnWait]);
 
   const updateTurns = useCallback((fn: (turns: LiveTurn[]) => LiveTurn[]) => {
     r.current.turns = fn(r.current.turns);
@@ -69,6 +88,29 @@ export function useRealtimeSession() {
       updateTurns((ts) => ts.map((t) => (t.ref === ref ? fn(t) : t))),
     [updateTurns],
   );
+
+  /** Realtime API へのクライアントイベント送信 */
+  const send = useCallback((ev: Record<string, unknown>) => {
+    const dc = r.current.dc;
+    if (dc?.readyState === "open") dc.send(JSON.stringify(ev));
+  }, []);
+
+  /** 話し終わりの自動判定を切り替える（manual で止める） */
+  const sendTurnDetection = useCallback(
+    (wait: TurnWait) =>
+      send({
+        type: "session.update",
+        session: { type: "realtime", audio: { input: { turn_detection: turnDetectionFor(wait) } } },
+      }),
+    [send],
+  );
+
+  /** 確定待ちを終える。自動モードで一時停止していた自動判定を元に戻す */
+  const finishEnding = useCallback(() => {
+    const s = r.current;
+    if (s.ending?.mode === "auto") sendTurnDetection(s.turnWait);
+    s.ending = null;
+  }, [sendTurnDetection]);
 
   /** 1発話分の録音を端末に保存し、発音評価に送る */
   const uploadClip = useCallback((seq: number, pcm: Int16Array, durationMs: number) => {
@@ -97,19 +139,6 @@ export function useRealtimeSession() {
     [uploadClip],
   );
 
-  /** 話し終わりの自動判定を設定する（manual / null で止める） */
-  const sendEagerness = useCallback((wait: TurnWait | null) => {
-    const dc = r.current.dc;
-    if (dc?.readyState !== "open") return;
-    const turnDetection = wait && wait !== "manual" ? { type: "semantic_vad", eagerness: wait } : null;
-    dc.send(
-      JSON.stringify({
-        type: "session.update",
-        session: { type: "realtime", audio: { input: { turn_detection: turnDetection } } },
-      }),
-    );
-  }, []);
-
   // Realtime API のサーバーイベント（型は公式ドキュメント参照。ここでは必要なフィールドだけ読む）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const onEvent = useCallback((ev: Record<string, any>) => {
@@ -130,21 +159,21 @@ export function useRealtimeSession() {
         if (sp) finalizeSpeech(ev.item_id, ev.audio_end_ms - sp.startMs);
         break;
       }
-      case "input_audio_buffer.committed":
-        if (s.pendingManualRef) {
-          s.alias.set(ev.item_id, s.pendingManualRef);
-          s.pendingManualRef = null;
+      case "input_audio_buffer.committed": {
+        // 手動で確定した発話は、AI 側の item_id が決まったここで会話に加える
+        const ending = s.ending;
+        if (ending?.mode === "manual") {
+          updateTurns((ts) => [...ts, { role: "user", text: "", seq: ending.seq, ref: ev.item_id }]);
+          s.ending = null;
         }
         break;
+      }
       case "conversation.item.input_audio_transcription.completed":
-        patchTurn(s.alias.get(ev.item_id) ?? ev.item_id, (t) => ({ ...t, text: ev.transcript ?? "" }));
+        patchTurn(ev.item_id, (t) => ({ ...t, text: ev.transcript ?? "" }));
         break;
       case "response.created":
         updateTurns((ts) => [...ts, { role: "assistant", text: "", ref: ev.response.id }]);
-        if (s.endingTurn) {
-          s.endingTurn = false;
-          sendEagerness(s.turnWait);
-        }
+        if (s.ending?.mode === "auto") finishEnding();
         break;
       case "response.output_audio_transcript.delta":
         patchTurn(ev.response_id, (t) => ({ ...t, text: t.text + ev.delta }));
@@ -154,39 +183,41 @@ export function useRealtimeSession() {
         break;
       case "response.done":
         if (ev.response?.usage) s.usage = addUsage(s.usage, ev.response.usage);
-        // 手動モードでは、AI の応答が終わった位置から自分の番とみなす
-        if (s.recorder) s.manualStart = s.recorder.position;
+        // 手動モード: AI の応答が終わったところから自分の番。録音と AI 側の音声バッファを同じ位置で区切り、
+        // 文字起こしされる音声と発音評価に送る音声の範囲をそろえる
+        if (s.turnWait === "manual" && s.recorder) {
+          s.manualStart = s.recorder.position;
+          send({ type: "input_audio_buffer.clear" });
+        }
         break;
       case "error":
         console.error("realtime error", ev.error);
         // 確定に失敗しても「話し終えた」が効かなくならないよう状態を戻す
-        s.pendingManualRef = null;
-        if (s.endingTurn) {
-          s.endingTurn = false;
-          sendEagerness(s.turnWait);
-        }
+        finishEnding();
         break;
     }
-  }, [updateTurns, patchTurn, finalizeSpeech, sendEagerness]);
+  }, [updateTurns, patchTurn, finalizeSpeech, finishEnding, send]);
 
-
-  /** 話し終わりの自動判定の待ち方を会話中に切り替える（low: 考えながら話す / medium: 標準） */
+  /** 交代の方法を切り替える（会話中でも可）。選択は次回のために保存する */
   const setTurnWait = useCallback(
-    (eagerness: TurnWait) => {
-      r.current.turnWait = eagerness;
-      sendEagerness(eagerness);
+    (wait: TurnWait) => {
+      r.current.turnWait = wait;
+      setTurnWaitState(wait);
+      sendTurnDetection(wait);
+      try {
+        localStorage.setItem(TURN_WAIT_KEY, wait);
+      } catch {}
     },
-    [sendEagerness],
+    [sendTurnDetection],
   );
 
   /**
-   * 「話し終えた」: 自動判定をいったん止めてから、ここまでの発話を確定して AI に応答させる。
-   * 自動判定を止めずに確定すると、残りの音声が別の発話とみなされて AI が二重に応答するため。
-   * 自動判定は AI の応答が始まったら元に戻す（response.created）。
+   * 「話し終えた」: ここまでの発話を確定して AI に応答させる。
+   * 自動モードでは自動判定をいったん止めてから確定する（止めないと残りの音声が別の発話とみなされ、AI が二重に応答する）。
    */
   const endTurn = useCallback(() => {
     const s = r.current;
-    if (!s.dc || s.dc.readyState !== "open" || !s.recorder || s.endingTurn || s.pendingManualRef) return;
+    if (s.dc?.readyState !== "open" || !s.recorder || s.ending) return;
     const end = s.recorder.position;
 
     if (s.turnWait === "manual") {
@@ -195,22 +226,20 @@ export function useRealtimeSession() {
       const voiced = voicedMs(pcm);
       if (voiced < MIN_SPEECH_MS) return;
       const seq = ++s.seq;
-      const ref = `manual-${seq}`;
-      s.pendingManualRef = ref;
+      s.ending = { mode: "manual", seq };
       s.manualStart = end;
-      updateTurns((ts) => [...ts, { role: "user", text: "", seq, ref }]);
       uploadClip(seq, pcm, voiced);
     } else {
       const pending = [...s.speech.entries()].filter(([, sp]) => !sp.done).at(-1);
       if (!pending) return;
       const [itemId, sp] = pending;
-      s.endingTurn = true;
-      sendEagerness(null);
+      s.ending = { mode: "auto" };
+      sendTurnDetection("manual");
       finalizeSpeech(itemId, ((end - sp.startIdx - PRE_ROLL) * 1000) / SAMPLE_RATE);
     }
-    s.dc.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
-    s.dc.send(JSON.stringify({ type: "response.create" }));
-  }, [sendEagerness, finalizeSpeech, uploadClip, updateTurns]);
+    send({ type: "input_audio_buffer.commit" });
+    send({ type: "response.create" });
+  }, [send, sendTurnDetection, finalizeSpeech, uploadClip]);
 
   const cleanup = useCallback(async () => {
     const s = r.current;
@@ -218,20 +247,21 @@ export function useRealtimeSession() {
     s.stream?.getTracks().forEach((t) => t.stop());
     await s.recorder?.close();
     s.pc = null;
+    s.dc = null;
     s.stream = null;
     s.recorder = null;
   }, []);
 
   const start = useCallback(
-    async (scenarioId: string, picks: ExpressionPick[], opts: { force?: boolean; turnWait?: TurnWait } = {}) => {
-      const force = opts.force ?? false;
+    async (scenarioId: string, picks: ExpressionPick[], force = false) => {
       setError(null);
       setStatus("connecting");
       try {
         const res = await fetch("/api/session/start", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scenarioId, picks, force }),
+          // 交代の方法は接続用キーの発行時に指定し、最初から選んだモードで始める
+          body: JSON.stringify({ scenarioId, picks, force, turnWait: r.current.turnWait }),
         });
         const data = await res.json();
         if (res.status === 402) {
@@ -260,10 +290,7 @@ export function useRealtimeSession() {
         s.dc = dc;
         dc.onmessage = (e) => onEvent(JSON.parse(e.data));
         dc.onopen = () => {
-          // サーバー側の初期値は low。標準を選んでいれば切り替えてから始める
-          s.turnWait = opts.turnWait ?? "manual";
-          if (s.turnWait !== "low") sendEagerness(s.turnWait); // サーバー側の初期値は low
-          dc.send(JSON.stringify({ type: "response.create" }));
+          send({ type: "response.create" });
           setStartedAt(Date.now());
           setStatus("live");
         };
@@ -285,7 +312,7 @@ export function useRealtimeSession() {
         return { budgetExceeded: false as const };
       }
     },
-    [onEvent, cleanup, sendEagerness],
+    [onEvent, cleanup, send],
   );
 
   /** 会話を終了し、未送信の発話を送り切ってから分析を依頼する */
@@ -308,5 +335,5 @@ export function useRealtimeSession() {
 
   useEffect(() => () => void cleanup(), [cleanup]);
 
-  return { status, error, turns, maxMinutes, startedAt, start, end, endTurn, setTurnWait };
+  return { status, error, turns, maxMinutes, startedAt, turnWait, start, end, endTurn, setTurnWait };
 }

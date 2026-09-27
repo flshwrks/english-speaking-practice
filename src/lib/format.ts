@@ -2,6 +2,15 @@ import type { WordAssessment } from "@/db/schema";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** 表現の見出しから空所（___）や補足の括弧を取り除く。blank は空所の置き換え（読み上げなら "something"） */
+export function plainExpressionText(text: string, blank = "") {
+  return text
+    .replace(/_{2,}/g, blank)
+    .replace(/\.{3}|\(.*?\)/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** 日本時間の日付。short は「9/26」、それ以外は「2026/9/26」 */
 export function formatDateJst(d: Date, style: "short" | "full" = "short") {
   return d.toLocaleDateString(

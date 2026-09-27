@@ -12,15 +12,24 @@ import {
   sessionCostUsd,
   settings,
   TRANSCRIBE_MODEL,
+  turnDetectionFor,
+  TURN_WAITS,
+  type TurnWait,
   VOICE,
   type RealtimeUsage,
 } from "./config";
 import { attachToSession, getPicked, markShownQuery, type ExpressionPick } from "./expressions";
 import { budgetStatus, buildInstructions, getCurrentCurriculum } from "./lesson";
+import { plainExpressionText } from "./format";
 import { getScenario, speechSpeed } from "./scenarios";
 
 /** Realtime API の一時トークンを発行する。ブラウザにはこれだけを渡し、API キーはサーバーに置く */
-async function createClientSecret(opts: { instructions: string; speed: number; transcriptionPrompt: string }) {
+async function createClientSecret(opts: {
+  instructions: string;
+  speed: number;
+  transcriptionPrompt: string;
+  turnWait: TurnWait;
+}) {
   const res = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -35,8 +44,8 @@ async function createClientSecret(opts: { instructions: string; speed: number; t
             // マイク付きイヤホン前提のノイズ除去（発話検出と文字起こしの精度が上がる）
             noise_reduction: { type: "near_field" },
             transcription: { model: TRANSCRIBE_MODEL, language: "en", prompt: opts.transcriptionPrompt },
-            // 無音の長さではなく「言い終わったか」で判定し、なるべく待つ。考え込んでもターンを奪われにくい
-            turn_detection: { type: "semantic_vad", eagerness: "low" },
+            // 手動なら自動判定なし。自動なら無音の長さではなく「言い終わったか」で判定する
+            turn_detection: turnDetectionFor(opts.turnWait),
           },
           output: { voice: VOICE, speed: opts.speed },
         },
@@ -51,7 +60,12 @@ export type StartResult =
   | { ok: true; sessionId: number; clientSecret: string; maxMinutes: number }
   | { ok: false; reason: "budget" | "unknown_scenario" };
 
-export async function startSession(input: { scenarioId: string; picks: ExpressionPick[]; force?: boolean }): Promise<StartResult> {
+export async function startSession(input: {
+  scenarioId: string;
+  picks: ExpressionPick[];
+  force?: boolean;
+  turnWait?: string;
+}): Promise<StartResult> {
   const scenario = getScenario(input.scenarioId);
   if (!scenario) return { ok: false, reason: "unknown_scenario" };
 
@@ -67,8 +81,9 @@ export async function startSession(input: { scenarioId: string; picks: Expressio
     speed: speechSpeed(profile.level),
     // 文字起こしのヒント: 場面と、出てきそうな語（今日の表現など）
     transcriptionPrompt: `A Japanese speaker practicing English in a business role-play: ${scenario.title}. Likely words: ${expressions
-      .map((e) => e.text.replace(/_{2,}|\.{3}|\(.*?\)/g, "").trim())
+      .map((e) => plainExpressionText(e.text))
       .join(", ")}.`,
+    turnWait: (TURN_WAITS as readonly string[]).includes(input.turnWait ?? "") ? (input.turnWait as TurnWait) : "manual",
   });
   const [session] = await db()
     .insert(t.sessions)
