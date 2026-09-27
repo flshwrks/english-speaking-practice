@@ -67,6 +67,7 @@ Principles:
 - Cover grammar, collocation, vocabulary choice, naturalness (how a native would phrase it), and register (politeness/tone for the situation).
 - For pronunciation and prosody, rely on the assessment data (low-scoring words, weak phonemes with what they sounded like, prosody errors). Explain the likely cause for a Japanese speaker (e.g. vowel insertion, /r/-/l/, /θ/→/s/, flat intonation, syllable-timed rhythm) and a concrete tip. Don't invent pronunciation errors not supported by the data.
 - The "Azure heard" text reflects what was actually pronounced more faithfully than the realtime transcript; use it to catch dropped articles, plurals, or endings.
+- When a transcribed word does not fit the context (e.g. "I want to rice my hand"), the learner most likely said a different word that was misheard. Infer the intended word from context and give a pronunciation item: which word was intended, what it sounded like, and why (e.g. /r/ vs /l/, missing final consonant, vowel insertion), with a concrete tip. Do not give grammar or vocabulary feedback on words that were merely misheard.
 - Prioritize: pick at most 3 top points that would most improve the learner's communication. Item-level feedback can be broader but skip trivial issues.
 - Reuse existing pattern keys when the same kind of mistake recurs, so progress can be tracked.
 - All explanations must be in natural Japanese. English examples stay in English.`;

@@ -2,9 +2,26 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useRealtimeSession } from "@/lib/client/use-realtime-session";
+import { useRealtimeSession, type TurnWait } from "@/lib/client/use-realtime-session";
 import { EXPRESSION_KIND_LABEL, type ExpressionKind } from "@/lib/categories";
 import type { ExpressionPick } from "@/lib/expressions";
+
+const TURN_WAIT_KEY = "esp-turn-wait";
+const TURN_WAIT_OPTIONS: { value: TurnWait; label: string }[] = [
+  { value: "manual", label: "手動" },
+  { value: "low", label: "自動・長め" },
+  { value: "medium", label: "自動・標準" },
+];
+
+/** 前回選んだ交代の方法（既定は「手動」: 何秒考えても割り込まれない） */
+function loadTurnWait(): TurnWait {
+  try {
+    const v = localStorage.getItem(TURN_WAIT_KEY);
+    return TURN_WAIT_OPTIONS.some((o) => o.value === v) ? (v as TurnWait) : "manual";
+  } catch {
+    return "manual";
+  }
+}
 
 export function LiveSession({
   scenarioId,
@@ -16,7 +33,8 @@ export function LiveSession({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { status, error, turns, maxMinutes, startedAt, start, end } = useRealtimeSession();
+  const { status, error, turns, maxMinutes, startedAt, start, end, endTurn, setTurnWait } = useRealtimeSession();
+  const [turnWait, setTurnWaitState] = useState<TurnWait>(() => loadTurnWait());
   const [budgetBlocked, setBudgetBlocked] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const bottom = useRef<HTMLDivElement>(null);
@@ -48,9 +66,29 @@ export function LiveSession({
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns.length]);
 
+  // スペースキーでも「話し終えた」
+  useEffect(() => {
+    if (status !== "live") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat || (e.target as HTMLElement).closest("input, textarea, button")) return;
+      e.preventDefault();
+      endTurn();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [status, endTurn]);
+
+  const changeTurnWait = (w: TurnWait) => {
+    setTurnWaitState(w);
+    setTurnWait(w);
+    try {
+      localStorage.setItem(TURN_WAIT_KEY, w);
+    } catch {}
+  };
+
   const begin = async (force = false) => {
     setBudgetBlocked(false);
-    const r = await start(scenarioId, expressions.map(({ id, role }) => ({ id, role })), force);
+    const r = await start(scenarioId, expressions.map(({ id, role }) => ({ id, role })), { force, turnWait });
     if (r.budgetExceeded) setBudgetBlocked(true);
   };
 
@@ -73,6 +111,8 @@ export function LiveSession({
             </button>
           )}
           <p className="mt-2 text-center text-xs text-muted">
+            言い終えたら「話し終えた ▶」（PC はスペースキー）で AI の番になります。押すまでは、考え込んでも AI は待ちます。
+            <br />
             AI の声をマイクが拾わないよう、イヤホンの使用をおすすめします
           </p>
         </div>
@@ -111,15 +151,36 @@ export function LiveSession({
         <div ref={bottom} />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 flex items-center justify-between gap-3 border-t border-line bg-bg/95 px-4 py-4 backdrop-blur">
-        <div className="tabular-nums">
-          <span className={remaining < 60 ? "text-bad" : ""}>{mmss(elapsed)}</span>
-          <span className="text-muted"> / {maxMinutes}:00</span>
-          {status === "live" && <span className="ml-2 inline-block h-2 w-2 animate-pulse rounded-full bg-bad" />}
+      <div className="sticky bottom-0 -mx-4 flex flex-col gap-3 border-t border-line bg-bg/95 px-4 py-3 backdrop-blur">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <div className="tabular-nums">
+            <span className={remaining < 60 ? "text-bad" : ""}>{mmss(elapsed)}</span>
+            <span className="text-muted"> / {maxMinutes}:00</span>
+            {status === "live" && <span className="ml-2 inline-block h-2 w-2 animate-pulse rounded-full bg-bad" />}
+          </div>
+          <div className="flex items-center gap-1" role="group" aria-label="AI に番を渡す方法">
+            <span className="mr-1 hidden text-xs text-muted sm:inline">交代</span>
+            {TURN_WAIT_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                onClick={() => changeTurnWait(o.value)}
+                className={`btn px-2 py-1 text-xs ${turnWait === o.value ? "border-accent text-accent" : ""}`}
+                aria-pressed={turnWait === o.value}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <button className="btn-primary" onClick={finish} disabled={status !== "live"}>
-          {status === "ending" ? "送信中…" : "終了してフィードバックへ"}
-        </button>
+        <div className="flex gap-2">
+          <button className="btn-primary flex-1 py-3" onClick={endTurn} disabled={status !== "live"}>
+            話し終えた ▶<span className="hidden text-xs opacity-80 sm:inline">（スペースキー）</span>
+          </button>
+          <button className="btn" onClick={finish} disabled={status !== "live"}>
+            {status === "ending" ? "送信中…" : "終了"}
+          </button>
+        </div>
       </div>
     </div>
   );

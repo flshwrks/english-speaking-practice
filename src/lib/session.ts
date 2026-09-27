@@ -8,6 +8,7 @@ import {
   azureBilledSeconds,
   PRICING,
   realtimeCostUsd,
+  transcribeCostUsd,
   sessionCostUsd,
   settings,
   TRANSCRIBE_MODEL,
@@ -16,10 +17,10 @@ import {
 } from "./config";
 import { attachToSession, getPicked, markShownQuery, type ExpressionPick } from "./expressions";
 import { budgetStatus, buildInstructions, getCurrentCurriculum } from "./lesson";
-import { getScenario } from "./scenarios";
+import { getScenario, speechSpeed } from "./scenarios";
 
 /** Realtime API の一時トークンを発行する。ブラウザにはこれだけを渡し、API キーはサーバーに置く */
-async function createClientSecret(instructions: string) {
+async function createClientSecret(opts: { instructions: string; speed: number; transcriptionPrompt: string }) {
   const res = await fetch("https://api.openai.com/v1/realtime/client_secrets", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "Content-Type": "application/json" },
@@ -28,13 +29,16 @@ async function createClientSecret(instructions: string) {
       session: {
         type: "realtime",
         model: PRICING.realtime.model,
-        instructions,
+        instructions: opts.instructions,
         audio: {
           input: {
-            transcription: { model: TRANSCRIBE_MODEL, language: "en" },
-            turn_detection: { type: "server_vad", silence_duration_ms: 900, prefix_padding_ms: 300 },
+            // マイク付きイヤホン前提のノイズ除去（発話検出と文字起こしの精度が上がる）
+            noise_reduction: { type: "near_field" },
+            transcription: { model: TRANSCRIBE_MODEL, language: "en", prompt: opts.transcriptionPrompt },
+            // 無音の長さではなく「言い終わったか」で判定し、なるべく待つ。考え込んでもターンを奪われにくい
+            turn_detection: { type: "semantic_vad", eagerness: "low" },
           },
-          output: { voice: VOICE },
+          output: { voice: VOICE, speed: opts.speed },
         },
       },
     }),
@@ -58,9 +62,14 @@ export async function startSession(input: { scenarioId: string; picks: Expressio
   ]);
   if (budget.exceeded && !input.force) return { ok: false, reason: "budget" };
 
-  const clientSecret = await createClientSecret(
-    buildInstructions({ profile, scenario, expressions, focus: curriculum.focus }),
-  );
+  const clientSecret = await createClientSecret({
+    instructions: buildInstructions({ profile, scenario, expressions, focus: curriculum.focus }),
+    speed: speechSpeed(profile.level),
+    // 文字起こしのヒント: 場面と、出てきそうな語（今日の表現など）
+    transcriptionPrompt: `A Japanese speaker practicing English in a business role-play: ${scenario.title}. Likely words: ${expressions
+      .map((e) => e.text.replace(/_{2,}|\.{3}|\(.*?\)/g, "").trim())
+      .join(", ")}.`,
+  });
   const [session] = await db()
     .insert(t.sessions)
     .values({ scenarioId: scenario.id, level: profile.level })
@@ -85,12 +94,14 @@ export async function finishSession(
       where u.session_id = ${sessionId} and u.seq = v.seq`);
   }
 
-  const assessed = await d
-    .select({ durationMs: t.utterances.durationMs })
+  const spoken = await d
+    .select({ durationMs: t.utterances.durationMs, assessed: sql<boolean>`${t.utterances.accuracy} is not null` })
     .from(t.utterances)
-    .where(sql`${t.utterances.sessionId} = ${sessionId} and ${t.utterances.accuracy} is not null`);
+    .where(eq(t.utterances.sessionId, sessionId));
+  const assessed = spoken.filter((u) => u.assessed);
+  const speakingMs = spoken.reduce((s, u) => s + u.durationMs, 0);
   const usage: Usage = {
-    realtimeUsd: realtimeCostUsd(body.realtimeUsage),
+    realtimeUsd: realtimeCostUsd(body.realtimeUsage) + transcribeCostUsd(speakingMs),
     azureSeconds: azureBilledSeconds(assessed.map((u) => u.durationMs)),
     claudeInputTokens: 0,
     claudeOutputTokens: 0,

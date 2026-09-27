@@ -100,13 +100,21 @@ export function scenarioMenu(completedSessions: number, curriculumScenarioIds: s
   };
 }
 
-/** 難易度 1〜10 に応じた AI の話し方 */
+/** 難易度 1〜10 に応じた AI の話し方（語彙・文の長さ・質問の難しさ） */
 export function levelGuidance(level: number) {
   if (level <= 3)
-    return "Speak slowly and clearly with common vocabulary and short sentences. Be patient and supportive; rephrase if the learner seems lost.";
-  if (level <= 6)
-    return "Speak at a moderate, natural pace with everyday business vocabulary. Ask follow-up questions that require explanations, not just yes/no answers.";
-  if (level <= 8)
-    return "Speak at natural native speed with idioms and business jargon where natural. Challenge vague answers and ask for specifics.";
-  return "Speak like a fast, demanding native executive: dense vocabulary, idioms, interruptions, ambiguity, and strong pushback. Expect precise, well-structured answers.";
+    return "Use simple, common words and short sentences (under 12 words). Ask one simple question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.";
+  if (level <= 5)
+    return "Use clear, everyday business English and short sentences (under 15 words). Ask one question at a time; avoid idioms and slang. Give the learner time and encourage longer answers with gentle follow-ups.";
+  if (level <= 7)
+    return "Use natural business English with some common idioms. Ask follow-up questions that require explanations and challenge vague answers politely.";
+  return "Speak like a demanding native executive: dense vocabulary, idioms, ambiguity, and strong pushback. Expect precise, well-structured answers.";
+}
+
+/** 難易度に応じた AI の話す速度（Realtime API の audio.output.speed, 1.0 が標準） */
+export function speechSpeed(level: number) {
+  if (level <= 3) return 0.85;
+  if (level <= 5) return 0.9;
+  if (level <= 7) return 1.0;
+  return 1.1;
 }

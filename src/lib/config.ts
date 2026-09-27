@@ -12,6 +12,8 @@ export const PRICING = {
     audioOut: 20,
     textOut: 2.4,
   },
+  /** 会話中の文字起こし（gpt-4o-transcribe）: 1分あたり。Realtime の usage には含まれない */
+  transcribePerMin: 0.006,
   /** Azure 発音評価（STT＋評価の追加料金）の概算: 1時間あたり */
   azurePerHour: 1.6,
   claude: {
@@ -21,7 +23,8 @@ export const PRICING = {
   },
 } as const;
 
-export const TRANSCRIBE_MODEL = "gpt-4o-mini-transcribe";
+/** 非ネイティブの発音でも取り違えにくい上位モデル（mini の約2倍だが1分 $0.006） */
+export const TRANSCRIBE_MODEL = "gpt-4o-transcribe";
 export const VOICE = "marin";
 
 export function settings() {
@@ -66,6 +69,11 @@ export function realtimeCostUsd(u: RealtimeUsage): number {
 /** Azure に送った秒数の見積もり: 発話長＋切り出しの前後余白（約1.5秒） */
 export function azureBilledSeconds(assessedDurationsMs: number[]) {
   return assessedDurationsMs.reduce((s, ms) => s + ms / 1000 + 1.5, 0);
+}
+
+/** 文字起こしの費用: 自分が話した時間ぶん */
+export function transcribeCostUsd(speakingMs: number) {
+  return (speakingMs / 60000) * PRICING.transcribePerMin;
 }
 
 export function sessionCostUsd(u: Usage) {

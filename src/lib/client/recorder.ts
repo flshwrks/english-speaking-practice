@@ -91,3 +91,21 @@ export function toWav(pcm: Int16Array) {
   new Int16Array(buf, 44).set(pcm);
   return new Blob([buf], { type: "audio/wav" });
 }
+
+/**
+ * 実際に声が出ていた時間（ミリ秒）を音量から推定する。手動で区切った発話は無音を含むため、話速の計算に使う。
+ * 20ms ごとの音量が、その録音の静かな部分（下位20%）の3倍かつ一定以上なら「声あり」とみなす。
+ */
+export function voicedMs(pcm: Int16Array) {
+  const frame = SAMPLE_RATE / 50;
+  const rms: number[] = [];
+  for (let i = 0; i + frame <= pcm.length; i += frame) {
+    let sum = 0;
+    for (let j = i; j < i + frame; j++) sum += pcm[j] * pcm[j];
+    rms.push(Math.sqrt(sum / frame));
+  }
+  if (!rms.length) return 0;
+  const floor = [...rms].sort((a, b) => a - b)[Math.floor(rms.length * 0.2)];
+  const threshold = Math.max(400, floor * 3);
+  return rms.filter((v) => v > threshold).length * 20;
+}
