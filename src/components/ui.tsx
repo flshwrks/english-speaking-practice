@@ -66,18 +66,20 @@ export function BackLink({ href = "/", label = "ホーム" }: { href?: string; l
 
 /** 区切りの見出し。数は右に */
 export function Section({
+  id,
   title,
   aside,
   children,
   className = "",
 }: {
+  id?: string;
   title: React.ReactNode;
   aside?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
-    <section className={`mb-10 ${className}`}>
+    <section id={id} className={`mb-10 scroll-mt-16 ${className}`}>
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <h2 className="text-[17px] font-bold">{title}</h2>
         {aside && <div className="meta shrink-0">{aside}</div>}
@@ -87,15 +89,21 @@ export function Section({
   );
 }
 
-/** 小さなラベル（強調は朱色、それ以外は無彩色） */
-export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "accent" }) {
-  const cls = {
-    neutral: "border border-line-strong text-fg-2",
-    accent: "bg-accent-soft text-accent",
-  }[tone];
+export type Tone = "neutral" | "primary" | "accent" | "good" | "warn";
+
+const TONE_CLASS: Record<Tone, string> = {
+  neutral: "bg-sunken text-fg-2",
+  primary: "bg-primary-soft text-primary",
+  accent: "bg-accent-soft text-accent",
+  good: "bg-good-soft text-good",
+  warn: "bg-warn-soft text-warn",
+};
+
+/** 小さなラベル。色は意味があるときだけ（藍=新しい・朱=要注意・緑=できた・黄土=途中） */
+export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: Tone }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-md px-1.5 text-xs leading-5 font-medium whitespace-nowrap ${cls}`}
+      className={`inline-flex shrink-0 items-center rounded-full px-2 text-xs leading-5 font-medium whitespace-nowrap ${TONE_CLASS[tone]}`}
     >
       {children}
     </span>
@@ -105,10 +113,10 @@ export function Badge({ children, tone = "neutral" }: { children: React.ReactNod
 /** 細い横棒（予算など） */
 export function Meter({ value, warn = false }: { value: number; warn?: boolean }) {
   return (
-    <div className="h-0.5 bg-line">
+    <div className="h-1 overflow-hidden rounded-full bg-sunken">
       <div
-        className={`h-full ${warn ? "bg-accent" : "bg-fg"}`}
-        style={{ width: `${Math.max(1, Math.min(100, value * 100))}%` }}
+        className={`h-full rounded-full ${warn ? "bg-accent" : "bg-primary"}`}
+        style={{ width: `${Math.max(2, Math.min(100, value * 100))}%` }}
       />
     </div>
   );
@@ -116,8 +124,28 @@ export function Meter({ value, warn = false }: { value: number; warn?: boolean }
 
 const TARGET = 80;
 
+/** スコア（0〜100）の良し悪し: 目標 80 以上＝緑、65 以上＝黄土、それ未満＝朱 */
+export function scoreTone(v: number | null | undefined): Tone {
+  if (v == null) return "neutral";
+  return v >= TARGET ? "good" : v >= 65 ? "warn" : "accent";
+}
+const FILL: Record<Tone, string> = {
+  neutral: "bg-line-strong",
+  primary: "bg-primary",
+  accent: "bg-accent",
+  good: "bg-good",
+  warn: "bg-warn",
+};
+const TEXT: Record<Tone, string> = {
+  neutral: "text-muted",
+  primary: "text-primary",
+  accent: "text-accent",
+  good: "text-good",
+  warn: "text-warn",
+};
+
 /**
- * 0〜100 のスコアを計器のように: 目盛り線（80＝目標）の上に今回の点、前回は白抜きの印。
+ * 0〜100 のスコア: 数字は良し悪しの色、棒は今回まで、縦線が目標 80、白抜きの丸が前回。
  */
 export function ScoreBar({
   label,
@@ -129,24 +157,27 @@ export function ScoreBar({
   prev?: number | null;
 }) {
   const pos = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
+  const tone = scoreTone(value);
   return (
     <div className="grid grid-cols-[4.5rem_2.5rem_minmax(0,1fr)] items-center gap-3">
       <span className="text-sm text-fg-2">{label}</span>
-      <span className="text-right text-[17px] font-bold tabular-nums">{value == null ? "—" : Math.round(value)}</span>
+      <span className={`text-right text-[17px] font-bold tabular-nums ${TEXT[tone]}`}>
+        {value == null ? "—" : Math.round(value)}
+      </span>
       <span className="relative h-5" aria-hidden>
-        <span className="absolute inset-x-0 top-1/2 h-px bg-line-strong" />
-        <span className="absolute top-1 h-3 w-px bg-muted" style={{ left: pos(TARGET) }} />
-        {prev != null && (
-          <span
-            className="absolute top-1/2 size-2 -translate-1/2 rounded-full border border-muted bg-surface"
-            style={{ left: pos(prev) }}
-            title={`前回 ${Math.round(prev)}`}
-          />
-        )}
+        <span className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-sunken" />
         {value != null && (
           <span
-            className={`absolute top-1/2 size-2.5 -translate-1/2 rounded-full ${value >= TARGET ? "bg-fg" : "bg-accent"}`}
-            style={{ left: pos(value) }}
+            className={`absolute top-1/2 left-0 h-1.5 -translate-y-1/2 rounded-full ${FILL[tone]}`}
+            style={{ width: pos(value) }}
+          />
+        )}
+        <span className="absolute top-0.5 h-4 w-0.5 rounded-full bg-fg/60" style={{ left: pos(TARGET) }} />
+        {prev != null && (
+          <span
+            className="absolute top-1/2 size-2.5 -translate-1/2 rounded-full border-2 border-fg-2 bg-surface"
+            style={{ left: pos(prev) }}
+            title={`前回 ${Math.round(prev)}`}
           />
         )}
       </span>
@@ -173,7 +204,7 @@ export function WeekTrack({ current, size = "sm" }: { current: number; size?: "s
                   key={w.week}
                   title={`第${w.week}週 ${w.theme}`}
                   className={`flex-1 rounded-[2px] ${size === "lg" ? "h-2" : "h-1"} ${
-                    w.week < current ? "bg-fg" : w.week === current ? "bg-accent" : "bg-line-strong/60"
+                    w.week < current ? "bg-primary" : w.week === current ? "bg-accent" : "bg-line-strong/60"
                   }`}
                 />
               ))}
@@ -181,6 +212,29 @@ export function WeekTrack({ current, size = "sm" }: { current: number; size?: "s
           {size === "lg" && <div className="meta mt-1.5">{phase}</div>}
         </div>
       ))}
+    </div>
+  );
+}
+
+/** 読み込み中の骨組み（行の数だけ灰色の帯） */
+export function SkeletonLines({ rows = 3, className = "" }: { rows?: number; className?: string }) {
+  return (
+    <div className={`flex flex-col gap-3 ${className}`} aria-hidden>
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="skeleton h-4" style={{ width: `${[92, 76, 84, 64, 88][i % 5]}%` }} />
+      ))}
+    </div>
+  );
+}
+
+/** 画面下に数秒だけ出るお知らせ（保存・追加などの完了） */
+export function Toast({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      role="status"
+      className="fixed bottom-24 left-1/2 z-50 inline-flex animate-toast items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium whitespace-nowrap text-ink-fg shadow-float lg:bottom-8"
+    >
+      {children}
     </div>
   );
 }

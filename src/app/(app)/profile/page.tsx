@@ -1,6 +1,8 @@
 import { connection } from "next/server";
-import { LevelPicker, SubmitButton } from "@/components/form-controls";
-import { Meter, Page, PageTitle } from "@/components/ui";
+import { Check } from "lucide-react";
+import { ActionButton } from "@/components/action-button";
+import { LevelPicker } from "@/components/form-controls";
+import { Meter, Page, PageTitle, Toast } from "@/components/ui";
 import { budgetStatus, getProfile } from "@/lib/lesson";
 import { saveProfile } from "../actions";
 
@@ -17,13 +19,19 @@ function Row({ label, help, children }: { label: string; help?: string; children
   );
 }
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }: PageProps<"/profile">) {
   await connection(); // 個人データを毎回 DB から読むため静的生成しない
-  const [p, budget] = await Promise.all([getProfile(), budgetStatus()]);
+  const [p, budget, { saved }] = await Promise.all([getProfile(), budgetStatus(), searchParams]);
   const ratio = budget.spentJpy / budget.budgetJpy;
   return (
     <Page narrow>
       <PageTitle>設定</PageTitle>
+      {saved && (
+        <Toast>
+          <Check size={16} strokeWidth={2.25} />
+          保存しました
+        </Toast>
+      )}
 
       <form action={saveProfile}>
         <h2 className="border-b border-line pb-2 text-[15px] font-bold">プロフィール</h2>
@@ -46,7 +54,9 @@ export default async function ProfilePage() {
         </Row>
 
         <div className="flex justify-end pt-6">
-          <SubmitButton>保存する</SubmitButton>
+          <ActionButton className="btn-primary min-w-28" pendingText="保存中…">
+            保存する
+          </ActionButton>
         </div>
       </form>
 

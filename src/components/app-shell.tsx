@@ -60,11 +60,17 @@ export function AppShell({ children, status }: { children: React.ReactNode; stat
                 <Link
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] ${
-                    active ? "font-bold text-fg" : "text-muted"
+                  className={`flex flex-col items-center gap-0.5 pt-1.5 pb-1 text-[11px] transition-colors ${
+                    active ? "font-bold text-primary" : "text-muted active:text-fg"
                   }`}
                 >
-                  <Icon size={22} strokeWidth={active ? 2 : 1.75} />
+                  <span
+                    className={`flex h-7 w-14 items-center justify-center rounded-full transition-colors ${
+                      active ? "bg-primary-soft" : ""
+                    }`}
+                  >
+                    <Icon size={20} strokeWidth={active ? 2.25 : 1.75} />
+                  </span>
                   {label}
                 </Link>
               </li>
@@ -82,12 +88,10 @@ function SideLink({ item: { href, label, icon: Icon }, active }: { item: NavItem
       href={href}
       aria-current={active ? "page" : undefined}
       className={`flex h-9 items-center gap-2.5 rounded-lg px-2 text-sm transition-colors ${
-        active
-          ? "bg-surface font-bold text-fg shadow-[0_0_0_1px_var(--line)]"
-          : "text-fg-2 hover:bg-surface/60 hover:text-fg"
+        active ? "bg-primary-soft font-bold text-primary" : "text-fg-2 hover:bg-surface hover:text-fg active:bg-sunken"
       }`}
     >
-      <Icon size={18} strokeWidth={1.75} />
+      <Icon size={18} strokeWidth={active ? 2.25 : 1.75} />
       {label}
     </Link>
   );

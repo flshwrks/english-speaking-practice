@@ -196,7 +196,7 @@ export function LiveSession({
         </div>
         <div className="absolute inset-x-0 -bottom-px h-0.5">
           <div
-            className={`h-full transition-[width] duration-1000 ${lastMinute ? "bg-accent" : "bg-fg"}`}
+            className={`h-full transition-[width] duration-1000 ${lastMinute ? "bg-accent" : "bg-primary"}`}
             style={{ width: `${progress * 100}%` }}
           />
         </div>
@@ -229,7 +229,7 @@ export function LiveSession({
               ) : (
                 <div key={t.ref} className="max-w-[85%] self-end">
                   <div className="meta mb-0.5 text-right">あなた</div>
-                  <div className="rounded-[14px] rounded-tr-[4px] bg-ink px-4 py-2.5 text-[16px] leading-relaxed text-ink-fg">
+                  <div className="rounded-[14px] rounded-tr-[4px] bg-primary px-4 py-2.5 text-[16px] leading-relaxed text-primary-fg">
                     {t.text || <TypingDots light />}
                   </div>
                 </div>
@@ -304,7 +304,7 @@ function TurnWaitPicker({ value, onChange }: { value: TurnWait; onChange: (v: Tu
             aria-pressed={value === o.value}
             className={`rounded-lg py-1.5 text-[13px] transition-colors ${
               value === o.value
-                ? "bg-surface font-bold text-fg shadow-[0_0_0_1px_var(--line)]"
+                ? "bg-surface font-bold text-primary shadow-card ring-1 ring-line"
                 : "text-fg-2 hover:text-fg"
             }`}
           >
@@ -377,7 +377,7 @@ function TypingDots({ light = false }: { light?: boolean }) {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className={`size-1 animate-blink rounded-full ${light ? "bg-ink-fg" : "bg-muted"}`}
+          className={`size-1 animate-blink rounded-full ${light ? "bg-primary-fg" : "bg-muted"}`}
           style={{ animationDelay: `${i * 0.18}s` }}
         />
       ))}

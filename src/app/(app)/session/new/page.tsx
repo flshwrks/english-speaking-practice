@@ -20,12 +20,7 @@ export default async function NewSessionPage({ searchParams }: { searchParams: P
       expressions={expressions.map((e) => ({ id: e.id, role: e.role, text: e.text, meaning: e.meaning }))}
     >
       {expressions.map((e) => (
-        <ExpressionEntry
-          key={e.id}
-          e={e}
-          status={e.role === "review" ? "復習" : "新規"}
-          statusAccent={e.role === "review"}
-        />
+        <ExpressionEntry key={e.id} e={e} status={e.role === "review" ? "復習" : undefined} statusTone="accent" />
       ))}
     </LiveSession>
   );

@@ -62,9 +62,9 @@ export default async function Home() {
         <ul>
           {recent.map((s) => (
             <li key={s.id} className="border-b border-line last:border-b-0">
-              <Link href={`/session/${s.id}`} className="group block py-3">
+              <Link href={`/session/${s.id}`} className="row-link group py-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="truncate text-sm font-medium group-hover:underline">
+                  <span className="truncate text-sm font-medium group-hover:text-primary">
                     {getScenario(s.scenarioId)?.title ?? s.scenarioId}
                   </span>
                   <span className="meta shrink-0 tabular-nums">{formatDateJst(s.startedAt)}</span>
@@ -72,9 +72,7 @@ export default async function Home() {
                 <div className="meta mt-0.5 flex items-center gap-2 tabular-nums">
                   {s.status === "done" && s.metrics ? (
                     <>
-                      {s.metrics.estimatedCefr && (
-                        <span className="font-medium text-fg">{s.metrics.estimatedCefr}</span>
-                      )}
+                      {s.metrics.estimatedCefr && <Badge tone="primary">{s.metrics.estimatedCefr}</Badge>}
                       <span>
                         発音 {score(s.metrics.accuracy)} · 流暢 {score(s.metrics.fluency)} · 抑揚{" "}
                         {score(s.metrics.prosody)}
@@ -104,7 +102,7 @@ export default async function Home() {
           </Link>
 
           {reviewDue && (
-            <p className="mb-4 rounded-[10px] bg-sunken px-4 py-2.5 text-sm text-fg-2">
+            <p className="mb-4 rounded-[10px] border border-warn/25 bg-warn-soft px-4 py-2.5 text-sm text-fg-2">
               週次レビューの時期です。Claude Code で <code className="font-medium text-fg">/weekly-review</code>{" "}
               を実行すると、今週の振り返りと来週の調整ができます。
             </p>
@@ -112,8 +110,11 @@ export default async function Home() {
 
           {pick && (
             <section className="panel mb-10" aria-labelledby="today">
-              <div className="px-5 pt-5 pb-4 lg:px-7 lg:pt-7">
-                <p className="meta">今日のレッスン</p>
+              <div className="rounded-t-[14px] bg-primary-soft/45 px-5 pt-5 pb-4 lg:px-7 lg:pt-6">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[13px] font-bold text-primary">今日のレッスン</p>
+                  {practice.practicedToday && <Badge tone="good">今日は練習済み</Badge>}
+                </div>
                 <h1 id="today" className="mt-0.5 text-[22px] leading-snug font-bold lg:text-[26px]">
                   {pick.title}
                 </h1>
@@ -131,9 +132,7 @@ export default async function Home() {
                       <span className="meta order-3 col-span-2 -mt-0.5 sm:order-none sm:col-span-1 sm:mt-0 sm:text-[15px] sm:text-fg-2">
                         {e.meaning}
                       </span>
-                      <span className={`text-xs ${e.role === "review" ? "font-medium text-accent" : "text-muted"}`}>
-                        {e.role === "review" ? "復習" : "新規"}
-                      </span>
+                      {e.role === "review" ? <Badge tone="accent">復習</Badge> : <span />}
                     </li>
                   ))}
                 </ul>
@@ -187,12 +186,16 @@ function ScenarioList({ items }: { items: Scenario[] }) {
     <ul className="grid border-t border-line sm:grid-cols-2 sm:gap-x-8">
       {items.map((s) => (
         <li key={s.id} className="border-b border-line">
-          <Link href={`/session/new?scenario=${s.id}`} className="group flex items-center gap-3 py-3.5">
+          <Link href={`/session/new?scenario=${s.id}`} className="row-link group flex items-center gap-3 py-3.5">
             <span className="min-w-0 flex-1">
-              <span className="block font-medium group-hover:underline">{s.title}</span>
+              <span className="block font-medium group-hover:text-primary">{s.title}</span>
               <span className="meta line-clamp-1">{s.brief}</span>
             </span>
-            <ChevronRight size={18} strokeWidth={1.75} className="shrink-0 text-muted" />
+            <ChevronRight
+              size={18}
+              strokeWidth={1.75}
+              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+            />
           </Link>
         </li>
       ))}

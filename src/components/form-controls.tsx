@@ -1,8 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
-import { useFormStatus } from "react-dom";
 
 const LEVEL_TEXT = [
   { max: 3, label: "やさしい", note: "ゆっくり・短い文・かんたんな単語" },
@@ -22,12 +20,12 @@ export function LevelPicker({ name, defaultValue }: { name: string; defaultValue
         {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
           <label
             key={n}
-            className={`flex h-10 cursor-pointer items-center justify-center rounded-md border text-sm tabular-nums transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-fg ${
+            className={`flex h-10 cursor-pointer items-center justify-center rounded-md border text-sm tabular-nums transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-primary ${
               n === value
-                ? "border-fg bg-fg font-bold text-bg"
+                ? "border-primary bg-primary font-bold text-primary-fg"
                 : n < value
-                  ? "border-line-strong bg-sunken text-fg-2"
-                  : "border-line text-fg-2 hover:border-line-strong"
+                  ? "border-primary/20 bg-primary-soft text-primary"
+                  : "border-line bg-surface text-fg-2 hover:border-line-strong"
             }`}
           >
             <input
@@ -49,16 +47,5 @@ export function LevelPicker({ name, defaultValue }: { name: string; defaultValue
         <span className="text-fg-2"> — {band.note}</span>
       </p>
     </fieldset>
-  );
-}
-
-/** 送信中は「保存中…」に変わる保存ボタン */
-export function SubmitButton({ children }: { children: React.ReactNode }) {
-  const { pending } = useFormStatus();
-  return (
-    <button className="btn-primary min-w-28" disabled={pending}>
-      {pending && <Loader2 size={16} className="animate-spin" />}
-      {pending ? "保存中…" : children}
-    </button>
   );
 }

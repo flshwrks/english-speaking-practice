@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import {
   addExpression,
   applyExpressionAction,
@@ -16,8 +17,7 @@ export async function expressionAction(formData: FormData) {
   const action = String(formData.get("action")) as ExpressionAction;
   if (!EXPRESSION_ACTIONS.includes(action)) return;
   await applyExpressionAction(Number(formData.get("id")), action);
-  revalidatePath("/expressions");
-  revalidatePath("/session/[id]", "page");
+  revalidateExpressions();
 }
 
 function revalidateExpressions() {
@@ -61,4 +61,6 @@ export async function saveProfile(formData: FormData) {
     level: Number(formData.get("level")),
   });
   revalidatePath("/profile");
+  // 保存できたことを画面に出すため、印を付けて同じ画面に戻す
+  redirect("/profile?saved=1");
 }

@@ -1,4 +1,5 @@
 import { SpeakButton } from "./speak-button";
+import { Badge, type Tone } from "./ui";
 import {
   EXPRESSION_CATEGORY_LABEL,
   EXPRESSION_KIND_LABEL,
@@ -50,13 +51,13 @@ function metaLine(e: Entry) {
 export function ExpressionEntry({
   e,
   status,
-  statusAccent = false,
+  statusTone = "neutral",
   layout = "stack",
   children,
 }: {
   e: Entry;
   status?: string;
-  statusAccent?: boolean;
+  statusTone?: Tone;
   layout?: "stack" | "row";
   children?: React.ReactNode;
 }) {
@@ -64,9 +65,9 @@ export function ExpressionEntry({
     <div className="min-w-0">
       <div className="text-[17px] leading-snug font-bold">{e.text}</div>
       <div className="mt-0.5 text-fg-2">{e.meaning}</div>
-      <div className="meta mt-1">
-        {status && <span className={statusAccent ? "font-medium text-accent" : ""}>{status} · </span>}
-        {metaLine(e)}
+      <div className="meta mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        {status && <Badge tone={statusTone}>{status}</Badge>}
+        <span>{metaLine(e)}</span>
       </div>
     </div>
   );

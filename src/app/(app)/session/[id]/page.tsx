@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { db, t } from "@/db";
 import type { SessionMetrics, WordAssessment } from "@/db/schema";
 import { ExpressionEntry } from "@/components/expression-card";
+import { ActionButton } from "@/components/action-button";
 import { SpeakButton } from "@/components/speak-button";
 import { BackLink, Page, ScoreBar, Section } from "@/components/ui";
 import { FEEDBACK_CATEGORY_LABEL, isUpgrade } from "@/lib/categories";
@@ -112,10 +113,10 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
           <p className="meta mt-1">{session.error}</p>
           <input type="hidden" name="id" value={id} />
           {session.turns.length > 0 && (
-            <button className="btn-primary mt-4">
+            <ActionButton className="btn-primary mt-4" pendingText="分析を依頼中…">
               <RotateCcw size={16} strokeWidth={1.75} />
               もう一度分析する
-            </button>
+            </ActionButton>
           )}
         </form>
       )}
@@ -123,10 +124,32 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
       {done && (
         <>
           {session.summary && <p className="mb-8 max-w-[38em] text-[16px] leading-[1.9]">{session.summary}</p>}
-          {scorecard && <div className="mb-10 lg:hidden">{scorecard}</div>}
+          {scorecard && <div className="mb-8 lg:hidden">{scorecard}</div>}
+          <nav
+            aria-label="このページの中を移動"
+            className="sticky top-0 z-10 -mx-4 mb-8 flex gap-1 overflow-x-auto border-b border-line bg-bg/95 px-4 py-2 backdrop-blur [scrollbar-width:none] lg:hidden"
+          >
+            {[
+              { href: "#points", label: "要点", show: Boolean(session.topPoints?.length) },
+              { href: "#fixes", label: `添削 ${items.length}`, show: items.length > 0 },
+              { href: "#targets", label: "今日の表現", show: targets.length > 0 },
+              { href: "#suggested", label: "覚える", show: suggested.length > 0 },
+              { href: "#transcript", label: "全文", show: session.turns.length > 0 },
+            ]
+              .filter((x) => x.show)
+              .map((x) => (
+                <a
+                  key={x.href}
+                  href={x.href}
+                  className="shrink-0 rounded-full px-3 py-1 text-[13px] font-medium whitespace-nowrap text-fg-2 transition-colors hover:bg-surface active:bg-primary-soft active:text-primary"
+                >
+                  {x.label}
+                </a>
+              ))}
+          </nav>
 
           {session.topPoints && session.topPoints.length > 0 && (
-            <Section title="今回の要点">
+            <Section id="points" title="今回の要点">
               <ol className="flex flex-col gap-4">
                 {session.topPoints.map((p, i) => (
                   <li key={i} className="grid grid-cols-[1.5rem_minmax(0,1fr)] gap-x-2">
@@ -143,6 +166,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
 
           {items.length > 0 && (
             <Section
+              id="fixes"
               title="添削"
               aside={
                 <span className="tabular-nums">
@@ -174,10 +198,10 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
                             example: it.improved,
                             scene: scenarioTitle,
                           })}
-                          className="mt-3 flex items-center justify-between gap-3 rounded-[10px] bg-sunken px-3.5 py-2.5"
+                          className="mt-3 flex items-center justify-between gap-3 rounded-[10px] bg-primary-soft/70 px-3.5 py-2.5"
                         >
                           <div className="min-w-0 text-sm">
-                            <span className="meta mr-2">覚える</span>
+                            <span className="mr-2 text-xs font-bold text-primary">覚える</span>
                             <b>{key.text}</b>
                             <span className="text-fg-2"> — {key.meaning}</span>
                           </div>
@@ -187,10 +211,10 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
                               追加済み
                             </span>
                           ) : (
-                            <button className="btn shrink-0 px-2.5 py-1 text-[13px]">
+                            <ActionButton className="btn shrink-0 border-primary/30 px-2.5 py-1 text-[13px] text-primary">
                               <Plus size={14} strokeWidth={2} />
                               追加
-                            </button>
+                            </ActionButton>
                           )}
                         </form>
                       )}
@@ -201,23 +225,32 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
             </Section>
           )}
 
-          {checklist && <div className="mb-10 lg:hidden">{checklist}</div>}
+          {checklist && (
+            <div id="targets" className="mb-10 scroll-mt-16 lg:hidden">
+              {checklist}
+            </div>
+          )}
 
           {suggested.length > 0 && (
-            <Section title="覚えておきたい表現" aside={`${suggested.length}件の提案`}>
+            <Section id="suggested" title="覚えておきたい表現" aside={`${suggested.length}件の提案`}>
               <div className="divide-y divide-line border-y border-line">
                 {suggested.map((e) => (
                   <ExpressionEntry key={e.id} e={e} status="提案">
                     <form action={expressionAction} className="flex gap-2">
                       <input type="hidden" name="id" value={e.id} />
-                      <button name="action" value="adopt" className="btn-primary px-4 py-2 text-sm">
+                      <ActionButton name="action" value="adopt" className="btn-primary px-4 py-2 text-sm">
                         <Plus size={15} strokeWidth={2} />
                         覚えるリストへ
-                      </button>
-                      <button name="action" value="delete" className="btn-ghost px-2.5" aria-label="この提案を消す">
+                      </ActionButton>
+                      <ActionButton
+                        name="action"
+                        value="delete"
+                        className="btn-ghost px-2.5"
+                        aria-label="この提案を消す"
+                      >
                         <X size={16} strokeWidth={1.75} />
                         不要
-                      </button>
+                      </ActionButton>
                     </form>
                   </ExpressionEntry>
                 ))}
@@ -228,7 +261,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
       )}
 
       {session.turns.length > 0 && (
-        <details className="group border-t border-line" open={!done}>
+        <details id="transcript" className="group scroll-mt-16 border-t border-line" open={!done}>
           <summary className="flex items-center gap-2 py-4 text-[17px] font-bold">
             <ChevronRight size={18} strokeWidth={1.75} className="transition-transform group-open:rotate-90" />
             会話の全文と発音
@@ -355,7 +388,7 @@ function Scorecard({ m, prev }: { m: SessionMetrics; prev: SessionMetrics | null
         <ScoreBar label="流暢さ" value={m.fluency} prev={prev?.fluency} />
         <ScoreBar label="抑揚" value={m.prosody} prev={prev?.prosody} />
       </div>
-      <p className="meta mt-2">● 今回{prev && "　○ 前回"}　| 目標 80</p>
+      <p className="meta mt-2">縦線＝目標80{prev && "　○＝前回"}</p>
     </div>
   );
 }

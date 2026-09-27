@@ -99,7 +99,7 @@ export default async function ProgressPage() {
                         key={di}
                         title={`${day.date}: ${day.count}回`}
                         className={`size-[14px] rounded-[3px] ${
-                          day.count === 0 ? "bg-sunken" : day.count === 1 ? "bg-fg/45" : "bg-fg"
+                          day.count === 0 ? "bg-sunken" : day.count === 1 ? "bg-primary/45" : "bg-primary"
                         } ${day.date === practice.today ? "outline-2 outline-offset-1 outline-accent" : ""}`}
                       />
                     ) : (

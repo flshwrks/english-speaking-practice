@@ -10,7 +10,7 @@ type Point = { label: string; value: number | null };
 const MIN_FOR_LINE = 3;
 
 const SERIES_STYLE = [
-  { stroke: "var(--fg)", dash: undefined },
+  { stroke: "var(--primary)", dash: undefined },
   { stroke: "var(--fg-2)", dash: "6 4" },
   { stroke: "var(--muted)", dash: "1.5 4" },
 ] as const;
@@ -182,7 +182,7 @@ export function TrendChart({
             <path
               d={line}
               fill="none"
-              stroke="var(--fg)"
+              stroke="var(--fg-2)"
               strokeWidth={1.5}
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -194,7 +194,7 @@ export function TrendChart({
                 cx={x(i)}
                 cy={y(d.value)}
                 r={data.length >= MIN_FOR_LINE && i < data.length - 1 ? 2 : 3.5}
-                fill="var(--fg)"
+                fill={i === data.length - 1 ? "var(--primary)" : "var(--fg-2)"}
               />
               <circle cx={x(i)} cy={y(d.value)} r={12} fill="transparent">
                 <title>{`${d.label}: ${fmt(d.value)}${unit}`}</title>

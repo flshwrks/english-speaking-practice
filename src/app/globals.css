@@ -3,55 +3,72 @@
 /*
  * デザイントークン
  * - 文字は濃く。灰色はメタ情報だけで、背景に対して 5:1 以上を保つ
- * - 主ボタンは墨色。朱色は「あなたの番」「添削の印」「今週」だけに使う
- * - 面は罫線で区切り、影は浮いている層（ドック・シート）にだけ付ける
+ * - 藍（primary）は「押せるもの・選んでいるもの」の色。主ボタン・リンク・選択中のタブ
+ * - 朱（accent）は「あなたの番」「添削の印」「今週」だけ。緑・黄土は結果の良し悪しだけ
+ * - 白い面は背景からわずかに浮かせる（細い罫線＋ごく薄い影）
  */
 :root {
-  --bg: #f7f6f3;
+  --bg: #f4f3f0;
   --surface: #ffffff;
-  --sunken: #efede8;
-  --line: #e3e0d9;
-  --line-strong: #c9c5bc;
+  --sunken: #ecebe6;
+  --line: #e2dfd8;
+  --line-strong: #c7c3ba;
 
   --fg: #1a1917;
   --fg-2: #46433d;
-  --muted: #6a665e;
+  --muted: #69655d;
 
   --ink: #1a1917;
   --ink-fg: #ffffff;
+
+  --primary: #23507a;
+  --primary-hover: #1b4064;
+  --primary-fg: #ffffff;
+  --primary-soft: #e6edf5;
 
   --accent: #b83a1e;
   --accent-fg: #ffffff;
   --accent-soft: #fae7e1;
 
   --good: #23633f;
+  --good-soft: #e2efe6;
   --warn: #8a5f00;
+  --warn-soft: #f5ebd3;
 
+  --shadow-card: 0 1px 2px rgb(26 25 23 / 0.05);
   --shadow-float: 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 24px rgb(0 0 0 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #131312;
-    --surface: #1b1b19;
-    --sunken: #0e0e0d;
+    --bg: #121212;
+    --surface: #1c1c1b;
+    --sunken: #0c0c0c;
     --line: #2e2d2a;
-    --line-strong: #45433f;
+    --line-strong: #46443f;
 
     --fg: #edebe6;
     --fg-2: #c2beb6;
-    --muted: #948f86;
+    --muted: #958f86;
 
     --ink: #edebe6;
     --ink-fg: #131312;
+
+    --primary: #93b9e4;
+    --primary-hover: #aecbec;
+    --primary-fg: #0d1824;
+    --primary-soft: #182636;
 
     --accent: #ff8a6e;
     --accent-fg: #1a0c07;
     --accent-soft: #3a1c14;
 
     --good: #72c69c;
+    --good-soft: #15271d;
     --warn: #e2b65a;
+    --warn-soft: #2c2412;
 
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
     --shadow-float: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.5);
   }
 }
@@ -67,15 +84,41 @@
   --color-muted: var(--muted);
   --color-ink: var(--ink);
   --color-ink-fg: var(--ink-fg);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
   --color-accent: var(--accent);
   --color-accent-fg: var(--accent-fg);
   --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
   --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
   --font-sans: var(--font-plex), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", system-ui, sans-serif;
   --font-serif: var(--font-source-serif), Georgia, serif;
+  --shadow-card: var(--shadow-card);
   --shadow-float: var(--shadow-float);
   --animate-blink: blink 1.2s ease-in-out infinite;
+  --animate-toast: toast 3.2s ease-out forwards;
+}
+
+/* 数秒だけ出て消えるお知らせ（JS なし） */
+@keyframes toast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  8%,
+  80% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+    visibility: hidden;
+  }
 }
 
 @keyframes blink {
@@ -106,12 +149,12 @@ h2,
 }
 
 ::selection {
-  background: var(--ink);
-  color: var(--ink-fg);
+  background: var(--primary-soft);
+  color: var(--fg);
 }
 
 :focus-visible {
-  outline: 2px solid var(--fg);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 
@@ -126,28 +169,38 @@ summary::-webkit-details-marker {
 
 @layer components {
   .panel {
-    @apply rounded-[14px] border border-line bg-surface;
+    @apply rounded-[14px] border border-line bg-surface shadow-card;
   }
-  /* 主ボタン: 墨色 */
+  /* 主ボタン: 藍。1画面に1つ */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-ink px-5 py-2.5 text-[15px] font-bold text-ink-fg transition-opacity duration-150 select-none hover:opacity-85 active:opacity-75 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-[15px] font-bold text-primary-fg transition duration-150 select-none hover:bg-primary-hover active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   /* 会話中の「話し終えた」だけに使う朱色のボタン */
   .btn-accent {
-    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-accent px-5 py-2.5 text-[15px] font-bold text-accent-fg transition-opacity duration-150 select-none hover:opacity-90 active:opacity-80 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-accent px-5 py-2.5 text-[15px] font-bold text-accent-fg transition duration-150 select-none hover:opacity-90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium text-fg transition-colors duration-150 select-none hover:bg-sunken disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium text-fg transition duration-150 select-none hover:border-fg-2 hover:bg-sunken/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-fg-2 transition-colors duration-150 hover:bg-sunken hover:text-fg;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-fg-2 transition duration-150 hover:bg-sunken hover:text-fg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+  }
+  /* 押せる行（一覧の1行）。ホバーで面が浮き、押すと沈む */
+  .row-link {
+    @apply -mx-3 block rounded-[10px] px-3 transition-colors duration-150 hover:bg-surface active:bg-sunken;
+  }
+  .link {
+    @apply font-medium text-primary underline decoration-primary/30 underline-offset-4 transition-colors hover:decoration-primary;
+  }
+  .skeleton {
+    @apply animate-pulse rounded-md bg-sunken;
   }
   /* 丸い再生ボタン */
   .btn-round {
-    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg transition-colors duration-150 hover:bg-sunken;
+    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition duration-150 hover:bg-primary hover:text-primary-fg active:scale-95;
   }
   .field {
-    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] transition-colors outline-none placeholder:text-muted focus:border-fg;
+    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] transition-colors outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15;
   }
   .meta {
     @apply text-[13px] leading-relaxed text-muted;

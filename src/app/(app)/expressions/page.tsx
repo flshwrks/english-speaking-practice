@@ -1,10 +1,11 @@
-import { asc, count, desc, inArray } from "drizzle-orm";
-import { Check, Plus, Trash2 } from "lucide-react";
+import { and, asc, count, desc, ilike, inArray, or } from "drizzle-orm";
+import { Check, Plus, Search, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES, type ExpressionStatus } from "@/db/schema";
+import { ActionButton } from "@/components/action-button";
 import { ExpressionEntry } from "@/components/expression-card";
-import { EmptyState, Page, PageTitle } from "@/components/ui";
+import { EmptyState, Page, PageTitle, type Tone } from "@/components/ui";
 import { formatDateJst } from "@/lib/format";
 import { addManualExpression, expressionAction } from "../actions";
 
@@ -15,24 +16,30 @@ const TABS: { key: string; label: string; statuses: readonly ExpressionStatus[];
   { key: "mastered", label: "習得", statuses: ["mastered"], empty: "自然に使えた表現がここに集まります" },
 ];
 
-const STATUS_LABEL: Record<ExpressionStatus, string> = {
-  suggested: "提案",
-  queued: "出題待ち",
-  new: "未使用",
-  attempted: "使おうとした",
-  correct: "使えた",
-  mastered: "習得",
+const STATUS: Record<ExpressionStatus, { label: string; tone: Tone }> = {
+  suggested: { label: "提案", tone: "primary" },
+  queued: { label: "出題待ち", tone: "neutral" },
+  new: { label: "未使用", tone: "neutral" },
+  attempted: { label: "使おうとした", tone: "warn" },
+  correct: { label: "使えた", tone: "good" },
+  mastered: { label: "習得", tone: "good" },
 };
 
 export default async function ExpressionsPage({ searchParams }: PageProps<"/expressions">) {
-  const tabKey = String((await searchParams).tab ?? "learning");
-  const tab = TABS.find((x) => x.key === tabKey) ?? TABS[0];
+  const params = await searchParams;
+  const tab = TABS.find((x) => x.key === String(params.tab ?? "")) ?? TABS[0];
+  const q = String(params.q ?? "").trim();
   const [statusCounts, list] = await Promise.all([
     db().select({ status: t.expressions.status, n: count() }).from(t.expressions).groupBy(t.expressions.status),
     db()
       .select()
       .from(t.expressions)
-      .where(inArray(t.expressions.status, tab.statuses))
+      .where(
+        and(
+          inArray(t.expressions.status, tab.statuses),
+          q ? or(ilike(t.expressions.text, `%${q}%`), ilike(t.expressions.meaning, `%${q}%`)) : undefined,
+        ),
+      )
       .orderBy(asc(t.expressions.nextReviewAt), desc(t.expressions.createdAt))
       .limit(100),
   ]);
@@ -53,7 +60,7 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
                 href={`/expressions?tab=${x.key}`}
                 aria-current={active ? "page" : undefined}
                 className={`flex items-baseline gap-1.5 border-b-2 px-3 py-2.5 text-sm whitespace-nowrap transition-colors first:pl-0 ${
-                  active ? "border-fg font-bold text-fg" : "border-transparent text-fg-2 hover:text-fg"
+                  active ? "border-primary font-bold text-primary" : "border-transparent text-fg-2 hover:text-fg"
                 }`}
               >
                 {x.label}
@@ -83,15 +90,50 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
                 <option value="phrase">フレーズ</option>
                 <option value="word">単語・熟語</option>
               </select>
-              <button className="btn-primary ml-auto">追加する</button>
+              <ActionButton className="btn-primary ml-auto" pendingText="追加中…">
+                追加する
+              </ActionButton>
             </div>
           </form>
         </details>
       </div>
 
+      <form className="relative my-4 sm:max-w-xs" role="search">
+        <input type="hidden" name="tab" value={tab.key} />
+        <Search
+          size={16}
+          strokeWidth={1.75}
+          className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
+        />
+        <input
+          type="search"
+          name="q"
+          defaultValue={q}
+          placeholder="英語か意味で探す"
+          className="field pl-9"
+          aria-label="表現を探す"
+        />
+        {q && (
+          <Link
+            href={`/expressions?tab=${tab.key}`}
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted hover:text-fg"
+            aria-label="検索をやめる"
+          >
+            <X size={15} />
+          </Link>
+        )}
+      </form>
+      {q && (
+        <p className="meta mb-2">
+          「{q}」の結果 {list.length}件
+        </p>
+      )}
+
       {list.length === 0 ? (
         <div className="mt-6">
-          <EmptyState title="まだありません">{tab.empty}</EmptyState>
+          <EmptyState title={q ? "見つかりませんでした" : "まだありません"}>
+            {q ? "別の言葉で探すか、ほかのタブも見てみてください" : tab.empty}
+          </EmptyState>
         </div>
       ) : (
         <div className="divide-y divide-line">
@@ -100,7 +142,8 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
               key={e.id}
               e={e}
               layout="row"
-              status={tab.statuses.length > 1 ? STATUS_LABEL[e.status] : undefined}
+              status={tab.statuses.length > 1 ? STATUS[e.status].label : undefined}
+              statusTone={STATUS[e.status].tone}
             >
               <form action={expressionAction} className="flex items-center gap-1">
                 <input type="hidden" name="id" value={e.id} />
@@ -110,13 +153,13 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
                   </span>
                 )}
                 {e.status === "suggested" && (
-                  <button name="action" value="adopt" className="btn px-2.5 text-[13px]">
+                  <ActionButton name="action" value="adopt" className="btn px-2.5 text-[13px]">
                     <Plus size={14} strokeWidth={2} />
                     出題リストへ
-                  </button>
+                  </ActionButton>
                 )}
                 {e.status !== "mastered" && e.status !== "suggested" && (
-                  <button
+                  <ActionButton
                     name="action"
                     value="master"
                     className="btn-ghost px-2"
@@ -124,11 +167,17 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
                     aria-label="習得済みにする"
                   >
                     <Check size={17} strokeWidth={1.75} />
-                  </button>
+                  </ActionButton>
                 )}
-                <button name="action" value="delete" className="btn-ghost px-2" title="削除" aria-label="削除">
+                <ActionButton
+                  name="action"
+                  value="delete"
+                  className="btn-ghost px-2 hover:text-accent"
+                  title="削除"
+                  aria-label="削除"
+                >
                   <Trash2 size={16} strokeWidth={1.75} />
-                </button>
+                </ActionButton>
               </form>
             </ExpressionEntry>
           ))}

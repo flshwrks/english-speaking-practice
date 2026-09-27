@@ -79,10 +79,10 @@ export default async function CurriculumPage() {
               .map((w) => (
                 <li key={w.week} className="border-b border-line">
                   <details className="group">
-                    <summary className="grid grid-cols-[1.25rem_2rem_3.5rem_minmax(0,1fr)_auto] items-center gap-x-2 py-3 hover:bg-sunken/60">
+                    <summary className="grid grid-cols-[1.25rem_2rem_3.5rem_minmax(0,1fr)_auto] items-center gap-x-2 py-3 hover:bg-surface">
                       <span className="flex justify-center">
                         {w.week < currentWeek ? (
-                          <Check size={15} strokeWidth={2.25} className="text-fg-2" />
+                          <Check size={15} strokeWidth={2.25} className="text-primary" />
                         ) : w.week === currentWeek ? (
                           <span className="size-2 rounded-full bg-accent" />
                         ) : null}
