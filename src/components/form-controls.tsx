@@ -16,14 +16,15 @@ export function LevelSlider({ name, defaultValue }: { name: string; defaultValue
   const [value, setValue] = useState(defaultValue);
   const band = LEVEL_TEXT.find((b) => value <= b.max) ?? LEVEL_TEXT[LEVEL_TEXT.length - 1];
   return (
-    <div className="rounded-2xl border border-line bg-surface p-4">
-      <div className="mb-3 flex items-end justify-between gap-3">
+    <div className="rounded-xl border border-line bg-surface p-4">
+      <div className="mb-3 flex items-baseline justify-between gap-3">
         <div>
-          <div className="text-lg font-extrabold">
-            {band.label}
-            <span className="ml-2 text-sm text-muted tabular-nums">{value} / 10</span>
-          </div>
+          <div className="font-bold">{band.label}</div>
           <div className="text-xs text-muted">{band.note}</div>
+        </div>
+        <div className="numeral text-4xl">
+          {value}
+          <span className="text-lg text-muted">/10</span>
         </div>
       </div>
       <input
@@ -37,7 +38,7 @@ export function LevelSlider({ name, defaultValue }: { name: string; defaultValue
         className="w-full accent-[var(--accent)]"
         aria-label="会話の難易度"
       />
-      <div className="mt-1 flex justify-between text-[10px] font-bold text-muted">
+      <div className="mt-1 flex justify-between font-mono text-[10px] text-muted">
         <span>1</span>
         <span>5</span>
         <span>10</span>
@@ -51,7 +52,7 @@ export function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
     <button className="btn-primary" disabled={pending}>
-      {pending ? <Loader2 size={17} className="animate-spin" /> : <Check size={17} strokeWidth={2.8} />}
+      {pending ? <Loader2 size={17} className="animate-spin" /> : <Check size={16} />}
       {pending ? "保存中…" : children}
     </button>
   );

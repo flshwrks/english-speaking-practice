@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "ビジネス英語スピーキングの自分専用トレーニング",
     start_url: "/",
     display: "standalone",
-    background_color: "#fbf8f3",
-    theme_color: "#5b4cf0",
+    background_color: "#f4f2ed",
+    theme_color: "#f4f2ed",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       { src: "/icon-192.png", sizes: "192x192", type: "image/png" },

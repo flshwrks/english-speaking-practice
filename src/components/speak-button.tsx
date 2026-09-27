@@ -4,7 +4,7 @@ import { Volume2 } from "lucide-react";
 import { useState } from "react";
 import { plainExpressionText } from "@/lib/format";
 
-/** ブラウザ内蔵の音声合成でお手本を読み上げる（API 費用なし）。label を空にするとアイコンだけ */
+/** ブラウザ内蔵の音声合成でお手本を読み上げる（API 費用なし） */
 export function SpeakButton({ text, label = "お手本" }: { text: string; label?: string }) {
   const [playing, setPlaying] = useState(false);
   const speak = () => {
@@ -25,11 +25,11 @@ export function SpeakButton({ text, label = "お手本" }: { text: string; label
       type="button"
       onClick={speak}
       aria-label="お手本を再生"
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-        playing ? "bg-accent text-accent-fg" : "bg-accent-soft text-accent hover:brightness-95"
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+        playing ? "border-accent bg-accent text-accent-fg" : "border-line text-fg hover:border-line-strong"
       }`}
     >
-      <Volume2 size={15} strokeWidth={2.4} className={playing ? "animate-wiggle" : ""} />
+      <Volume2 size={14} strokeWidth={2} />
       {label}
     </button>
   );

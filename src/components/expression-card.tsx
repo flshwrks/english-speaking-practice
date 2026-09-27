@@ -10,7 +10,7 @@ import {
 } from "@/lib/categories";
 import type { Tone } from "./illustrations";
 
-export const KIND_TONE: Record<ExpressionKind, Tone> = { phrase: "accent", word: "coral" };
+export const KIND_TONE: Record<ExpressionKind, Tone> = { phrase: "sky", word: "coral" };
 
 export function ExpressionCard({
   e,
@@ -32,7 +32,7 @@ export function ExpressionCard({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="card flex flex-col gap-3">
+    <div className="card flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -43,14 +43,14 @@ export function ExpressionCard({
               {REGISTER_LABEL[e.register] && `・${REGISTER_LABEL[e.register]}`}
             </span>
           </div>
-          <div className="mt-2 text-lg leading-snug font-extrabold">{e.text}</div>
-          <div className="mt-0.5 text-sm text-muted">{e.meaning}</div>
+          <div className="mt-3 text-xl leading-snug font-bold tracking-tight">{e.text}</div>
+          <div className="mt-1 text-sm text-muted">{e.meaning}</div>
         </div>
         <SpeakButton text={e.example || e.text} />
       </div>
       {(e.example || e.scene) && (
-        <div className="rounded-2xl bg-surface-2 px-4 py-3 text-sm">
-          {e.example && <p className="font-medium italic">“{e.example}”</p>}
+        <div className="border-l-2 border-line-strong pl-3.5">
+          {e.example && <p className="font-serif text-[17px] leading-snug italic">{e.example}</p>}
           {e.scene && <p className="mt-1 text-xs text-muted">{e.scene}</p>}
         </div>
       )}

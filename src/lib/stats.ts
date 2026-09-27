@@ -43,13 +43,20 @@ export async function practiceSummary(days = 120) {
   return summarizePractice(new Map(rows.map((r) => [r.day, r.n])));
 }
 
-/** 日本時間の時間帯に合わせたあいさつ */
+/** 日本時間の時間帯に合わせたあいさつ（英語） */
 export function greeting() {
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: "Asia/Tokyo" }).format(new Date()));
-  if (hour < 5) return "夜ふかしですね";
-  if (hour < 11) return "おはようございます";
-  if (hour < 18) return "こんにちは";
-  return "こんばんは";
+  if (hour < 5) return "Up late.";
+  if (hour < 12) return "Good morning.";
+  if (hour < 18) return "Good afternoon.";
+  return "Good evening.";
+}
+
+/** 画面上部の日付（例: SUN 27 SEP） */
+export function todayLabel() {
+  return new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "2-digit", month: "short", timeZone: "Asia/Tokyo" })
+    .format(new Date())
+    .toUpperCase();
 }
 
 /** 練習カレンダー用: 直近 weeks 週（月曜始まり）の日付と回数。未来の日は null */

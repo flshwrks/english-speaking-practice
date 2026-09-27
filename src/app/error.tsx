@@ -1,9 +1,8 @@
 "use client";
 
-import { Home, RotateCcw } from "lucide-react";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { Mascot } from "@/components/illustrations";
 import { Page } from "@/components/ui";
 
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
@@ -12,17 +11,18 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [error]);
   return (
     <Page>
-      <div className="flex flex-col items-center py-16 text-center">
-        <Mascot mood="sleepy" size={140} className="animate-float" />
-        <h1 className="mt-4 text-xl font-extrabold">うまく表示できませんでした</h1>
-        <p className="mt-1 max-w-sm text-sm text-muted">通信が不安定だったかもしれません。もう一度試してみてください。</p>
-        <div className="mt-6 flex gap-2">
+      <div className="py-16">
+        <p className="eyebrow">Something went wrong</p>
+        <p className="mt-3 font-serif text-5xl italic">Hmm.</p>
+        <h1 className="mt-4 text-2xl font-bold">うまく表示できませんでした</h1>
+        <p className="mt-2 max-w-sm text-sm text-muted">通信が不安定だったかもしれません。もう一度試してみてください。</p>
+        <div className="mt-8 flex gap-2">
           <button className="btn-primary" onClick={reset}>
-            <RotateCcw size={17} strokeWidth={2.5} />
+            <RotateCcw size={16} />
             もう一度
           </button>
           <Link href="/" className="btn">
-            <Home size={16} />
+            <ArrowLeft size={16} />
             ホームへ
           </Link>
         </div>

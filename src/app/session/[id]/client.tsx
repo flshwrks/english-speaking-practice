@@ -1,6 +1,6 @@
 "use client";
 
-import { AudioLines, BookOpenCheck, Check, Loader2, Play, ScanText } from "lucide-react";
+import { Check, Play } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { loadUtterance, purgeOldUtterances } from "@/lib/client/audio-store";
@@ -14,11 +14,7 @@ export function AutoRefresh() {
   return null;
 }
 
-const STEPS = [
-  { icon: AudioLines, label: "発音と抑揚をチェック" },
-  { icon: ScanText, label: "文法と言い回しを分析" },
-  { icon: BookOpenCheck, label: "覚える表現をまとめる" },
-];
+const STEPS = ["発音と抑揚をチェック", "文法と言い回しを分析", "覚える表現をまとめる"];
 
 /** 分析中の段階表示（実際の進み具合ではなく、待ち時間を退屈させないための演出） */
 export function AnalyzingSteps() {
@@ -28,24 +24,19 @@ export function AnalyzingSteps() {
     return () => clearInterval(timer);
   }, []);
   return (
-    <ol className="mx-auto mt-5 flex w-full max-w-xs flex-col gap-2 text-left">
-      {STEPS.map(({ icon: Icon, label }, i) => (
+    <ol className="mx-auto mt-6 w-full max-w-xs border-t border-line text-left">
+      {STEPS.map((label, i) => (
         <li
           key={label}
-          className={`flex items-center gap-3 rounded-2xl px-3 py-2 text-sm font-bold transition ${
-            i === step ? "bg-accent-soft text-accent" : i < step ? "text-mint" : "text-muted"
+          className={`flex items-center gap-3 border-b border-line py-2.5 text-sm transition-colors ${
+            i === step ? "font-bold text-fg" : "text-muted"
           }`}
         >
-          <span className="inline-flex size-7 items-center justify-center rounded-full bg-surface shadow-[var(--shadow-soft)]">
-            {i < step ? (
-              <Check size={15} strokeWidth={3} />
-            ) : i === step ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <Icon size={15} />
-            )}
+          <span className="w-5 font-mono text-xs">
+            {i < step ? <Check size={14} className="text-good" /> : String(i + 1).padStart(2, "0")}
           </span>
           {label}
+          {i === step && <span className="ml-auto size-1.5 animate-blink rounded-full bg-accent" />}
         </li>
       ))}
     </ol>
@@ -78,11 +69,11 @@ export function MyRecording({ sessionId, seq }: { sessionId: number; seq: number
     <button
       type="button"
       onClick={play}
-      className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-bold transition active:scale-95 ${
-        playing ? "bg-coral text-white" : "bg-coral-soft text-coral"
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
+        playing ? "border-fg bg-fg text-bg" : "border-line hover:border-line-strong"
       }`}
     >
-      <Play size={13} strokeWidth={2.6} className="fill-current" />
+      <Play size={12} className="fill-current" />
       自分の声
     </button>
   );

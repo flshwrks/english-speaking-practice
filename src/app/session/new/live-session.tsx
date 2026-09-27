@@ -4,7 +4,7 @@ import { CornerDownLeft, Headphones, Mic, Square, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { KIND_TONE } from "@/components/expression-card";
-import { Mascot, ScenarioArt } from "@/components/illustrations";
+import { ScenarioArt } from "@/components/illustrations";
 import { Badge } from "@/components/ui";
 import { useRealtimeSession, type TurnWait } from "@/lib/client/use-realtime-session";
 import { EXPRESSION_KIND_LABEL, type ExpressionKind } from "@/lib/categories";
@@ -86,21 +86,21 @@ export function LiveSession({
     return (
       <>
         {children}
-        <div className="sticky bottom-3 z-20 mt-8">
-          <div className="rounded-[28px] border border-line bg-surface/90 p-3 shadow-[var(--shadow-lift)] backdrop-blur-xl">
-            {error && <p className="mb-2 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">{error}</p>}
+        <div className="sticky bottom-3 z-20 mt-10">
+          <div className="rounded-xl border border-line bg-surface/95 p-3 backdrop-blur">
+            {error && <p className="mb-2 border-l-2 border-bad bg-bad-soft px-3 py-2 text-sm text-bad">{error}</p>}
             {budgetBlocked ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 px-2 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-sm">
                 <p className="font-bold text-bad">今月の予算上限に達しています。</p>
                 <button className="btn" onClick={() => begin(true)}>
                   それでも始める
                 </button>
               </div>
             ) : (
-              <button className="btn-primary w-full py-3.5 text-base" onClick={() => begin()}>
-                <Mic size={20} strokeWidth={2.6} />
+              <button className="btn-primary w-full py-3.5 text-[15px]" onClick={() => begin()}>
+                <Mic size={18} strokeWidth={2} />
                 会話を始める
-                <span className="text-xs font-bold opacity-75">最大{maxMinutes}分</span>
+                <span className="font-mono text-xs font-normal opacity-80">max {maxMinutes} min</span>
               </button>
             )}
             <p className="mt-2 flex items-center justify-center gap-1.5 text-[11px] text-muted">
@@ -120,65 +120,63 @@ export function LiveSession({
   // --- 会話中 ---
   return (
     <div className="flex min-h-[calc(100dvh-8rem)] flex-col">
-      {/* 上部: シナリオ・残り時間・終了 */}
-      <div className="sticky top-14 z-20 -mx-4 mb-3 border-b border-line/70 bg-bg/85 px-4 py-2.5 backdrop-blur-xl sm:mx-0 sm:rounded-2xl sm:border">
+      {/* 上部: シナリオ・経過時間・終了 */}
+      <div className="sticky top-14 z-20 -mx-5 mb-4 border-b border-line bg-bg/95 px-5 pt-3 backdrop-blur sm:-mx-8 sm:px-8">
         <div className="flex items-center gap-3">
-          <ScenarioArt id={scenarioId} size={36} />
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-extrabold">{scenarioTitle}</div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2">
-              <div
-                className={`h-full rounded-full transition-[width] duration-1000 ${remaining < 60 ? "bg-bad" : "bg-accent"}`}
-                style={{ width: `${progress * 100}%` }}
-              />
-            </div>
-          </div>
-          <div className={`text-sm font-extrabold tabular-nums ${remaining < 60 ? "text-bad" : ""}`}>
+          <ScenarioArt id={scenarioId} size={32} />
+          <div className="min-w-0 flex-1 truncate text-sm font-bold">{scenarioTitle}</div>
+          <div className={`font-mono text-sm tabular-nums ${remaining < 60 ? "text-bad" : ""}`}>
             {mmss(elapsed)}
-            <span className="font-medium text-muted"> / {maxMinutes}:00</span>
+            <span className="text-muted"> / {maxMinutes}:00</span>
           </div>
-          <button className="btn px-3" onClick={finish} disabled={!live} aria-label="会話を終了してフィードバックへ">
+          <button className="btn px-3 py-1.5" onClick={finish} disabled={!live} aria-label="会話を終了してフィードバックへ">
             {status === "ending" ? "送信中…" : (
               <>
-                <X size={16} strokeWidth={2.6} />
+                <X size={15} />
                 <span className="hidden sm:inline">終了</span>
               </>
             )}
           </button>
         </div>
         {/* 今日の表現（横スクロール） */}
-        <div className="-mx-1 mt-2 flex gap-1.5 overflow-x-auto px-1 pb-0.5 [scrollbar-width:none]">
+        <div className="-mx-1 mt-2.5 flex gap-1.5 overflow-x-auto px-1 pb-2.5 [scrollbar-width:none]">
           {expressions.map((e) => (
             <span key={e.id} title={`${EXPRESSION_KIND_LABEL[e.kind]}: ${e.meaning}`} className="shrink-0">
               <Badge tone={KIND_TONE[e.kind]}>{e.text}</Badge>
             </span>
           ))}
         </div>
+        {/* 経過時間の細いバー（ヘッダー下端の罫線に重ねる） */}
+        <div className="absolute inset-x-0 -bottom-px h-px">
+          <div
+            className={`h-full transition-[width] duration-1000 ${remaining < 60 ? "bg-bad" : "bg-accent"}`}
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
       </div>
 
       {/* 会話 */}
-      <div className="flex flex-1 flex-col gap-3 pb-4" aria-live="polite">
+      <div className="flex flex-1 flex-col gap-4 pb-4" aria-live="polite">
         {status === "connecting" && (
-          <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-            <Mascot mood="listen" size={110} className="animate-float" />
-            <p className="font-extrabold">つないでいます…</p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-20 text-center">
+            <p className="font-serif text-3xl italic">Connecting…</p>
             <p className="text-sm text-muted">マイクの使用を許可してください</p>
           </div>
         )}
         {turns.map((t) =>
           t.role === "assistant" ? (
-            <div key={t.ref} className="flex animate-rise items-end gap-2 self-start pr-10">
-              <ScenarioArt id={scenarioId} size={30} />
-              <div className="rounded-3xl rounded-bl-md border border-line bg-surface px-4 py-2.5 shadow-[var(--shadow-soft)]">
+            <div key={t.ref} className="max-w-[85%] animate-rise self-start">
+              <div className="eyebrow mb-1">Partner</div>
+              <div className="rounded-xl rounded-tl-sm border border-line bg-surface px-4 py-2.5 leading-relaxed">
                 {t.text || <TypingDots />}
               </div>
             </div>
           ) : (
-            <div
-              key={t.ref}
-              className="max-w-[85%] animate-rise self-end rounded-3xl rounded-br-md hero-gradient px-4 py-2.5 text-white shadow-[0_8px_20px_-12px_var(--accent)]"
-            >
-              {t.text || <TypingDots light />}
+            <div key={t.ref} className="max-w-[85%] animate-rise self-end text-right">
+              <div className="eyebrow mb-1">You</div>
+              <div className="rounded-xl rounded-tr-sm bg-ink px-4 py-2.5 text-left leading-relaxed text-ink-fg">
+                {t.text || <TypingDots light />}
+              </div>
             </div>
           ),
         )}
@@ -187,12 +185,12 @@ export function LiveSession({
 
       {/* 下部: 番の表示・マイク・話し終えた */}
       <div className="sticky bottom-3 z-20">
-        <div className="rounded-[28px] border border-line bg-surface/90 p-3 shadow-[var(--shadow-lift)] backdrop-blur-xl">
-          <div className="mb-2.5 flex items-center justify-between gap-2 px-1">
-            <div className="flex min-w-0 items-center gap-2 text-sm font-extrabold">
+        <div className="rounded-xl border border-line bg-surface/95 p-3 backdrop-blur">
+          <div className="mb-2.5 flex items-center justify-between gap-2 px-0.5">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-bold">
               {aiSpeaking ? (
                 <>
-                  <span className="inline-flex size-2.5 animate-blink rounded-full bg-coral" />
+                  <span className="inline-flex size-2 animate-blink rounded-full bg-fg" />
                   <span className="truncate">相手が話しています</span>
                 </>
               ) : live ? (
@@ -205,7 +203,7 @@ export function LiveSession({
               )}
             </div>
             <div
-              className="flex shrink-0 rounded-full bg-surface-2 p-0.5"
+              className="flex shrink-0 overflow-hidden rounded-lg border border-line text-[11px]"
               role="group"
               aria-label="AI に番を渡す方法（手動 / 自動・長め / 自動・標準）"
             >
@@ -215,8 +213,8 @@ export function LiveSession({
                   type="button"
                   onClick={() => setTurnWait(o.value)}
                   aria-pressed={turnWait === o.value}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition ${
-                    turnWait === o.value ? "bg-surface text-accent shadow-[var(--shadow-soft)]" : "text-muted"
+                  className={`border-l border-line px-2.5 py-1 font-bold transition-colors first:border-l-0 ${
+                    turnWait === o.value ? "bg-fg text-bg" : "text-muted hover:text-fg"
                   }`}
                 >
                   <span className="sm:hidden">{o.short}</span>
@@ -226,14 +224,14 @@ export function LiveSession({
             </div>
           </div>
           <button
-            className={`btn-primary w-full py-3.5 text-base ${yourTurn ? "" : "opacity-60"}`}
+            className={`btn-primary w-full py-3.5 text-[15px] ${yourTurn ? "" : "opacity-50"}`}
             onClick={endTurn}
             disabled={!live}
           >
-            <Square size={16} strokeWidth={3} className="fill-current" />
+            <Square size={13} strokeWidth={2.5} className="fill-current" />
             話し終えた
-            <span className="hidden items-center gap-1 rounded-md bg-white/20 px-1.5 py-0.5 text-[11px] sm:inline-flex">
-              <CornerDownLeft size={11} /> Space
+            <span className="hidden items-center gap-1 rounded border border-white/40 px-1.5 py-0.5 font-mono text-[10px] font-normal sm:inline-flex">
+              <CornerDownLeft size={10} /> Space
             </span>
           </button>
         </div>
@@ -248,7 +246,7 @@ function TypingDots({ light = false }: { light?: boolean }) {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className={`size-1.5 animate-blink rounded-full ${light ? "bg-white" : "bg-muted"}`}
+          className={`size-1 animate-blink rounded-full ${light ? "bg-ink-fg" : "bg-muted"}`}
           style={{ animationDelay: `${i * 0.18}s` }}
         />
       ))}
