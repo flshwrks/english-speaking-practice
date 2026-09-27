@@ -1,15 +1,15 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db, t } from "@/db";
 import type { WordAssessment } from "@/db/schema";
 import { SpeakButton } from "@/components/speak-button";
 import { Header, Page, scoreColor, Stat } from "@/components/ui";
-import { FEEDBACK_CATEGORY_LABEL } from "@/lib/categories";
+import { EXPRESSION_KIND_LABEL, FEEDBACK_CATEGORY_LABEL } from "@/lib/categories";
 import { usdToJpy } from "@/lib/config";
 import { sessionTargets } from "@/lib/expressions";
 import { formatPhoneme, isWeakWord, targetMark } from "@/lib/format";
 import { getScenario } from "@/lib/scenarios";
-import { expressionAction, retryAnalysis } from "../../actions";
+import { addExpressionAction, expressionAction, retryAnalysis } from "../../actions";
 import { AutoRefresh, MyRecording, PurgeOldAudio } from "./client";
 
 // 再分析（retryAnalysis の after()）がこのページの実行時間内で動くため
@@ -27,6 +27,19 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
     d.select().from(t.expressions).where(eq(t.expressions.status, "suggested")).limit(8),
   ]);
   if (!session) notFound();
+  const scenarioTitle = getScenario(session.scenarioId)?.title ?? "セッション";
+  // 「覚える表現」のうち、すでに表現リストにある（提案中を除く）ものは「追加済み」と表示する
+  const keyTexts = items.flatMap((it) => (it.keyExpression ? [it.keyExpression.text] : []));
+  const added = new Set(
+    keyTexts.length
+      ? (
+          await d
+            .select({ text: t.expressions.text })
+            .from(t.expressions)
+            .where(and(inArray(t.expressions.text, keyTexts), ne(t.expressions.status, "suggested")))
+        ).map((e) => e.text)
+      : [],
+  );
   const byseq = new Map(utterances.map((u) => [u.seq, u]));
   const m = session.metrics;
   const yen = Math.round(usdToJpy(session.costUsd));
@@ -35,7 +48,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
   return (
     <Page>
       <PurgeOldAudio />
-      <Header title={getScenario(session.scenarioId)?.title ?? "セッション"} />
+      <Header title={scenarioTitle} />
 
       {session.status === "analyzing" && (
         <div className="card mb-6 text-center">
@@ -123,16 +136,46 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
                     <div key={it.id} className="mt-3 border-t border-line pt-3 text-sm">
                       <div className="mb-1 flex items-center gap-2 text-xs">
                         <span className="rounded bg-surface-2 px-1.5 py-0.5">{FEEDBACK_CATEGORY_LABEL[it.category]}</span>
-                        <span className="text-muted">{"●".repeat(it.severity)}</span>
+                        {it.severity === 1 ? (
+                          <span className="text-accent">より良い言い方</span>
+                        ) : (
+                          <span className="text-muted">{"●".repeat(it.severity)}</span>
+                        )}
                       </div>
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="text-bad line-through decoration-1">{it.original}</div>
-                          <div className="font-medium text-good">{it.improved}</div>
+                          {/* 言い換えの提案（誤りではない）は取り消し線にしない */}
+                          <div className={it.severity === 1 ? "text-muted" : "text-bad line-through decoration-1"}>
+                            {it.original}
+                          </div>
+                          <div className="font-medium text-good">→ {it.improved}</div>
                         </div>
                         <SpeakButton text={it.improved} />
                       </div>
                       <p className="mt-1 text-muted">{it.explanation}</p>
+                      {it.keyExpression && (
+                        <form
+                          action={addExpressionAction}
+                          className="mt-2 flex items-center justify-between gap-2 rounded-lg bg-surface-2 px-3 py-2"
+                        >
+                          <div>
+                            <span className="mr-1 text-xs text-muted">覚える表現</span>
+                            <b>{it.keyExpression.text}</b>
+                            <span className="text-muted"> — {it.keyExpression.meaning}</span>
+                          </div>
+                          <input type="hidden" name="text" value={it.keyExpression.text} />
+                          <input type="hidden" name="meaning" value={it.keyExpression.meaning} />
+                          <input type="hidden" name="kind" value={it.keyExpression.kind} />
+                          <input type="hidden" name="category" value={it.keyExpression.category} />
+                          <input type="hidden" name="example" value={it.improved} />
+                          <input type="hidden" name="scene" value={scenarioTitle} />
+                          {added.has(it.keyExpression.text) ? (
+                            <span className="shrink-0 text-xs text-muted">追加済み</span>
+                          ) : (
+                            <button className="btn shrink-0">＋追加</button>
+                          )}
+                        </form>
+                      )}
                     </div>
                   ))}
               </div>
@@ -148,6 +191,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
             {suggested.map((e) => (
               <form key={e.id} action={expressionAction} className="card flex items-center justify-between gap-3">
                 <div className="text-sm">
+                  <span className="mr-1 text-xs text-muted">[{EXPRESSION_KIND_LABEL[e.kind]}]</span>
                   <b>{e.text}</b> <span className="text-muted">— {e.meaning}</span>
                   {e.example && <div className="italic">“{e.example}”</div>}
                 </div>

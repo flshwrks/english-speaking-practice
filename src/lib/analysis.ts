@@ -5,7 +5,7 @@ import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
 import type { SessionMetrics } from "@/db/schema";
-import { EXPRESSION_CATEGORIES, FEEDBACK_CATEGORIES } from "./categories";
+import { EXPRESSION_CATEGORIES, EXPRESSION_KINDS, FEEDBACK_CATEGORIES } from "./categories";
 import { PRICING, sessionCostUsd } from "./config";
 import { markMasteredQuery, practicedExpressions, recordUseQueries, sessionTargets } from "./expressions";
 import { formatPhoneme, isWeakWord } from "./format";
@@ -24,9 +24,23 @@ const AnalysisSchema = z.object({
       original: z.string().describe("学習者の実際の発話（該当部分）"),
       improved: z.string().describe("ネイティブが自然に言う形"),
       explanation: z.string().describe("なぜそう言うのかの解説（日本語）"),
-      severity: z.number().int().min(1).max(3).describe("3=意味が通じない/誤解を招く, 2=明確な誤り, 1=より自然にできる"),
+      severity: z
+        .number()
+        .int()
+        .min(1)
+        .max(3)
+        .describe("3=意味が通じない/誤解を招く, 2=明確な誤り, 1=誤りではないが、より的確・自然な言い方がある（言い換えの提案）"),
       patternKey: z.string().describe("ミスの型の snake_case キー。既存キーに当てはまるなら必ずそれを使う"),
       patternLabel: z.string().describe("ミスの型の短い日本語ラベル"),
+      keyExpression: z
+        .object({
+          text: z.string().describe("improved の中の、他の場面でも再利用できる部分（コロケーション・句動詞・言い回し）。文全体ではなく核になる部分"),
+          meaning: z.string().describe("日本語の意味"),
+          kind: z.enum(EXPRESSION_KINDS).describe("word=単語・句動詞・熟語・コロケーション（多くは1〜4語）/ phrase=文の型・言い回し"),
+          category: z.enum(EXPRESSION_CATEGORIES),
+        })
+        .nullable()
+        .describe("覚える価値のある表現。発音・抑揚の指摘や、覚える価値のないものは null"),
     }),
   ),
   targetExpressions: z.array(
@@ -48,9 +62,10 @@ const AnalysisSchema = z.object({
         example: z.string(),
         scene: z.string().describe("使う場面（日本語）"),
         category: z.enum(EXPRESSION_CATEGORIES),
+        kind: z.enum(EXPRESSION_KINDS).describe("word=単語・句動詞・熟語・コロケーション / phrase=文の型・言い回し"),
       }),
     )
-    .describe("学習者がこの会話で言えると良かった、覚える価値の高い表現。最大4つ"),
+    .describe("この会話の流れで使えると良かった、覚える価値の高い表現（items の keyExpression と重複しないもの）。フレーズと単語・熟語を合わせて最大6つ"),
   estimatedCefr: z.enum(["A2", "B1", "B2", "C1", "C2"]),
   levelAdjustment: z
     .enum(["up", "keep", "down"])
@@ -68,7 +83,13 @@ Principles:
 - For pronunciation and prosody, rely on the assessment data (low-scoring words, weak phonemes with what they sounded like, prosody errors). Explain the likely cause for a Japanese speaker (e.g. vowel insertion, /r/-/l/, /θ/→/s/, flat intonation, syllable-timed rhythm) and a concrete tip. Don't invent pronunciation errors not supported by the data.
 - The "Azure heard" text reflects what was actually pronounced more faithfully than the realtime transcript; use it to catch dropped articles, plurals, or endings.
 - When a transcribed word does not fit the context (e.g. "I want to rice my hand"), the learner most likely said a different word that was misheard. Infer the intended word from context and give a pronunciation item: which word was intended, what it sounded like, and why (e.g. /r/ vs /l/, missing final consonant, vowel insertion), with a concrete tip. Do not give grammar or vocabulary feedback on words that were merely misheard.
-- Prioritize: pick at most 3 top points that would most improve the learner's communication. Item-level feedback can be broader but skip trivial issues.
+- Prioritize: pick at most 3 top points that would most improve the learner's communication.
+- Beyond errors, actively suggest upgrades (severity 1): where the learner's sentence was understandable but an educated native speaker would use a more precise word, a stronger collocation, or a more natural business phrase, show that version (e.g. "strong manufacturing" → "strong manufacturing capabilities", "do business in overseas" → "expand overseas"). Aim for at least one upgrade per substantive learner turn, and more for longer turns; skip filler turns and do not nitpick style.
+- keyExpression is what the learner should add to their vocabulary list, so it must be reusable in other conversations:
+  - Good: collocations and phrasal verbs ("manufacturing capabilities", "expand overseas", "be vulnerable to", "iron out"), and sentence frames ("What I'm getting at is...", "The main reason is that...").
+  - For grammar fixes, give the reusable pattern only if there is one ("be interested in ~ing"); for trivial fixes such as a missing article or subject-verb agreement, set keyExpression to null.
+  - kind: "word" for single words, phrasal verbs, idioms and collocations (usually 1-4 words); "phrase" for sentence-level frames.
+  - category: pick the business situation where it is most useful; use "general" only when none fits.
 - Reuse existing pattern keys when the same kind of mistake recurs, so progress can be tracked.
 - All explanations must be in natural Japanese. English examples stay in English.`;
 
@@ -153,7 +174,8 @@ ${transcript}`;
   const targetById = new Map(targets.map((x) => [x.id, x]));
   const practicedIds = new Set(practiced.map((p) => p.id));
   const spontaneous = a.spontaneousExpressionIds.filter((id) => practicedIds.has(id));
-  const patternsByKey = new Map(a.items.map((i) => [i.patternKey, i]));
+  // ミスの型として数えるのは明確な誤り（重大度2以上）だけ。言い換えの提案は数えない
+  const patternsByKey = new Map(a.items.filter((i) => i.severity >= 2).map((i) => [i.patternKey, i]));
   const levelDelta = { up: 1, keep: 0, down: -1 }[a.levelAdjustment];
 
   const writes: BatchItem<"pg">[] = [];
@@ -169,8 +191,13 @@ ${transcript}`;
           explanation: i.explanation,
           severity: i.severity,
           patternKey: i.patternKey,
+          keyExpression: i.keyExpression,
         })),
       ),
+    );
+  }
+  if (patternsByKey.size) {
+    writes.push(
       d
         .insert(t.errorPatterns)
         .values([...patternsByKey].map(([key, i]) => ({ key, label: i.patternLabel, category: i.category, count: 1 })))

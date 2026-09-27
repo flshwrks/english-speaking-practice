@@ -3,9 +3,10 @@ import Link from "next/link";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES, type ExpressionStatus } from "@/db/schema";
 import { ExpressionCard } from "@/components/expression-card";
-import { Header, Page } from "@/components/ui";
+import { fieldClass as field, Header, Page } from "@/components/ui";
 import { formatDateJst } from "@/lib/format";
-import { expressionAction } from "../actions";
+import { addExpressionAction, expressionAction } from "../actions";
+
 
 const TABS: { key: string; label: string; statuses: readonly ExpressionStatus[] }[] = [
   { key: "learning", label: "練習中", statuses: LEARNING_STATUSES },
@@ -41,6 +42,24 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
   return (
     <Page>
       <Header title="表現リスト" />
+      <details className="card mb-4">
+        <summary className="cursor-pointer text-sm font-medium">＋ 表現を自分で追加する</summary>
+        <form action={addExpressionAction} className="mt-3 flex flex-col gap-2 text-sm">
+          <input type="hidden" name="source" value="manual" />
+          <input name="text" required placeholder="英語（例: iron out the details）" className={field} />
+          <input name="meaning" required placeholder="意味（例: 細部を詰める）" className={field} />
+          <input name="example" placeholder="例文（任意）" className={field} />
+          <div className="flex items-center gap-2">
+            <select name="kind" defaultValue="" className={`${field} w-auto`}>
+              <option value="">種類: 自動判定</option>
+              <option value="phrase">フレーズ</option>
+              <option value="word">単語・熟語</option>
+            </select>
+            <button className="btn-primary">追加</button>
+          </div>
+          <p className="text-xs text-muted">追加した表現は、次のレッスンから優先して出題されます。</p>
+        </form>
+      </details>
       <nav className="mb-4 flex gap-2 overflow-x-auto">
         {TABS.map((x) => (
           <Link

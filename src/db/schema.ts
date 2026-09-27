@@ -168,7 +168,16 @@ export const feedbackItems = pgTable("feedback_items", {
   explanation: text("explanation").notNull(),
   severity: integer("severity").notNull(),
   patternKey: text("pattern_key").notNull(),
+  /** この指摘から覚えておくと再利用できる部分（「＋追加」で表現リストに入れられる） */
+  keyExpression: jsonb("key_expression").$type<KeyExpression>(),
 });
+
+export type KeyExpression = {
+  text: string;
+  meaning: string;
+  kind: ExpressionKind;
+  category: ExpressionCategory;
+};
 
 export const errorPatterns = pgTable("error_patterns", {
   key: text("key").primaryKey(),

@@ -1,9 +1,7 @@
 import { connection } from "next/server";
-import { Header, Page } from "@/components/ui";
+import { fieldClass as field, Header, Page } from "@/components/ui";
 import { getProfile } from "@/lib/lesson";
 import { saveProfile } from "../actions";
-
-const field = "w-full rounded-lg border border-line bg-surface px-3 py-2";
 
 export default async function ProfilePage() {
   await connection(); // 個人データを毎回 DB から読むため静的生成しない

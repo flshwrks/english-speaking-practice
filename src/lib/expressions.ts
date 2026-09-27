@@ -28,7 +28,8 @@ const NEW_PER_KIND = { phrase: 2, word: 2 } as const;
 
 /**
  * 今日の表現を選ぶ: 新しいフレーズ2つ＋新しい単語・熟語2つ＋復習1つ（出題日が来たものがあれば）。
- * 新規は「今週の週次レビューで追加 → シナリオのカテゴリ（先頭優先）→ 今週のカテゴリ → 登録順」。
+ * 新規は「自分で追加した表現（フィードバックからの追加・手入力・週次レビュー）→ シナリオのカテゴリ（先頭優先）
+ * → 今週のカテゴリ → 登録順」。自分で選んだものは初期データより先に出題する。
  */
 export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curriculum) {
   const categories = [...new Set([...scenario.categories, ...curriculum.categories])];
@@ -38,7 +39,7 @@ export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curr
       .from(t.expressions)
       .where(and(eq(t.expressions.status, "queued"), eq(t.expressions.kind, kind)))
       .orderBy(
-        sql`case when ${t.expressions.source} = 'review' and ${t.expressions.createdAt} >= ${curriculum.weekStart}::date then 0 else 1 end`,
+        sql`case when ${t.expressions.source} <> 'seed' then 0 else 1 end`,
         sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`,
         asc(t.expressions.id),
       )
@@ -172,6 +173,21 @@ export function markMasteredQuery(ids: number[]) {
 
 export const EXPRESSION_ACTIONS = ["adopt", "master", "delete"] as const;
 export type ExpressionAction = (typeof EXPRESSION_ACTIONS)[number];
+
+/**
+ * 表現リストに追加する（フィードバックの「＋追加」や手入力）。すでにあれば、提案中のものだけ出題待ちに上げる。
+ */
+export function addExpression(input: unknown, source: "feedback" | "manual") {
+  const e = ExpressionInput.parse(input);
+  return db()
+    .insert(t.expressions)
+    .values({ ...e, source, status: "queued" })
+    .onConflictDoUpdate({
+      target: t.expressions.text,
+      set: { status: "queued" },
+      setWhere: eq(t.expressions.status, "suggested"),
+    });
+}
 
 /** 画面からの手動操作: 提案を採用 / 習得済みにする / 削除 */
 export async function applyExpressionAction(id: number, action: ExpressionAction) {

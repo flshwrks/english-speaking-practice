@@ -36,3 +36,6 @@ export function scoreColor(score: number | null | undefined) {
 export function Badge({ children }: { children: React.ReactNode }) {
   return <span className="rounded bg-accent-soft px-1.5 py-0.5 text-xs text-accent">{children}</span>;
 }
+
+/** フォームの入力欄の共通スタイル */
+export const fieldClass = "w-full rounded-lg border border-line bg-surface px-3 py-2";
