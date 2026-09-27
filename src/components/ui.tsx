@@ -1,146 +1,196 @@
-import { ArrowLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
-import { TONES, type Tone } from "./illustrations";
+import { SYLLABUS } from "@/lib/syllabus";
 
-export function Page({ children, wide = false }: { children: React.ReactNode; wide?: boolean }) {
+/**
+ * 画面の本文。rail を渡すと PC では右に補助欄（固定）を置く2カラムになる。
+ * スマホでは rail は本文の後ろに回る。
+ */
+export function Page({
+  children,
+  rail,
+  narrow = false,
+}: {
+  children: React.ReactNode;
+  rail?: React.ReactNode;
+  narrow?: boolean;
+}) {
   return (
-    <main className={`mx-auto w-full ${wide ? "max-w-5xl" : "max-w-3xl"} px-5 pt-6 pb-28 sm:px-8 sm:pt-10 md:pb-20`}>
-      {children}
+    <main
+      className={`mx-auto w-full px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-28 sm:px-8 lg:px-10 lg:pt-10 lg:pb-16 ${
+        narrow ? "max-w-[760px]" : "max-w-[1120px]"
+      }`}
+    >
+      {rail ? (
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
+          <div className="min-w-0">{children}</div>
+          <aside className="min-w-0 lg:sticky lg:top-10 lg:self-start">{rail}</aside>
+        </div>
+      ) : (
+        children
+      )}
     </main>
   );
 }
 
-/** ページ上部の見出し（小見出し＋大きなタイトル＋補足） */
-export function Header({
-  title,
-  eyebrow,
-  subtitle,
-  back = "/",
-  aside,
-}: {
-  title: React.ReactNode;
-  eyebrow?: React.ReactNode;
-  subtitle?: React.ReactNode;
-  back?: string | null;
-  aside?: React.ReactNode;
-}) {
-  return (
-    <header className="mb-8">
-      {back && (
-        <Link href={back} className="btn-ghost -ml-2.5 mb-4" aria-label="戻る">
-          <ArrowLeft size={16} />
-          戻る
-        </Link>
-      )}
-      <div className="flex items-end justify-between gap-4">
-        <div className="min-w-0">
-          {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-          <h1 className="text-[28px] leading-tight font-bold tracking-tight sm:text-4xl">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm text-muted">{subtitle}</p>}
-        </div>
-        {aside}
-      </div>
-    </header>
-  );
-}
-
-/** セクション見出し: 番号＋見出し＋右側の補足。上に罫線 */
-export function SectionTitle({
+/** ページの見出し（右に操作を置ける） */
+export function PageTitle({
   children,
-  index,
-  aside,
+  action,
+  sub,
 }: {
   children: React.ReactNode;
-  index?: string;
-  aside?: React.ReactNode;
+  action?: React.ReactNode;
+  sub?: React.ReactNode;
 }) {
   return (
-    <div className="mb-4 flex items-baseline justify-between gap-3 border-t border-fg pt-3">
-      <h2 className="flex items-baseline gap-3 text-[15px] font-bold">
-        {index && <span className="font-mono text-xs font-medium text-muted">{index}</span>}
-        {children}
-      </h2>
-      {aside && <div className="text-xs text-muted">{aside}</div>}
-    </div>
-  );
-}
-
-/** 数字の見出し（罫線で区切ったセルに置く） */
-export function Stat({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
-  return (
-    <div className="min-w-0 px-4 py-4 first:pl-0 sm:px-5">
-      <div className="eyebrow truncate">{label}</div>
-      <div className="numeral mt-2 text-[40px] sm:text-5xl">{value}</div>
-      {sub && <div className="mt-1 truncate text-xs text-muted">{sub}</div>}
-    </div>
-  );
-}
-
-/** Stat を横に並べる（間に縦の罫線） */
-export function StatRow({ children, cols = 3 }: { children: React.ReactNode; cols?: 2 | 3 | 4 }) {
-  const grid = { 2: "grid-cols-2", 3: "grid-cols-3", 4: "grid-cols-2 sm:grid-cols-4" }[cols];
-  return <div className={`grid ${grid} divide-x divide-line border-y border-line`}>{children}</div>;
-}
-
-export function scoreColor(score: number | null | undefined) {
-  if (score == null) return "text-muted";
-  if (score >= 85) return "text-good";
-  if (score >= 65) return "text-warn";
-  return "text-bad";
-}
-
-function scoreBar(score: number | null | undefined) {
-  if (score == null) return "bg-line";
-  if (score >= 85) return "bg-good";
-  if (score >= 65) return "bg-sun";
-  return "bg-bad";
-}
-
-/** 「おすすめ」「今週」などの小さなタグ */
-export function Badge({ children, tone = "accent" }: { children: React.ReactNode; tone?: Tone }) {
-  return <span className={`pill ${TONES[tone]}`}>{children}</span>;
-}
-
-/** 0〜100 のスコア: 大きな数字と細いバー */
-export function ScoreRing({ label, value }: { label: string; value: number | null | undefined }) {
-  const pct = value == null ? 0 : Math.max(0, Math.min(100, value));
-  return (
-    <div className="min-w-0">
-      <div className="eyebrow">{label}</div>
-      <div className="numeral mt-2 text-5xl">{value == null ? "—" : Math.round(value)}</div>
-      <div className="mt-3 h-1 bg-surface-2">
-        <div className={`h-full ${scoreBar(value)}`} style={{ width: `${pct}%` }} />
+    <div className="mb-6 flex items-end justify-between gap-4 lg:mb-8">
+      <div className="min-w-0">
+        <h1 className="text-2xl leading-snug font-bold">{children}</h1>
+        {sub && <p className="meta mt-1">{sub}</p>}
       </div>
+      {action}
     </div>
   );
 }
 
-const BAR_COLOR: Record<Tone, string> = {
-  accent: "bg-accent",
-  coral: "bg-coral",
-  mint: "bg-mint",
-  sun: "bg-sun",
-  sky: "bg-sky",
-};
-
-export function ProgressBar({ value, tone = "accent" }: { value: number; tone?: Tone }) {
+/** 下の階層の画面の上部: 戻り先だけを小さく */
+export function BackLink({ href = "/", label = "ホーム" }: { href?: string; label?: string }) {
   return (
-    <div className="h-1 bg-surface-2">
+    <Link href={href} className="btn-ghost mb-3 -ml-2.5 pl-1.5">
+      <ChevronLeft size={18} strokeWidth={1.75} />
+      {label}
+    </Link>
+  );
+}
+
+/** 区切りの見出し。数は右に */
+export function Section({
+  title,
+  aside,
+  children,
+  className = "",
+}: {
+  title: React.ReactNode;
+  aside?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={`mb-10 ${className}`}>
+      <div className="mb-3 flex items-baseline justify-between gap-3">
+        <h2 className="text-[17px] font-bold">{title}</h2>
+        {aside && <div className="meta shrink-0">{aside}</div>}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** 小さなラベル（強調は朱色、それ以外は無彩色） */
+export function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "accent" }) {
+  const cls = {
+    neutral: "border border-line-strong text-fg-2",
+    accent: "bg-accent-soft text-accent",
+  }[tone];
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-md px-1.5 text-xs leading-5 font-medium whitespace-nowrap ${cls}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** 細い横棒（予算など） */
+export function Meter({ value, warn = false }: { value: number; warn?: boolean }) {
+  return (
+    <div className="h-0.5 bg-line">
       <div
-        className={`h-full ${BAR_COLOR[tone]} transition-[width] duration-700`}
+        className={`h-full ${warn ? "bg-accent" : "bg-fg"}`}
         style={{ width: `${Math.max(1, Math.min(100, value * 100))}%` }}
       />
     </div>
   );
 }
 
-/** 何もないときの表示（文字だけで静かに） */
+const TARGET = 80;
+
+/**
+ * 0〜100 のスコアを計器のように: 目盛り線（80＝目標）の上に今回の点、前回は白抜きの印。
+ */
+export function ScoreBar({
+  label,
+  value,
+  prev,
+}: {
+  label: string;
+  value: number | null | undefined;
+  prev?: number | null;
+}) {
+  const pos = (v: number) => `${Math.max(0, Math.min(100, v))}%`;
+  return (
+    <div className="grid grid-cols-[4.5rem_2.5rem_minmax(0,1fr)] items-center gap-3">
+      <span className="text-sm text-fg-2">{label}</span>
+      <span className="text-right text-[17px] font-bold tabular-nums">{value == null ? "—" : Math.round(value)}</span>
+      <span className="relative h-5" aria-hidden>
+        <span className="absolute inset-x-0 top-1/2 h-px bg-line-strong" />
+        <span className="absolute top-1 h-3 w-px bg-muted" style={{ left: pos(TARGET) }} />
+        {prev != null && (
+          <span
+            className="absolute top-1/2 size-2 -translate-1/2 rounded-full border border-muted bg-surface"
+            style={{ left: pos(prev) }}
+            title={`前回 ${Math.round(prev)}`}
+          />
+        )}
+        {value != null && (
+          <span
+            className={`absolute top-1/2 size-2.5 -translate-1/2 rounded-full ${value >= TARGET ? "bg-fg" : "bg-accent"}`}
+            style={{ left: pos(value) }}
+          />
+        )}
+      </span>
+    </div>
+  );
+}
+
+/** 全体カリキュラム12週の位置。基礎・会議・応用の間に隙間をあける */
+export function WeekTrack({ current, size = "sm" }: { current: number; size?: "sm" | "lg" }) {
+  const weeks = SYLLABUS.map((w, i) => ({ ...w, week: i + 1 }));
+  const phases = [...new Set(weeks.map((w) => w.phase))];
+  return (
+    <div
+      className={`flex ${size === "lg" ? "gap-3" : "gap-1.5"}`}
+      aria-label={`全${SYLLABUS.length}週のうち第${current}週`}
+    >
+      {phases.map((phase) => (
+        <div key={phase} className="flex-1">
+          <div className={`flex ${size === "lg" ? "gap-1" : "gap-0.5"}`}>
+            {weeks
+              .filter((w) => w.phase === phase)
+              .map((w) => (
+                <span
+                  key={w.week}
+                  title={`第${w.week}週 ${w.theme}`}
+                  className={`flex-1 rounded-[2px] ${size === "lg" ? "h-2" : "h-1"} ${
+                    w.week < current ? "bg-fg" : w.week === current ? "bg-accent" : "bg-line-strong/60"
+                  }`}
+                />
+              ))}
+          </div>
+          {size === "lg" && <div className="meta mt-1.5">{phase}</div>}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** 何もないとき */
 export function EmptyState({ title, children }: { title: string; children?: React.ReactNode }) {
   return (
-    <div className="border border-dashed border-line-strong px-6 py-12 text-center">
-      <p className="font-serif text-2xl text-muted italic">Nothing here yet.</p>
-      <p className="mt-2 font-bold">{title}</p>
-      {children && <div className="mt-1 text-sm text-muted">{children}</div>}
+    <div className="rounded-[14px] border border-dashed border-line-strong px-6 py-10 text-center">
+      <p className="font-bold">{title}</p>
+      {children && <div className="meta mt-1">{children}</div>}
     </div>
   );
 }

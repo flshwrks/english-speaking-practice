@@ -1,84 +1,94 @@
 "use client";
 
-import { BookOpenText, Home, LineChart, Map, UserRound, type LucideIcon } from "lucide-react";
+import { BookOpen, Home, LineChart, Route, Settings, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "./illustrations";
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
+type NavItem = { href: string; label: string; icon: LucideIcon };
+
+const MAIN: NavItem[] = [
   { href: "/", label: "ホーム", icon: Home },
-  { href: "/curriculum", label: "カリキュラム", icon: Map },
-  { href: "/expressions", label: "表現", icon: BookOpenText },
+  { href: "/expressions", label: "表現", icon: BookOpen },
   { href: "/progress", label: "記録", icon: LineChart },
-  { href: "/profile", label: "設定", icon: UserRound },
+  { href: "/curriculum", label: "カリキュラム", icon: Route },
 ];
+const SETTINGS: NavItem = { href: "/profile", label: "設定", icon: Settings };
+// スマホのタブは4つ（カリキュラムはホームの「第n週」から入る）
+const TABS: NavItem[] = [MAIN[0], MAIN[1], MAIN[2], SETTINGS];
 
-const isActive = (pathname: string, href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+const isActive = (pathname: string, href: string) =>
+  href === "/" ? pathname === "/" || pathname.startsWith("/session") : pathname.startsWith(href);
 
-/** 上部ナビ（PC）と下部タブバー（スマホ）。ログイン画面と会話画面では出さない */
-export function AppShell({ children }: { children: React.ReactNode }) {
+/**
+ * PC: 左のサイドバー（ナビ・今週の位置・費用）。スマホ: 下のタブだけ（上部バーは置かない）。
+ * 会話の準備・会話中は集中のためナビを出さない。
+ */
+export function AppShell({ children, status }: { children: React.ReactNode; status: React.ReactNode }) {
   const pathname = usePathname();
-  if (pathname.startsWith("/login")) return <>{children}</>;
-  const focusMode = pathname.startsWith("/session/new");
+  if (pathname.startsWith("/session/new")) return <>{children}</>;
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-5 sm:px-8">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="ホームへ">
-            <Logo size={22} />
-            <span className="text-[15px] font-bold tracking-tight">Speaking Practice</span>
-          </Link>
-          <nav className="hidden h-full items-stretch gap-6 md:flex" aria-label="メイン">
-            {NAV.map(({ href, label }) => {
-              const active = isActive(pathname, href);
-              return (
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-line bg-sunken px-4 py-6 lg:flex">
+        <Link href="/" className="mb-7 flex items-center gap-2 px-2" aria-label="ホームへ">
+          <Logo size={20} />
+          <span className="text-[15px] font-bold">Speaking Practice</span>
+        </Link>
+        <nav className="flex flex-col gap-0.5" aria-label="メイン">
+          {MAIN.map((item) => (
+            <SideLink key={item.href} item={item} active={isActive(pathname, item.href)} />
+          ))}
+        </nav>
+        <div className="mt-auto flex flex-col gap-5">
+          <div className="px-2">{status}</div>
+          <SideLink item={SETTINGS} active={isActive(pathname, SETTINGS.href)} />
+        </div>
+      </aside>
+
+      <div className="lg:pl-[232px]">{children}</div>
+
+      <nav
+        aria-label="メイン"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      >
+        <ul className="grid grid-cols-4">
+          {TABS.map(({ href, label, icon: Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <li key={href}>
                 <Link
-                  key={href}
                   href={href}
                   aria-current={active ? "page" : undefined}
-                  className={`relative flex items-center text-sm transition-colors ${
-                    active ? "font-bold text-fg" : "text-muted hover:text-fg"
+                  className={`flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] ${
+                    active ? "font-bold text-fg" : "text-muted"
                   }`}
                 >
+                  <Icon size={22} strokeWidth={active ? 2 : 1.75} />
                   {label}
-                  {active && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-accent" />}
                 </Link>
-              );
-            })}
-          </nav>
-        </div>
-      </header>
-
-      {children}
-
-      {!focusMode && (
-        <nav
-          aria-label="メイン"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-bg/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
-        >
-          <ul className="grid grid-cols-5">
-            {NAV.map(({ href, label, icon: Icon }) => {
-              const active = isActive(pathname, href);
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    aria-current={active ? "page" : undefined}
-                    className={`relative flex flex-col items-center gap-1 pt-2.5 pb-2 text-[10px] ${
-                      active ? "font-bold text-fg" : "text-muted"
-                    }`}
-                  >
-                    {active && <span className="absolute inset-x-6 top-0 h-0.5 bg-accent" />}
-                    <Icon size={20} strokeWidth={active ? 2 : 1.6} />
-                    {label}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-      )}
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
     </>
+  );
+}
+
+function SideLink({ item: { href, label, icon: Icon }, active }: { item: NavItem; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`flex h-9 items-center gap-2.5 rounded-lg px-2 text-sm transition-colors ${
+        active
+          ? "bg-surface font-bold text-fg shadow-[0_0_0_1px_var(--line)]"
+          : "text-fg-2 hover:bg-surface/60 hover:text-fg"
+      }`}
+    >
+      <Icon size={18} strokeWidth={1.75} />
+      {label}
+    </Link>
   );
 }

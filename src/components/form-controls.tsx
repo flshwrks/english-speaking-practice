@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -11,39 +11,44 @@ const LEVEL_TEXT = [
   { max: 10, label: "エグゼクティブ", note: "速く濃い語彙・強めの反論" },
 ];
 
-/** 会話の難易度（1〜10）のスライダー。値と説明をその場で表示する */
-export function LevelSlider({ name, defaultValue }: { name: string; defaultValue: number }) {
+/** 会話の難易度（1〜10）。10段のボタンで選び、選んだ段の説明をその場で出す */
+export function LevelPicker({ name, defaultValue }: { name: string; defaultValue: number }) {
   const [value, setValue] = useState(defaultValue);
   const band = LEVEL_TEXT.find((b) => value <= b.max) ?? LEVEL_TEXT[LEVEL_TEXT.length - 1];
   return (
-    <div className="rounded-xl border border-line bg-surface p-4">
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <div>
-          <div className="font-bold">{band.label}</div>
-          <div className="text-xs text-muted">{band.note}</div>
-        </div>
-        <div className="numeral text-4xl">
-          {value}
-          <span className="text-lg text-muted">/10</span>
-        </div>
+    <fieldset>
+      <legend className="sr-only">会話の難易度</legend>
+      <div className="grid grid-cols-10 gap-1">
+        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+          <label
+            key={n}
+            className={`flex h-10 cursor-pointer items-center justify-center rounded-md border text-sm tabular-nums transition-colors has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-fg ${
+              n === value
+                ? "border-fg bg-fg font-bold text-bg"
+                : n < value
+                  ? "border-line-strong bg-sunken text-fg-2"
+                  : "border-line text-fg-2 hover:border-line-strong"
+            }`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={n}
+              checked={n === value}
+              onChange={() => setValue(n)}
+              className="sr-only"
+            />
+            {n}
+          </label>
+        ))}
       </div>
-      <input
-        type="range"
-        name={name}
-        min={1}
-        max={10}
-        step={1}
-        value={value}
-        onChange={(e) => setValue(Number(e.target.value))}
-        className="w-full accent-[var(--accent)]"
-        aria-label="会話の難易度"
-      />
-      <div className="mt-1 flex justify-between font-mono text-[10px] text-muted">
-        <span>1</span>
-        <span>5</span>
-        <span>10</span>
-      </div>
-    </div>
+      <p className="mt-2 text-sm">
+        <b>
+          {value} {band.label}
+        </b>
+        <span className="text-fg-2"> — {band.note}</span>
+      </p>
+    </fieldset>
   );
 }
 
@@ -51,8 +56,8 @@ export function LevelSlider({ name, defaultValue }: { name: string; defaultValue
 export function SubmitButton({ children }: { children: React.ReactNode }) {
   const { pending } = useFormStatus();
   return (
-    <button className="btn-primary" disabled={pending}>
-      {pending ? <Loader2 size={17} className="animate-spin" /> : <Check size={16} />}
+    <button className="btn-primary min-w-28" disabled={pending}>
+      {pending && <Loader2 size={16} className="animate-spin" />}
       {pending ? "保存中…" : children}
     </button>
   );

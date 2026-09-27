@@ -1,125 +1,87 @@
 @import "tailwindcss";
 
 /*
- * デザイントークン — 「紙とインク」
- * 生成りの紙にほぼ黒のインク。差し色は朱色（バーミリオン）1色だけを要所に使う。
- * 面の区切りは影ではなく細い罫線。角丸は小さく、グラデーションは使わない。
- * データ用の色（緑・藍・黄土・赤錆）は彩度を落として、紙の上で浮かないようにしている。
+ * デザイントークン
+ * - 文字は濃く。灰色はメタ情報だけで、背景に対して 5:1 以上を保つ
+ * - 主ボタンは墨色。朱色は「あなたの番」「添削の印」「今週」だけに使う
+ * - 面は罫線で区切り、影は浮いている層（ドック・シート）にだけ付ける
  */
 :root {
-  --bg: #f4f2ed;
-  --surface: #fbfaf7;
-  --surface-2: #ebe8e1;
-  --fg: #151513;
-  --muted: #6d6a63;
-  --line: #dcd8cf;
-  --line-strong: #bdb8ad;
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --sunken: #efede8;
+  --line: #e3e0d9;
+  --line-strong: #c9c5bc;
 
-  --accent: #e0431f;
-  --accent-strong: #c2370f;
+  --fg: #1a1917;
+  --fg-2: #46433d;
+  --muted: #6a665e;
+
+  --ink: #1a1917;
+  --ink-fg: #ffffff;
+
+  --accent: #b83a1e;
   --accent-fg: #ffffff;
-  --accent-soft: #f7e3dc;
+  --accent-soft: #fae7e1;
 
-  --ink: #151513;
-  --ink-fg: #f4f2ed;
+  --good: #23633f;
+  --warn: #8a5f00;
 
-  --coral: #b4532f;
-  --coral-soft: #f1e1d8;
-  --mint: #2c7353;
-  --mint-soft: #dde9e1;
-  --sun: #a8770b;
-  --sun-soft: #f1e8d0;
-  --sky: #2e5597;
-  --sky-soft: #dfe5ef;
-
-  --good: #2c7353;
-  --warn: #a8770b;
-  --bad: #c0351c;
-  --bad-soft: #f5dfd8;
+  --shadow-float: 0 1px 2px rgb(0 0 0 / 0.05), 0 8px 24px rgb(0 0 0 / 0.08);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0e0e0d;
-    --surface: #161614;
-    --surface-2: #1f1f1c;
-    --fg: #ecEAE4;
-    --muted: #9a968d;
-    --line: #2b2a27;
-    --line-strong: #43413c;
+    --bg: #131312;
+    --surface: #1b1b19;
+    --sunken: #0e0e0d;
+    --line: #2e2d2a;
+    --line-strong: #45433f;
 
-    --accent: #ff6a45;
-    --accent-strong: #ff8466;
-    --accent-fg: #140a06;
-    --accent-soft: #33190f;
+    --fg: #edebe6;
+    --fg-2: #c2beb6;
+    --muted: #948f86;
 
-    --ink: #ecEAE4;
-    --ink-fg: #0e0e0d;
+    --ink: #edebe6;
+    --ink-fg: #131312;
 
-    --coral: #e08a64;
-    --coral-soft: #2f1c14;
-    --mint: #6cc39a;
-    --mint-soft: #15261d;
-    --sun: #e0b457;
-    --sun-soft: #2b2312;
-    --sky: #8aa8e0;
-    --sky-soft: #172030;
+    --accent: #ff8a6e;
+    --accent-fg: #1a0c07;
+    --accent-soft: #3a1c14;
 
-    --good: #6cc39a;
-    --warn: #e0b457;
-    --bad: #ff7a5c;
-    --bad-soft: #33170f;
+    --good: #72c69c;
+    --warn: #e2b65a;
+
+    --shadow-float: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px rgb(0 0 0 / 0.5);
   }
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-fg: var(--fg);
-  --color-muted: var(--muted);
+  --color-sunken: var(--sunken);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
-  --color-accent: var(--accent);
-  --color-accent-strong: var(--accent-strong);
-  --color-accent-fg: var(--accent-fg);
-  --color-accent-soft: var(--accent-soft);
+  --color-fg: var(--fg);
+  --color-fg-2: var(--fg-2);
+  --color-muted: var(--muted);
   --color-ink: var(--ink);
   --color-ink-fg: var(--ink-fg);
-  --color-coral: var(--coral);
-  --color-coral-soft: var(--coral-soft);
-  --color-mint: var(--mint);
-  --color-mint-soft: var(--mint-soft);
-  --color-sun: var(--sun);
-  --color-sun-soft: var(--sun-soft);
-  --color-sky: var(--sky);
-  --color-sky-soft: var(--sky-soft);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
   --color-good: var(--good);
   --color-warn: var(--warn);
-  --color-bad: var(--bad);
-  --color-bad-soft: var(--bad-soft);
-  --font-sans: var(--font-sans-latin), var(--font-kaku), "Hiragino Kaku Gothic ProN", "Hiragino Sans", system-ui, sans-serif;
-  --font-serif: var(--font-serif-latin), "Hiragino Mincho ProN", serif;
-  --font-mono: var(--font-mono-latin), ui-monospace, monospace;
-  --radius-card: 12px;
-  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --font-sans: var(--font-plex), "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --shadow-float: var(--shadow-float);
   --animate-blink: blink 1.2s ease-in-out infinite;
 }
 
-@keyframes rise {
-  from {
-    transform: translateY(6px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
 @keyframes blink {
   0%,
   100% {
-    opacity: 0.25;
+    opacity: 0.3;
   }
   50% {
     opacity: 1;
@@ -133,59 +95,62 @@ html {
 body {
   background: var(--bg);
   color: var(--fg);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+h1,
+h2,
+.palt {
   font-feature-settings: "palt" 1;
-  letter-spacing: 0.01em;
 }
 
 ::selection {
-  background: var(--accent);
-  color: var(--accent-fg);
+  background: var(--ink);
+  color: var(--ink-fg);
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--fg);
   outline-offset: 2px;
 }
 
+/* <details> の三角を消す（開閉は自前の印で示す） */
+summary {
+  list-style: none;
+  cursor: pointer;
+}
+summary::-webkit-details-marker {
+  display: none;
+}
+
 @layer components {
-  /* 面: 影なし、細い罫線だけ */
-  .card {
-    @apply rounded-[var(--radius-card)] border border-line bg-surface p-5;
+  .panel {
+    @apply rounded-[14px] border border-line bg-surface;
   }
-  .card-hover {
-    @apply transition-colors duration-150 hover:border-line-strong;
-  }
-  /* 主ボタン: 朱色。要所（会話を始める・話し終えた）にだけ使う */
+  /* 主ボタン: 墨色 */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-bold text-accent-fg transition-colors duration-150 select-none hover:bg-accent-strong active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-ink px-5 py-2.5 text-[15px] font-bold text-ink-fg transition-opacity duration-150 select-none hover:opacity-85 active:opacity-75 disabled:pointer-events-none disabled:opacity-40;
   }
-  /* 強いボタン: 墨色 */
-  .btn-ink {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-5 py-2.5 text-sm font-bold text-ink-fg transition-opacity duration-150 select-none hover:opacity-85 active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+  /* 会話中の「話し終えた」だけに使う朱色のボタン */
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-accent px-5 py-2.5 text-[15px] font-bold text-accent-fg transition-opacity duration-150 select-none hover:opacity-90 active:opacity-80 disabled:pointer-events-none disabled:opacity-40;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 py-1.5 text-sm font-medium transition-colors duration-150 select-none hover:border-line-strong active:translate-y-px disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium text-fg transition-colors duration-150 select-none hover:bg-sunken disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-fg-2 transition-colors duration-150 hover:bg-sunken hover:text-fg;
   }
-  /* 小見出し: 等幅の英字＋字間 */
-  .eyebrow {
-    @apply font-mono text-[11px] font-medium tracking-[0.12em] text-muted uppercase;
-  }
-  .label {
-    @apply text-xs font-bold tracking-wider text-muted;
-  }
-  /* タグ: 角の立った小さなラベル */
-  .pill {
-    @apply inline-flex items-center gap-1 rounded-[4px] px-1.5 py-0.5 text-[11px] leading-4 font-bold;
+  /* 丸い再生ボタン */
+  .btn-round {
+    @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-line-strong text-fg transition-colors duration-150 hover:bg-sunken;
   }
   .field {
-    @apply w-full rounded-lg border border-line bg-surface px-3.5 py-2.5 transition-colors outline-none placeholder:text-muted/70 focus:border-fg;
+    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] transition-colors outline-none placeholder:text-muted focus:border-fg;
   }
-  /* 大きな数字（セリフ体） */
-  .numeral {
-    @apply font-serif leading-none tracking-tight tabular-nums;
+  .meta {
+    @apply text-[13px] leading-relaxed text-muted;
   }
 }
 

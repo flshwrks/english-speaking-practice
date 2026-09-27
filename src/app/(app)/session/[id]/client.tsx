@@ -24,19 +24,22 @@ export function AnalyzingSteps() {
     return () => clearInterval(timer);
   }, []);
   return (
-    <ol className="mx-auto mt-6 w-full max-w-xs border-t border-line text-left">
+    <ol className="mx-auto mt-6 flex w-full max-w-60 flex-col gap-2 text-left text-sm">
       {STEPS.map((label, i) => (
         <li
           key={label}
-          className={`flex items-center gap-3 border-b border-line py-2.5 text-sm transition-colors ${
-            i === step ? "font-bold text-fg" : "text-muted"
-          }`}
+          className={`flex items-center gap-2.5 ${i === step ? "font-bold text-fg" : i < step ? "text-fg-2" : "text-muted"}`}
         >
-          <span className="w-5 font-mono text-xs">
-            {i < step ? <Check size={14} className="text-good" /> : String(i + 1).padStart(2, "0")}
+          <span className="flex w-4 justify-center">
+            {i < step ? (
+              <Check size={15} strokeWidth={2.25} className="text-good" />
+            ) : i === step ? (
+              <span className="size-1.5 animate-blink rounded-full bg-fg" />
+            ) : (
+              <span className="size-1.5 rounded-full bg-line-strong" />
+            )}
           </span>
           {label}
-          {i === step && <span className="ml-auto size-1.5 animate-blink rounded-full bg-accent" />}
         </li>
       ))}
     </ol>
@@ -69,11 +72,9 @@ export function MyRecording({ sessionId, seq }: { sessionId: number; seq: number
     <button
       type="button"
       onClick={play}
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition-colors ${
-        playing ? "border-fg bg-fg text-bg" : "border-line hover:border-line-strong"
-      }`}
+      className={`btn shrink-0 px-2.5 py-1 text-[13px] ${playing ? "bg-sunken" : ""}`}
     >
-      <Play size={12} className="fill-current" />
+      <Play size={12} strokeWidth={2} className="fill-current" />
       自分の声
     </button>
   );

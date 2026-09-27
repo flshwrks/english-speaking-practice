@@ -1,13 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif, Zen_Kaku_Gothic_New } from "next/font/google";
-import { AppShell } from "@/components/app-shell";
+import { IBM_Plex_Sans_JP, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
-// 英文 UI: Geist、和文: 骨格のはっきりした角ゴシック、見出しの英字と大きな数字: セリフ体、小さなラベル: 等幅
-const sans = Geist({ variable: "--font-sans-latin", subsets: ["latin"] });
-const mono = Geist_Mono({ variable: "--font-mono-latin", subsets: ["latin"], weight: ["400", "500"] });
-const serif = Instrument_Serif({ variable: "--font-serif-latin", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
-const kaku = Zen_Kaku_Gothic_New({ variable: "--font-kaku", weight: ["400", "500", "700"], preload: false });
+// UI と和文: IBM Plex Sans JP（欧文も同じ骨格で混植が揃う）。英語の例文だけ辞書のような書体にする
+const plex = IBM_Plex_Sans_JP({ variable: "--font-plex", weight: ["400", "500", "700"], preload: false });
+const serif = Source_Serif_4({ variable: "--font-source-serif", subsets: ["latin"], style: ["normal", "italic"] });
 
 export const metadata: Metadata = {
   title: { default: "Speaking Practice", template: "%s | Speaking Practice" },
@@ -17,18 +14,16 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f2ed" },
-    { media: "(prefers-color-scheme: dark)", color: "#0e0e0d" },
+    { media: "(prefers-color-scheme: light)", color: "#f7f6f3" },
+    { media: "(prefers-color-scheme: dark)", color: "#131312" },
   ],
   viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ja" className={`${sans.variable} ${mono.variable} ${serif.variable} ${kaku.variable} antialiased`}>
-      <body className="min-h-dvh">
-        <AppShell>{children}</AppShell>
-      </body>
+    <html lang="ja" className={`${plex.variable} ${serif.variable} antialiased`}>
+      <body className="min-h-dvh">{children}</body>
     </html>
   );
 }
