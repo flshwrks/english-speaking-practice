@@ -137,6 +137,8 @@ export const sessions = pgTable("sessions", {
   homework: jsonb("homework").$type<Homework>(),
   /** 会話 AI に渡した前回の最重要ポイント（開始時に記録。homework の判定の基準） */
   homeworkGiven: jsonb("homework_given").$type<{ title: string; detail: string }>(),
+  /** この会話で使ったお題カード（再挑戦では同じカードを使う） */
+  cardId: integer("card_id"),
   error: text("error"),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
   /** 選んだ会話の長さ（分）。サーバー側の時間制限に使う（null は古いセッション: 設定の上限を使う） */
@@ -286,6 +288,35 @@ export type DrillWord = {
 };
 
 /** 添削の「言い直す」で、改善後の文を声に出して採点した記録 */
+/**
+ * お題カード: 1回の会話の状況・学習者の役・使える事実・ゴール。会話 AI と学習者が同じカードを見る。
+ * 日本語の項目は学習者向け、partner は会話 AI 向け（英語）
+ */
+export type ScenarioCard = {
+  /** 今回のお題（日本語の短い見出し） */
+  title: string;
+  /** 状況（日本語） */
+  situation: string;
+  /** 学習者の役（日本語）。自分として話す場面は null */
+  role: string | null;
+  /** 会話で使える事実・論点（日本語。数字や固有名詞を含む） */
+  facts: string[];
+  /** この会話で目指すこと（日本語） */
+  goal: string;
+  /** 会話 AI 向け: この場面での相手の立場・知っていること・狙い・切り出し方（英語） */
+  partner: string;
+  /** 重複よけ用の短い話題タグ（英語） */
+  topic: string;
+};
+
+export const scenarioCards = pgTable("scenario_cards", {
+  id: serial("id").primaryKey(),
+  scenarioId: text("scenario_id").notNull(),
+  card: jsonb("card").$type<ScenarioCard>().notNull(),
+  costUsd: real("cost_usd").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const drillAttempts = pgTable("drill_attempts", {
   id: serial("id").primaryKey(),
   feedbackItemId: integer("feedback_item_id").notNull(),

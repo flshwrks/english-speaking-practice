@@ -257,8 +257,10 @@ export async function buildAnalysisInput(sessionId: number) {
         status: t.sessions.status,
         analysisStartedAt: t.sessions.analysisStartedAt,
         homeworkGiven: t.sessions.homeworkGiven,
+        card: t.scenarioCards.card,
       })
       .from(t.sessions)
+      .leftJoin(t.scenarioCards, eq(t.scenarioCards.id, t.sessions.cardId))
       .where(eq(t.sessions.id, sessionId)),
     getProfile(),
     d.select().from(t.utterances).where(eq(t.utterances.sessionId, sessionId)),
@@ -336,9 +338,21 @@ export async function buildAnalysisInput(sessionId: number) {
     )
     .join("\n");
 
+  const card = session.card;
   const userText = `# Scenario
 ${scenario?.title ?? session.scenarioId}: ${scenario?.role ?? ""}
-
+${
+  card
+    ? `
+# Task card for this session (the learner saw it in Japanese; judge how well they achieved the goal and used the facts, and mention it briefly in the summary)
+Title: ${card.title}
+Situation: ${card.situation}
+Learner's role: ${card.role ?? "themselves (a university student)"}
+Facts / material: ${card.facts.join(" / ")}
+Goal: ${card.goal}
+`
+    : ""
+}
 # Learner profile
 ${profile.about || "(none)"}
 Current conversation difficulty: ${session.level}/10

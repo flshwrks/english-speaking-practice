@@ -14,6 +14,7 @@ import { BackLink, Page, ScoreBar, Section } from "@/components/ui";
 import { FEEDBACK_CATEGORY_LABEL, isUpgrade } from "@/lib/categories";
 import { usdToJpy } from "@/lib/config";
 import { sessionTargets } from "@/lib/expressions";
+import { getCard, previousAttempt } from "@/lib/cards";
 import { bestDrillScores } from "@/lib/drill";
 import { formatDateJst, formatPhoneme, isWeakWord } from "@/lib/format";
 import { getScenario } from "@/lib/scenarios";
@@ -68,6 +69,10 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
     bestDrillScores(id),
   ]);
   if (!session) notFound();
+  // お題カードで話した会話なら、そのカードと、同じお題で前に話した回（再挑戦の比較相手）
+  const [cardRow, attempt] = session.cardId
+    ? await Promise.all([getCard(session.cardId), previousAttempt(session.cardId, id)])
+    : [null, null];
   const scenarioTitle = getScenario(session.scenarioId)?.title ?? "セッション";
   const byseq = new Map(utterances.map((u) => [u.seq, u]));
   const m = session.metrics;
@@ -88,9 +93,12 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
             <div className="hidden lg:block">{checklist}</div>
             <div className="border-t border-line pt-4">
               <div className="flex flex-wrap gap-2">
-                <Link href={`/session/new?scenario=${session.scenarioId}`} className="btn">
+                <Link
+                  href={`/session/new?scenario=${session.scenarioId}${cardRow ? `&card=${cardRow.id}` : ""}`}
+                  className="btn"
+                >
                   <RotateCcw size={15} strokeWidth={1.75} />
-                  同じシナリオでもう一度
+                  {cardRow ? "同じお題に再挑戦" : "同じシナリオでもう一度"}
                 </Link>
                 <Link href="/" className="btn">
                   ホームへ
@@ -109,6 +117,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
       <h1 className="text-2xl leading-snug font-bold">{scenarioTitle}</h1>
       <p className="meta mt-0.5 mb-6 tabular-nums">
         {formatDateJst(session.startedAt, "full")} · {Math.round(session.durationSec / 60)}分
+        {cardRow && ` · お題「${cardRow.card.title}」`}
       </p>
 
       {session.status === "analyzing" && (
@@ -151,6 +160,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
           {scorecard && <div className="mb-8 lg:hidden">{scorecard}</div>}
           {session.summary && <p className="mb-8 max-w-[38em] text-[16px] leading-[1.9]">{session.summary}</p>}
           {session.homework && <HomeworkResult hw={session.homework} />}
+          {m && attempt?.metrics && <AttemptComparison prev={attempt} now={m} />}
           {/* 読み終えたら次にやること: 添削された言い方を声に出して言い直す */}
           {items.length > 0 && (
             <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -453,5 +463,93 @@ function TargetChecklist({ targets }: { targets: Target[] }) {
         ))}
       </ul>
     </div>
+  );
+}
+
+/** 再挑戦で比べる指標（higher: 大きいほど良い） */
+const COMPARE: {
+  label: string;
+  get: (m: SessionMetrics) => number | null | undefined;
+  fmt: (v: number) => string;
+  higher: boolean;
+  /** これ未満の差は「変わらず」とみなす */
+  noise: number;
+}[] = [
+  {
+    label: "話す速さ",
+    get: (m) => (m.wpm > 0 ? m.wpm : null),
+    fmt: (v) => `${Math.round(v)} wpm`,
+    higher: true,
+    noise: 5,
+  },
+  {
+    label: "誤りのない節",
+    get: (m) => m.errorFreeClauseRatio,
+    fmt: (v) => `${Math.round(v * 100)}%`,
+    higher: true,
+    noise: 0.03,
+  },
+  {
+    label: "話し始めるまで",
+    get: (m) => m.medianLatencyMs,
+    fmt: (v) => `${(v / 1000).toFixed(1)}秒`,
+    higher: false,
+    noise: 200,
+  },
+  { label: "発音", get: (m) => m.accuracy, fmt: (v) => `${Math.round(v)}`, higher: true, noise: 2 },
+  { label: "流暢さ", get: (m) => m.fluency, fmt: (v) => `${Math.round(v)}`, higher: true, noise: 2 },
+  { label: "抑揚", get: (m) => m.prosody, fmt: (v) => `${Math.round(v)}`, higher: true, noise: 2 },
+];
+
+/** 同じお題の前回と今回を並べる（成長が見えるように） */
+function AttemptComparison({
+  prev,
+  now,
+}: {
+  prev: { startedAt: Date; metrics: SessionMetrics | null; topPoints: { title: string }[] | null };
+  now: SessionMetrics;
+}) {
+  const rows = COMPARE.flatMap((c) => {
+    const a = prev.metrics ? c.get(prev.metrics) : null;
+    const b = c.get(now);
+    return a == null || b == null ? [] : [{ ...c, a, b }];
+  });
+  if (!rows.length) return null;
+  const better = rows.filter((r) => Math.abs(r.b - r.a) >= r.noise && r.b > r.a === r.higher).length;
+  return (
+    <section className="panel mb-8 px-5 py-4" aria-labelledby="compare-title">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 id="compare-title" className="text-[15px] font-bold">
+          前回（{formatDateJst(prev.startedAt)}）との比較
+        </h2>
+        <span className="meta">
+          {rows.length}項目中 {better}項目が良くなりました
+        </span>
+      </div>
+      <table className="mt-2 w-full text-sm tabular-nums">
+        <tbody>
+          {rows.map((r) => {
+            const diff = r.b - r.a;
+            const tone = Math.abs(diff) < r.noise ? "text-muted" : diff > 0 === r.higher ? "text-good" : "text-accent";
+            return (
+              <tr key={r.label} className="border-b border-line last:border-b-0">
+                <td className="py-2 text-fg-2">{r.label}</td>
+                <td className="py-2 text-right text-muted">{r.fmt(r.a)}</td>
+                <td className="w-6 py-2 text-center text-muted">→</td>
+                <td className="py-2 text-right font-bold">{r.fmt(r.b)}</td>
+                <td className={`w-20 py-2 text-right text-[13px] font-medium ${tone}`}>
+                  {Math.abs(diff) < r.noise ? "変わらず" : diff > 0 === r.higher ? "良くなった" : "下がった"}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      {prev.topPoints?.[0] && (
+        <p className="meta mt-3">
+          前回の一番の課題: <b className="font-medium text-fg">{prev.topPoints[0].title}</b>
+        </p>
+      )}
+    </section>
   );
 }

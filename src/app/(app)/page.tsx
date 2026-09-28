@@ -1,10 +1,11 @@
 import { count, desc, eq } from "drizzle-orm";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { after, connection } from "next/server";
 import { db, t } from "@/db";
 import type { SessionStatus } from "@/db/schema";
 import { Badge, Section } from "@/components/ui";
+import { prepareCard, retryCandidate } from "@/lib/cards";
 import { pickTodaysExpressions, weakExpressionCategories } from "@/lib/expressions";
 import { formatDateJst } from "@/lib/format";
 import { budgetStatus, getCurrentCurriculum, isReviewDue } from "@/lib/lesson";
@@ -22,7 +23,7 @@ export default async function Home() {
   await connection(); // 個人データを毎回 DB から読むため静的生成しない
   // タブを閉じたなどで終了の連絡がないまま時間を過ぎた会話を、表示の後で締めて分析に回す
   after(() => sweepStaleSessions());
-  const [{ profile, curriculum }, budget, reviewDue, recent, [{ n: sessionCount }], practice, weakCategories] =
+  const [{ profile, curriculum }, budget, reviewDue, recent, [{ n: sessionCount }], practice, weakCategories, retry] =
     await Promise.all([
       getCurrentCurriculum(),
       budgetStatus(),
@@ -42,6 +43,7 @@ export default async function Home() {
       db().select({ n: count() }).from(t.sessions).where(eq(t.sessions.status, "done")),
       practiceSummary(),
       weakExpressionCategories(),
+      retryCandidate(),
     ]);
 
   // 今週のシナリオを、最近やったもの・苦手な表現のカテゴリで並べ替える
@@ -50,6 +52,8 @@ export default async function Home() {
     weakCategories,
   });
   const pick = scenarios.find((s) => recommended.has(s.id)) ?? scenarios[0];
+  // おすすめのお題カードを表示の後で作っておき、準備画面をすぐ開けるようにする
+  if (pick) after(() => prepareCard(pick).catch((e) => console.error("お題カードの先行作成に失敗", e)));
   // 準備画面と同じ選び方なので、ここで見せた表現がそのまま出題される
   const expressions = pick ? await pickTodaysExpressions(pick, curriculum) : [];
   const thisWeek = scenarios.filter((s) => recommended.has(s.id) && s.id !== pick?.id);
@@ -180,6 +184,22 @@ export default async function Home() {
             </section>
           )}
 
+          {retry?.cardId && (
+            <Link
+              href={`/session/new?scenario=${retry.scenarioId}&card=${retry.cardId}`}
+              className="panel group mb-10 flex items-center gap-4 px-5 py-4 transition-colors hover:border-primary/40"
+            >
+              <RotateCcw size={20} strokeWidth={1.75} className="shrink-0 text-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-bold text-primary">再挑戦</span>
+                <span className="block font-medium group-hover:text-primary">{retry.title}</span>
+                <span className="meta">
+                  {formatDateJst(retry.startedAt)} に話したお題。もう一度話して、前回と比べます
+                </span>
+              </span>
+              <ChevronRight size={18} strokeWidth={1.75} className="shrink-0 text-muted" />
+            </Link>
+          )}
           {thisWeek.length > 0 && (
             <Section title="今週のシナリオ">
               <ScenarioList items={thisWeek} />

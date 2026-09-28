@@ -4,6 +4,8 @@ import { ChevronDown, ChevronLeft, Mic, Square, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { ScenarioCardView } from "@/components/scenario-card";
+import type { ScenarioCard } from "@/db/schema";
 import { useRealtimeSession } from "@/lib/client/use-realtime-session";
 import type { ExpressionPick } from "@/lib/expressions";
 import {
@@ -28,12 +30,20 @@ type Target = ExpressionPick & { text: string; meaning: string };
 export function LiveSession({
   scenario,
   partner,
+  card,
+  cardId,
+  cardPanel,
   expressions,
   children,
 }: {
   scenario: { id: string; title: string; brief: string };
   /** 相手役の名前（なければ「相手」） */
   partner: string;
+  /** 今回のお題カード（会話中も右の欄・シートで見られるように） */
+  card: ScenarioCard | null;
+  cardId?: number;
+  /** 準備画面で見せるお題カード（「別のお題にする」などの操作つき。サーバーで組み立てる） */
+  cardPanel?: React.ReactNode;
   expressions: Target[];
   /** 準備画面の本文（今日の表現） */
   children: React.ReactNode;
@@ -133,6 +143,7 @@ export function LiveSession({
       expressions.map(({ id, role }) => ({ id, role })),
       force,
       Number(minutes),
+      cardId,
     );
     if (r.budgetExceeded) setBudgetBlocked("hardCap" in r && r.hardCap ? "hard" : "soft");
   };
@@ -192,6 +203,7 @@ export function LiveSession({
           </Link>
           <h1 className="text-[24px] leading-snug font-bold lg:text-[26px]">{scenario.title}</h1>
           <p className="mt-2 text-fg-2">{scenario.brief}</p>
+          {cardPanel && <div className="mt-6">{cardPanel}</div>}
 
           <div className="mt-8 hidden flex-col gap-8 lg:flex">
             {settings}
@@ -266,7 +278,9 @@ export function LiveSession({
               onClick={() => setSheet(true)}
               aria-haspopup="dialog"
             >
-              <span className="font-medium">今日の表現 {expressions.length}</span>
+              <span className="font-medium">
+                {card ? "お題と" : ""}今日の表現 {expressions.length}
+              </span>
               <ChevronDown size={16} strokeWidth={1.75} className="text-muted" />
             </button>
 
@@ -363,6 +377,11 @@ export function LiveSession({
 
         {/* PC: 今日の表現を右に */}
         <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-line px-6 py-6 lg:block">
+          {card && (
+            <div className="mb-6 border-b border-line pb-5">
+              <ScenarioCardView card={card} compact />
+            </div>
+          )}
           <h2 className="text-[15px] font-bold">今日の表現</h2>
           {targets}
         </aside>
@@ -406,11 +425,16 @@ export function LiveSession({
           <button className="absolute inset-0 bg-black/30" onClick={() => setSheet(false)} aria-label="閉じる" />
           <div className="absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-t-[14px] bg-surface px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-float">
             <div className="flex items-center justify-between">
-              <h2 className="font-bold">今日の表現</h2>
+              <h2 className="font-bold">{card ? "お題と今日の表現" : "今日の表現"}</h2>
               <button className="btn-ghost px-2" onClick={() => setSheet(false)} aria-label="閉じる" autoFocus>
                 <X size={18} strokeWidth={1.75} />
               </button>
             </div>
+            {card && (
+              <div className="mt-3 mb-5 border-b border-line pb-4">
+                <ScenarioCardView card={card} compact />
+              </div>
+            )}
             {targets}
           </div>
         </div>

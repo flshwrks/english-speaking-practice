@@ -12,19 +12,28 @@ export type Scenario = {
   categories: ExpressionCategory[];
   /** 初回（完了セッション0件）だけ表示・推奨する */
   onboarding?: boolean;
+  /**
+   * roleplay: 用意した役（お題カード）を演じる場面。self: 学生の今の自分として話す場面（役職などを作らなくてよい）
+   */
+  mode: "roleplay" | "self";
+  /** お題カードを作らない（レベル診断など、毎回同じでよい場面） */
+  noCard?: boolean;
 };
 
 export const SCENARIOS: Scenario[] = [
   {
     id: "diagnostic",
+    mode: "self",
+    noCard: true,
     title: "レベル診断",
     brief: "経歴や興味について自由に話し、最初の難易度を決めます。",
-    role: "You are a friendly interviewer getting to know a new colleague. Ask open questions about their background, studies, interests, and career goals, then follow up with 'why' and 'how' questions that require longer answers. Gradually increase the complexity of your questions to probe their ceiling.",
+    role: "You are a friendly interviewer getting to know a Japanese university student who is preparing for a global career. Ask open questions about their studies, experiences, interests and career goals (never about a job they don't have), then follow up with 'why' and 'how' questions that require longer answers. Gradually increase the complexity of your questions to probe their ceiling.",
     categories: ["small_talk"],
     onboarding: true,
   },
   {
     id: "self-intro",
+    mode: "roleplay",
     title: "海外チームへの自己紹介",
     brief: "グローバル案件の初日。PMのAlexに自己紹介し、役割や期待を確認します。",
     role: "You are Alex, a project manager at a global consulting firm in London. The learner has just joined your cross-border project team from Tokyo. Welcome them, ask them to introduce themselves, then discuss what they'll work on and what they expect from the project.",
@@ -32,6 +41,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "status-report",
+    mode: "roleplay",
     title: "定例会議での進捗報告",
     brief: "週次ミーティングで担当タスクの進捗を報告します。一部に遅れがあります。",
     role: "You are Priya, the team lead running a weekly status meeting on a video call. Ask the learner for an update on their workstream (a market analysis that is about a week behind schedule). Probe the reasons for the delay, the impact, and the recovery plan.",
@@ -39,6 +49,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "pushback",
+    mode: "roleplay",
     title: "会議で反対意見を述べる",
     brief: "上司が提案した方針に懸念があります。角を立てずに反論し、代案を出します。",
     role: "You are Mark, a senior manager. You propose cutting the customer interview phase to save two weeks. You are fairly attached to your idea. Invite the learner's opinion and push back on weak arguments, but be persuadable by well-reasoned ones.",
@@ -46,6 +57,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "clarify",
+    mode: "roleplay",
     title: "曖昧な要件を確認する",
     brief: "クライアントの依頼が曖昧です。質問して要件をはっきりさせます。",
     role: "You are Jennifer, a client-side director. Give the learner a vague request ('We need something on our Asia strategy by end of month'). Only reveal specifics (scope, audience, format, deadline, budget) when asked good clarifying questions.",
@@ -53,6 +65,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "negotiate",
+    mode: "roleplay",
     title: "納期とスコープの交渉",
     brief: "クライアントが納期の前倒しを求めています。条件を調整して合意を目指します。",
     role: "You are Tom, a procurement manager at a client company. You want the deliverable two weeks earlier with no change in scope or fee. Negotiate firmly; concede only in exchange for something.",
@@ -60,6 +73,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "presentation-qa",
+    mode: "roleplay",
     title: "プレゼン後の質疑応答",
     brief: "新規事業の提案を発表し終えたところ。鋭い質問に答えます。",
     role: "You are a skeptical executive audience member. The learner has just presented a proposal to launch a subscription service in Southeast Asia. Ask tough questions about assumptions, risks, numbers, and competition, one at a time.",
@@ -67,6 +81,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "small-talk",
+    mode: "roleplay",
     title: "会議前のスモールトーク",
     brief: "会議が始まるまでの数分間、海外の同僚と雑談します。",
     role: "You are Sam, a colleague from the Singapore office, chatting casually a few minutes before a meeting starts. Talk about weekends, travel, food, the weather, and work life. Keep it light and natural, with occasional humor.",
@@ -74,6 +89,7 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "feedback-1on1",
+    mode: "roleplay",
     title: "1on1でのフィードバック",
     brief: "マネージャーとの1on1。フィードバックを受け、自分からも改善提案をします。",
     role: "You are Chris, the learner's manager, in a monthly 1-on-1. Give balanced feedback (strong analysis, but updates to stakeholders are too infrequent), then ask for their feedback on how the team works.",
@@ -81,10 +97,52 @@ export const SCENARIOS: Scenario[] = [
   },
   {
     id: "free-talk",
+    mode: "self",
     title: "フリートーク",
     brief: "興味のある話題について自由に話します。",
     role: "You are a curious, well-read conversation partner. Let the learner pick a topic (or suggest one related to their interests), then have a genuine discussion, sharing your own views and asking for theirs.",
     categories: ["hedging", "agreeing_disagreeing"],
+  },
+  // --- 学生の今の自分として話す場面（役職を想像で答えなくてよい） ---
+  {
+    id: "internship-interview",
+    mode: "self",
+    title: "外資系インターンの英語面接",
+    brief: "外資系企業のサマーインターン選考。面接官の質問に、自分の経験と志望動機で答えます。",
+    role: "You are an interviewer at a global company, running a first-round English interview for a summer internship. The candidate is a Japanese university student. Ask about their real studies, experiences and motivation, then dig deeper with follow-ups (why, what exactly did you do, what did you learn, what would you do differently).",
+    categories: ["presenting", "small_talk", "general"],
+  },
+  {
+    id: "case-interview",
+    mode: "self",
+    title: "英語のケース面接",
+    brief: "コンサル・商社の選考を想定したケース面接。お題に対して考え方を整理し、英語で説明します。",
+    role: "You are a case interviewer at a strategy consulting firm. Give the candidate a short business case (market sizing, profitability, or market entry), let them ask clarifying questions, and ask them to structure their approach, state assumptions and reach a recommendation. Share data only when asked, and challenge weak assumptions politely.",
+    categories: ["presenting", "clarifying", "hedging"],
+  },
+  {
+    id: "group-discussion",
+    mode: "self",
+    title: "英語でディスカッション",
+    brief: "選考のグループディスカッションを想定。あるテーマについて、別の候補者と意見を戦わせます。",
+    role: "You are another candidate in an English group discussion at a job selection event. Take a clear position on the given topic that differs from the learner's, argue it with reasons and examples, respond to their points, and work toward a conclusion together as a good teammate would.",
+    categories: ["agreeing_disagreeing", "meetings", "hedging"],
+  },
+  {
+    id: "research-talk",
+    mode: "self",
+    title: "自分の研究・関心を英語で説明する",
+    brief: "海外の研究者や社会人に、自分が勉強・研究していることを説明し、質問に答えます。",
+    role: "You are a curious professional from abroad who is not an expert in the learner's field. Ask the learner to explain what they study or research, ask them to make it concrete and relevant (examples, real-world impact, why it matters for business), and ask questions a smart outsider would ask.",
+    categories: ["presenting", "clarifying", "general"],
+  },
+  {
+    id: "ob-visit",
+    mode: "self",
+    title: "海外で働く先輩に話を聞く",
+    brief: "グローバル企業で働く社会人に、キャリアや仕事について自分から質問します。",
+    role: "You are a mid-career professional working at a global company outside Japan, meeting a Japanese university student who asked to hear about your career. Let the learner lead with questions; answer with concrete stories, and occasionally ask about their interests and plans so it stays a two-way conversation.",
+    categories: ["small_talk", "clarifying", "general"],
   },
 ];
 

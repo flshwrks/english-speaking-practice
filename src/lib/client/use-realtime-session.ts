@@ -563,7 +563,7 @@ export function useRealtimeSession() {
   }, []);
 
   const start = useCallback(
-    async (scenarioId: string, picks: ExpressionPick[], force = false, minutes?: number) => {
+    async (scenarioId: string, picks: ExpressionPick[], force = false, minutes?: number, cardId?: number) => {
       const s = r.current;
       if (s.phase !== "idle") return { budgetExceeded: false as const };
       s.phase = "starting";
@@ -608,7 +608,7 @@ export function useRealtimeSession() {
         const res = await fetch("/api/session/start", {
           method: "POST",
           // 交代の方法は接続用キーの発行時に指定し、最初から選んだモードで始める
-          ...json({ scenarioId, picks, force, turnWait: s.turnWait, minutes }),
+          ...json({ scenarioId, picks, force, turnWait: s.turnWait, minutes, cardId }),
         });
         const data = await res.json().catch(() => ({}));
         if (res.status === 402) {

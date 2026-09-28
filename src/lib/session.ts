@@ -24,6 +24,7 @@ import {
   type TurnWait,
   VOICE,
 } from "./config";
+import { getCard } from "./cards";
 import { buildInstructions, buildTranscriptionPrompt } from "./conversation-prompt";
 import { attachToSession, getPicked, markShownQuery } from "./expressions";
 import { budgetStatus, getCurrentCurriculum, topErrorPatterns } from "./lesson";
@@ -77,6 +78,8 @@ export const StartInput = z.object({
   turnWait: z.enum(TURN_WAITS).optional().catch("manual"),
   /** 会話の長さ（分）。選べる長さ以外は上限に丸める */
   minutes: z.number().int().positive().optional(),
+  /** 今回のお題カード（準備画面で見せたもの。再挑戦では前と同じカード） */
+  cardId: z.number().int().positive().optional(),
 });
 
 const tokens = z.number().nonnegative().optional();
@@ -135,12 +138,13 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
   const scenario = getScenario(input.scenarioId);
   if (!scenario) return { ok: false, reason: "unknown_scenario" };
 
-  const [budget, { profile, curriculum }, expressions, patterns, homework] = await Promise.all([
+  const [budget, { profile, curriculum }, expressions, patterns, homework, cardRow] = await Promise.all([
     budgetStatus(),
     getCurrentCurriculum(),
     getPicked(input.picks),
     topErrorPatterns(3),
     lastHomework(),
+    input.cardId ? getCard(input.cardId) : null,
     // 前回の会話が終了の連絡なしに残っていたら、ここで締めて費用を予算に反映する（失敗しても開始は止めない）
     sweepStaleSessions().catch((e) => {
       console.error("sweep stale sessions failed", e);
@@ -150,6 +154,8 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
   // 「それでも始める」で超えられるのは予算の一定倍まで
   if (budget.spentJpy >= budget.budgetJpy * BUDGET_HARD_CAP_RATIO) return { ok: false, reason: "budget_hard_cap" };
   if (budget.exceeded && !input.force) return { ok: false, reason: "budget" };
+  // 別のシナリオのカードが渡されたら使わない
+  const card = cardRow?.scenarioId === scenario.id ? cardRow : null;
 
   const transcription: TranscriptionConfig = {
     model: TRANSCRIBE_MODEL,
@@ -164,6 +170,7 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
       focus: curriculum.focus,
       patterns: patterns.map((p) => p.label),
       homework,
+      card: card?.card,
     }),
     speed: speechSpeed(profile.level),
     transcription,
@@ -172,7 +179,7 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
   const maxMinutes = sessionMinutes(input.minutes);
   const [session] = await db()
     .insert(t.sessions)
-    .values({ scenarioId: scenario.id, level: profile.level, maxMinutes, homeworkGiven: homework })
+    .values({ scenarioId: scenario.id, level: profile.level, maxMinutes, homeworkGiven: homework, cardId: card?.id })
     .returning({ id: t.sessions.id });
   if (expressions.length) await attachToSession(session.id, expressions);
 

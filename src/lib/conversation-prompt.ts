@@ -1,3 +1,4 @@
+import type { ScenarioCard } from "@/db/schema";
 import type { Expression } from "./expressions";
 import { EXPRESSION_KIND_PROMPT, EXPRESSION_KINDS } from "./categories";
 import type { getProfile } from "./lesson";
@@ -35,6 +36,34 @@ How to use this:
 `;
 }
 
+/**
+ * 今回のお題カード（学習者は日本語版を見ている）と、場面の種類ごとの決まり。
+ * 学生が職歴や役職を作り話しなくて済むよう、役と事実はカードに任せる
+ */
+function scene(scenario: Scenario, card: ScenarioCard | null) {
+  const rules =
+    scenario.mode === "self"
+      ? "- The learner speaks as themselves: a university student. Never ask about a job title, company or work experience they don't have; ask about their studies, experiences, views and plans."
+      : "- The card fixes the learner's role and facts. Don't ask them to invent more background (job title, years of experience, company history); if a detail is missing, supply a plausible one yourself or accept whatever they say.";
+  if (!card)
+    return scenario.mode === "self"
+      ? `\n# Scene rules\n${rules}\n`
+      : "\n# Scene rules\n- The learner is a junior member (an intern or new hire). If the scene needs details about their work, supply plausible ones yourself instead of asking them to invent them.\n";
+  return `
+# This session's card (the learner sees a Japanese version of it)
+Title: ${card.title}
+Situation: ${card.situation}
+${card.role ? `The learner's role: ${card.role}` : "The learner speaks as themselves (a university student)."}
+${card.role ? "Facts the learner can use" : "Material for this conversation"}:
+${bullets(card.facts)}
+The learner's goal: ${card.goal}
+Your side of the scene: ${card.partner}
+${rules}
+- Open with something specific to this card rather than a generic "tell me about yourself" (unless the card is an interview), and keep the conversation on this card's situation.
+- Never read the card out. The learner already has it: set the scene in one or two short sentences, then reveal details only when they become relevant or the learner asks.
+`;
+}
+
 /** 会話 AI（OpenAI Realtime）への指示文 */
 export function buildInstructions(opts: {
   profile: Profile;
@@ -44,8 +73,10 @@ export function buildInstructions(opts: {
   /** 繰り返しているミスの傾向（表示名） */
   patterns?: string[];
   homework?: Homework | null;
+  /** 今回のお題カード（レベル診断などカードのない場面は null） */
+  card?: ScenarioCard | null;
 }) {
-  const { profile, scenario, expressions, focus, patterns = [], homework = null } = opts;
+  const { profile, scenario, expressions, focus, patterns = [], homework = null, card = null } = opts;
   const targets = EXPRESSION_KINDS.map((kind) => {
     const items = expressions.filter((e) => e.kind === kind).map((e) => `- "${e.text}" (${e.scene})`);
     return `${EXPRESSION_KIND_PROMPT[kind]}:\n${items.join("\n") || "- (none)"}`;
@@ -59,7 +90,7 @@ export function buildInstructions(opts: {
 
   return `# Role
 ${scenario.role}
-
+${scene(scenario, card)}
 # Learner
 A Japanese learner practicing spoken English for business and future overseas projects.
 ${learner.join("\n")}
