@@ -42,18 +42,17 @@ export default async function NewSessionPage({
       cardPanel={
         card && (
           <ScenarioCardView card={card.card} label={usage?.count ? "再挑戦のお題" : "今回のお題"}>
-            {usage?.lastAt ? (
+            {usage?.lastAt && (
               <p className="meta mt-3 border-t border-line pt-3">
                 {formatDateJst(usage.lastAt)} に話したお題です。終わったら前回と比べられます。
               </p>
-            ) : (
-              <form action={newCardAction.bind(null, scenario.id)} className="mt-3 border-t border-line pt-2">
-                <ActionButton className="btn-ghost -ml-2.5 text-[13px]" pendingText="お題を作っています…">
-                  <Shuffle size={15} strokeWidth={1.75} />
-                  別のお題にする
-                </ActionButton>
-              </form>
             )}
+            <form action={newCardAction.bind(null, scenario.id, card.id)} className="mt-3 border-t border-line pt-2">
+              <ActionButton className="btn-ghost -ml-2.5 text-[13px]" pendingText="切り替えています…">
+                <Shuffle size={15} strokeWidth={1.75} />
+                別のお題にする
+              </ActionButton>
+            </form>
           </ScenarioCardView>
         )
       }

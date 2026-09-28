@@ -290,6 +290,7 @@ export type DrillWord = {
 /** 添削の「言い直す」で、改善後の文を声に出して採点した記録 */
 /**
  * お題カード: 1回の会話の状況・学習者の役・使える事実・ゴール。会話 AI と学習者が同じカードを見る。
+ * カードは data/cards.json にあらかじめ用意し、seed で入れる（アプリの中では作らない）。
  * 日本語の項目は学習者向け、partner は会話 AI 向け（英語）
  */
 export type ScenarioCard = {
@@ -311,6 +312,8 @@ export type ScenarioCard = {
 
 export const scenarioCards = pgTable("scenario_cards", {
   id: serial("id").primaryKey(),
+  /** data/cards.json のカードの識別子（シナリオ ID と番号）。seed で入れ直しても同じ行を更新する */
+  slug: text("slug").unique(),
   scenarioId: text("scenario_id").notNull(),
   card: jsonb("card").$type<ScenarioCard>().notNull(),
   costUsd: real("cost_usd").notNull().default(0),

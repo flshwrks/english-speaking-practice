@@ -9,7 +9,7 @@ import {
   inferKind,
   type ExpressionAction,
 } from "@/lib/expressions";
-import { generateCard } from "@/lib/cards";
+import { nextCard } from "@/lib/cards";
 import { updateProfileQuery } from "@/lib/lesson";
 import { getScenario } from "@/lib/scenarios";
 import { requestAnalysis } from "@/lib/session";
@@ -67,10 +67,10 @@ export async function saveProfile(formData: FormData) {
   redirect("/profile?saved=1");
 }
 
-/** 準備画面の「別のお題にする」: 新しいお題カードを作って、そのカードで準備画面を開き直す */
-export async function newCardAction(scenarioId: string) {
+/** 準備画面の「別のお題にする」: 用意したカードの次のものに切り替えて、準備画面を開き直す */
+export async function newCardAction(scenarioId: string, currentCardId: number) {
   const scenario = getScenario(scenarioId);
   if (!scenario || scenario.noCard) return;
-  const card = await generateCard(scenario);
-  redirect(`/session/new?scenario=${scenario.id}&card=${card.id}`);
+  const card = await nextCard(scenario.id, currentCardId);
+  if (card) redirect(`/session/new?scenario=${scenario.id}&card=${card.id}`);
 }

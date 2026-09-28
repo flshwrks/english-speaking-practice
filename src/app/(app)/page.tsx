@@ -5,7 +5,7 @@ import { after, connection } from "next/server";
 import { db, t } from "@/db";
 import type { SessionStatus } from "@/db/schema";
 import { Badge, Section } from "@/components/ui";
-import { prepareCard, retryCandidate } from "@/lib/cards";
+import { retryCandidate } from "@/lib/cards";
 import { pickTodaysExpressions, weakExpressionCategories } from "@/lib/expressions";
 import { formatDateJst } from "@/lib/format";
 import { budgetStatus, getCurrentCurriculum, isReviewDue } from "@/lib/lesson";
@@ -52,8 +52,6 @@ export default async function Home() {
     weakCategories,
   });
   const pick = scenarios.find((s) => recommended.has(s.id)) ?? scenarios[0];
-  // おすすめのお題カードを表示の後で作っておき、準備画面をすぐ開けるようにする
-  if (pick) after(() => prepareCard(pick).catch((e) => console.error("お題カードの先行作成に失敗", e)));
   // 準備画面と同じ選び方なので、ここで見せた表現がそのまま出題される
   const expressions = pick ? await pickTodaysExpressions(pick, curriculum) : [];
   const thisWeek = scenarios.filter((s) => recommended.has(s.id) && s.id !== pick?.id);

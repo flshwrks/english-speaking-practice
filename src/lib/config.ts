@@ -24,12 +24,6 @@ export const PRICING = {
     input: 2,
     output: 10,
   },
-  /** お題カードを作るモデル（速くて安いもの。1枚あたり約 $0.003） */
-  cards: {
-    model: "claude-haiku-4-5",
-    input: 1,
-    output: 5,
-  },
 } as const;
 
 /** 非ネイティブの発音でも取り違えにくい上位モデル（mini の約2倍だが1分 $0.006） */
