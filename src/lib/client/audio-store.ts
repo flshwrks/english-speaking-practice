@@ -15,7 +15,11 @@ function open() {
   dbPromise ??= new Promise<IDBDatabase>((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
     req.onupgradeneeded = () => req.result.createObjectStore(STORE);
-    req.onsuccess = () => resolve(req.result);
+    req.onsuccess = () => {
+      // iOS Safari はバックグラウンド中などに接続を切ることがある。切れたら次の操作で開き直す
+      req.result.onclose = () => (dbPromise = undefined);
+      resolve(req.result);
+    };
     req.onerror = () => {
       dbPromise = undefined;
       reject(req.error);
@@ -27,10 +31,18 @@ function open() {
 async function tx<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<T> | void) {
   const db = await open();
   return new Promise<T | undefined>((resolve, reject) => {
-    const t = db.transaction(STORE, mode);
+    let t: IDBTransaction;
+    try {
+      t = db.transaction(STORE, mode);
+    } catch (e) {
+      // 接続が閉じていると例外になる（onclose が来ない場合もある）。次は開き直す
+      dbPromise = undefined;
+      return reject(e);
+    }
     const req = fn(t.objectStore(STORE));
     t.oncomplete = () => resolve(req ? req.result : undefined);
     t.onerror = () => reject(t.error);
+    t.onabort = () => reject(t.error);
   });
 }
 

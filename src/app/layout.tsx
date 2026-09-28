@@ -12,11 +12,13 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Speaking", statusBarStyle: "default" },
 };
 
+// 状態バー・アドレスバーの色は背景（--bg）と揃え、境目が見えないようにする
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f7f6f3" },
-    { media: "(prefers-color-scheme: dark)", color: "#131312" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f3f0" },
+    { media: "(prefers-color-scheme: dark)", color: "#121212" },
   ],
+  colorScheme: "light dark",
   viewportFit: "cover",
 };
 

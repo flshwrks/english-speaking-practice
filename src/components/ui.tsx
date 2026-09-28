@@ -17,7 +17,7 @@ export function Page({
 }) {
   return (
     <main
-      className={`mx-auto w-full px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-28 sm:px-8 lg:px-10 lg:pt-10 lg:pb-16 ${
+      className={`mx-auto w-full px-4 pt-[max(1.25rem,env(safe-area-inset-top))] pb-[calc(6.5rem+env(safe-area-inset-bottom))] sm:px-8 lg:px-10 lg:pt-10 lg:pb-16 ${
         narrow ? "max-w-[760px]" : "max-w-[1120px]"
       }`}
     >
@@ -44,7 +44,7 @@ export function PageTitle({
   sub?: React.ReactNode;
 }) {
   return (
-    <div className="mb-6 flex items-end justify-between gap-4 lg:mb-8">
+    <div className="relative mb-6 flex items-end justify-between gap-4 lg:mb-8">
       <div className="min-w-0">
         <h1 className="text-2xl leading-snug font-bold">{children}</h1>
         {sub && <p className="meta mt-1">{sub}</p>}
@@ -232,7 +232,7 @@ export function Toast({ children }: { children: React.ReactNode }) {
   return (
     <div
       role="status"
-      className="fixed bottom-24 left-1/2 z-50 inline-flex animate-toast items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium whitespace-nowrap text-ink-fg shadow-float lg:bottom-8"
+      className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] left-1/2 z-50 inline-flex animate-toast items-center gap-2 rounded-full bg-ink px-4 py-2 text-sm font-medium whitespace-nowrap text-ink-fg shadow-float lg:bottom-8"
     >
       {children}
     </div>

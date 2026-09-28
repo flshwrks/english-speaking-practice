@@ -1,19 +1,23 @@
 import { and, asc, desc, eq, inArray, lt, ne, sql } from "drizzle-orm";
-import { Check, ChevronRight, Minus, Plus, RotateCcw, X } from "lucide-react";
+import { Check, ChevronRight, Mic, Minus, Plus, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db, t } from "@/db";
-import type { SessionMetrics, WordAssessment } from "@/db/schema";
+import type { Homework, SessionMetrics, WordAssessment } from "@/db/schema";
+import { Correction } from "@/components/correction";
 import { ExpressionEntry } from "@/components/expression-card";
 import { ActionButton } from "@/components/action-button";
 import { SpeakButton } from "@/components/speak-button";
+import { JumpNav } from "@/components/jump-nav";
+import { RetryDrill } from "@/components/retry-drill";
 import { BackLink, Page, ScoreBar, Section } from "@/components/ui";
 import { FEEDBACK_CATEGORY_LABEL, isUpgrade } from "@/lib/categories";
 import { usdToJpy } from "@/lib/config";
 import { sessionTargets } from "@/lib/expressions";
+import { bestDrillScores } from "@/lib/drill";
 import { formatDateJst, formatPhoneme, isWeakWord } from "@/lib/format";
 import { getScenario } from "@/lib/scenarios";
-import { diffWords, isRewrite } from "@/lib/typeset";
+import { isAnalysisStale } from "@/lib/session";
 import { addFeedbackExpression, expressionAction, retryAnalysis } from "../../actions";
 import { AnalyzingSteps, AutoRefresh, MyRecording, PurgeOldAudio } from "./client";
 
@@ -25,7 +29,7 @@ type Target = Awaited<ReturnType<typeof sessionTargets>>[number];
 export default async function SessionPage({ params }: PageProps<"/session/[id]">) {
   const id = Number((await params).id);
   const d = db();
-  const [[session], items, utterances, targets, suggested, added, [previous]] = await Promise.all([
+  const [[session], items, utterances, targets, suggested, added, [previous], drills] = await Promise.all([
     d.select().from(t.sessions).where(eq(t.sessions.id, id)),
     d
       .select()
@@ -60,6 +64,8 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
       .where(and(lt(t.sessions.id, id), eq(t.sessions.status, "done")))
       .orderBy(desc(t.sessions.id))
       .limit(1),
+    // 言い直し練習のベスト（添削ごと）
+    bestDrillScores(id),
   ]);
   if (!session) notFound();
   const scenarioTitle = getScenario(session.scenarioId)?.title ?? "セッション";
@@ -68,6 +74,7 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
   const done = session.status === "done";
   const yen = Math.round(usdToJpy(session.costUsd));
   const fixes = items.filter((it) => !isUpgrade(it.severity)).length;
+  const stale = isAnalysisStale(session);
 
   const scorecard = m && <Scorecard m={m} prev={previous?.metrics ?? null} />;
   const checklist = targets.length > 0 && <TargetChecklist targets={targets} />;
@@ -79,13 +86,19 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
           <div className="flex flex-col gap-8">
             <div className="hidden lg:block">{scorecard}</div>
             <div className="hidden lg:block">{checklist}</div>
-            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
-              <span className="meta tabular-nums">
+            <div className="border-t border-line pt-4">
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/session/new?scenario=${session.scenarioId}`} className="btn">
+                  <RotateCcw size={15} strokeWidth={1.75} />
+                  同じシナリオでもう一度
+                </Link>
+                <Link href="/" className="btn">
+                  ホームへ
+                </Link>
+              </div>
+              <p className="meta mt-3 tabular-nums">
                 {Math.round(session.durationSec / 60)}分 · 約¥{yen}
-              </span>
-              <Link href="/" className="btn">
-                ホームへ
-              </Link>
+              </p>
             </div>
           </div>
         )
@@ -103,7 +116,18 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
           <AutoRefresh />
           <p className="text-[17px] font-bold">フィードバックを作成しています</p>
           <p className="meta mt-1">発音データと会話を分析しています（30秒〜1分ほど）</p>
-          <AnalyzingSteps />
+          {stale ? (
+            <form action={retryAnalysis} className="mt-6">
+              <p className="text-sm text-fg-2">時間がかかりすぎています。途中で止まったかもしれません。</p>
+              <input type="hidden" name="id" value={id} />
+              <ActionButton className="btn-primary mt-3" pendingText="分析を依頼中…">
+                <RotateCcw size={16} strokeWidth={1.75} />
+                もう一度分析する
+              </ActionButton>
+            </form>
+          ) : (
+            <AnalyzingSteps />
+          )}
         </section>
       )}
 
@@ -123,30 +147,31 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
 
       {done && (
         <>
-          {session.summary && <p className="mb-8 max-w-[38em] text-[16px] leading-[1.9]">{session.summary}</p>}
+          {/* スマホは結果（スコア）を先に、講評はその後。PC はスコアが右の欄にある */}
           {scorecard && <div className="mb-8 lg:hidden">{scorecard}</div>}
-          <nav
-            aria-label="このページの中を移動"
-            className="sticky top-0 z-10 -mx-4 mb-8 flex gap-1 overflow-x-auto border-b border-line bg-bg/95 px-4 py-2 backdrop-blur [scrollbar-width:none] lg:hidden"
-          >
-            {[
-              { href: "#points", label: "要点", show: Boolean(session.topPoints?.length) },
-              { href: "#fixes", label: `添削 ${items.length}`, show: items.length > 0 },
-              { href: "#targets", label: "今日の表現", show: targets.length > 0 },
-              { href: "#suggested", label: "覚える", show: suggested.length > 0 },
-              { href: "#transcript", label: "全文", show: session.turns.length > 0 },
+          {session.summary && <p className="mb-8 max-w-[38em] text-[16px] leading-[1.9]">{session.summary}</p>}
+          {session.homework && <HomeworkResult hw={session.homework} />}
+          {/* 読み終えたら次にやること: 添削された言い方を声に出して言い直す */}
+          {items.length > 0 && (
+            <div className="mb-8 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Link href={`/session/${id}/drill`} className="btn-primary px-6 py-3 max-sm:w-full">
+                <Mic size={17} strokeWidth={2} />
+                言い直し練習（{items.length}問）
+              </Link>
+              <span className="meta">添削された言い方を、声に出して言い直します</span>
+            </div>
+          )}
+          <JumpNav
+            items={[
+              { id: "points", label: "要点", show: Boolean(session.topPoints?.length) },
+              { id: "fixes", label: `添削 ${items.length}`, show: items.length > 0 },
+              { id: "targets", label: "今日の表現", show: targets.length > 0 },
+              { id: "suggested", label: "覚える", show: suggested.length > 0 },
+              { id: "transcript", label: "全文", show: session.turns.length > 0 },
             ]
               .filter((x) => x.show)
-              .map((x) => (
-                <a
-                  key={x.href}
-                  href={x.href}
-                  className="shrink-0 rounded-full px-3 py-1 text-[13px] font-medium whitespace-nowrap text-fg-2 transition-colors hover:bg-surface active:bg-primary-soft active:text-primary"
-                >
-                  {x.label}
-                </a>
-              ))}
-          </nav>
+              .map(({ id, label }) => ({ id, label }))}
+          />
 
           {session.topPoints && session.topPoints.length > 0 && (
             <Section id="points" title="今回の要点">
@@ -191,6 +216,13 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
                         <SpeakButton text={it.improved} />
                       </div>
                       <p className="mt-2.5 max-w-[38em] text-fg-2">{it.explanation}</p>
+                      <RetryDrill
+                        itemId={it.id}
+                        sessionId={id}
+                        seq={it.seq}
+                        original={it.seq == null ? null : (byseq.get(it.seq)?.accuracy ?? null)}
+                        best={drills.get(it.id) ?? null}
+                      />
                       {key && (
                         <form
                           action={addFeedbackExpression.bind(null, {
@@ -293,35 +325,6 @@ export default async function SessionPage({ params }: PageProps<"/session/[id]">
   );
 }
 
-/** 赤ペン添削: 残す語はそのまま、消す語に線、足す語は太字。ほぼ全部入れ替えなら2行に分ける */
-function Correction({ original, improved, upgrade }: { original: string; improved: string; upgrade: boolean }) {
-  const parts = diffWords(original, improved);
-  const del = upgrade
-    ? "text-muted line-through decoration-muted"
-    : "text-fg-2 line-through decoration-accent decoration-[1.5px]";
-  const ins = upgrade
-    ? "font-bold underline decoration-line-strong underline-offset-4"
-    : "rounded-sm bg-accent-soft px-0.5 font-bold";
-  if (isRewrite(parts)) {
-    return (
-      <div className="min-w-0 text-[17px] leading-relaxed">
-        <p className={del}>{original}</p>
-        <p className="mt-0.5 font-bold">{improved}</p>
-      </div>
-    );
-  }
-  return (
-    <p className="min-w-0 text-[17px] leading-relaxed">
-      {parts.map((p, i) => (
-        <span key={i}>
-          {i > 0 && " "}
-          <span className={p.op === "del" ? del : p.op === "ins" ? ins : ""}>{p.text}</span>
-        </span>
-      ))}
-    </p>
-  );
-}
-
 /** 発音の詳細（折りたたみ）: 気になる語だけに印を付ける */
 function Pronunciation({ words }: { words: WordAssessment[] }) {
   if (!words.length) return null;
@@ -366,6 +369,31 @@ function Pronunciation({ words }: { words: WordAssessment[] }) {
   );
 }
 
+/** 前回の宿題（前回の要点の1つ目）を今回生かせたか。緑＝できた、黄土＝まだ */
+function HomeworkResult({ hw }: { hw: Homework }) {
+  return (
+    <div className="mb-8 grid max-w-[38em] grid-cols-[1.25rem_minmax(0,1fr)] gap-x-2 border-y border-line py-3">
+      <span className="pt-1">
+        {hw.applied ? (
+          <Check size={15} strokeWidth={2.25} className="text-good" />
+        ) : (
+          <span className="text-[13px] font-bold text-warn">△</span>
+        )}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm">
+          <span className="font-bold">前回の宿題</span>
+          <span className="text-fg-2">「{hw.title}」</span>
+          <span className={`font-bold ${hw.applied ? "text-good" : "text-warn"}`}>
+            {hw.applied ? "できました" : "もう一歩"}
+          </span>
+        </p>
+        {hw.comment && <p className="meta mt-0.5">{hw.comment}</p>}
+      </div>
+    </div>
+  );
+}
+
 const round = (v: number | null) => (v == null ? "—" : Math.round(v * 10) / 10);
 
 function Scorecard({ m, prev }: { m: SessionMetrics; prev: SessionMetrics | null }) {
@@ -378,7 +406,7 @@ function Scorecard({ m, prev }: { m: SessionMetrics; prev: SessionMetrics | null
         </div>
         <dl className="meta grid grid-cols-[auto_auto] gap-x-2 tabular-nums">
           <dt>話す速さ</dt>
-          <dd className="font-medium text-fg">{m.wpm} wpm</dd>
+          <dd className="font-medium text-fg">{m.wpm > 0 ? `${m.wpm} wpm` : "—"}</dd>
           <dt>誤り</dt>
           <dd className="font-medium text-fg">{round(m.errorsPer100Words)} / 100語</dd>
         </dl>

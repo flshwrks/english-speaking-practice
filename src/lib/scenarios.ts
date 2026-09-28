@@ -1,4 +1,5 @@
 import type { ExpressionCategory } from "./categories";
+import { DAY_MS, isoDateJst } from "./format";
 
 export type Scenario = {
   id: string;
@@ -91,44 +92,106 @@ export function getScenario(id: string) {
   return SCENARIOS.find((s) => s.id === id);
 }
 
-/** 表示するシナリオとおすすめ。初回はレベル診断、以降は今週のカリキュラムの推奨 */
-export function scenarioMenu(completedSessions: number, curriculumScenarioIds: string[]) {
+/** 今日のおすすめを決める材料（ホーム用。省略時は日付だけで今週のシナリオを日替わりにする） */
+export type ScenarioContext = {
+  /** 直近の完了セッションのシナリオ ID（新しい順） */
+  recentScenarioIds?: string[];
+  /** 苦手な表現カテゴリ（expressions.ts の weakExpressionCategories） */
+  weakCategories?: readonly string[];
+  /** 日本時間の今日（YYYY-MM-DD） */
+  today?: string;
+};
+
+/**
+ * 今週のシナリオの並べ替え（先頭が今日のおすすめ）。点数の高い順:
+ * - 直前の会話と同じシナリオは -2、直近5回に出た回数ごとに -0.5（同じ場面ばかりにしない）
+ * - 苦手な表現カテゴリを含むごとに +0.5（使う場面を作る）
+ * - 同点は日付で回す（毎日違うシナリオが先頭に来る）
+ */
+export function rankScenarios(ids: string[], ctx: ScenarioContext = {}) {
+  const recent = (ctx.recentScenarioIds ?? []).slice(0, 5);
+  const weak = new Set(ctx.weakCategories ?? []);
+  const day = Math.floor(Date.parse(ctx.today ?? isoDateJst(new Date())) / DAY_MS);
+  const score = (id: string) => {
+    const categories = getScenario(id)?.categories ?? [];
+    return (
+      (recent[0] === id ? -2 : 0) -
+      0.5 * recent.filter((r) => r === id).length +
+      0.5 * categories.filter((c) => weak.has(c)).length
+    );
+  };
+  const n = ids.length;
+  return ids
+    .map((id, i) => ({ id, score: score(id), turn: (((i - day) % n) + n) % n }))
+    .sort((x, y) => y.score - x.score || x.turn - y.turn)
+    .map((x) => x.id);
+}
+
+/** 表示するシナリオとおすすめ。初回はレベル診断、以降は今週のカリキュラムのシナリオを rankScenarios の順で先頭に */
+export function scenarioMenu(completedSessions: number, curriculumScenarioIds: string[], ctx?: ScenarioContext) {
   const first = completedSessions === 0;
+  const visible = SCENARIOS.filter((s) => first || !s.onboarding);
+  const recommended = first
+    ? SCENARIOS.filter((s) => s.onboarding).map((s) => s.id)
+    : rankScenarios(
+        curriculumScenarioIds.filter((id) => visible.some((s) => s.id === id)),
+        ctx,
+      );
   return {
-    scenarios: SCENARIOS.filter((s) => first || !s.onboarding),
-    recommended: new Set(first ? SCENARIOS.filter((s) => s.onboarding).map((s) => s.id) : curriculumScenarioIds),
+    scenarios: [
+      ...recommended.map((id) => visible.find((s) => s.id === id)!),
+      ...visible.filter((s) => !recommended.includes(s.id)),
+    ],
+    recommended: new Set(recommended),
   };
 }
 
-/** 難易度 1〜10 の帯ごとの AI の話し方（語彙・文の長さ・質問の難しさ）と話す速度（Realtime API の speed, 1.0 が標準） */
-const LEVEL_BANDS = [
-  {
-    maxLevel: 3,
-    speed: 0.85,
-    guidance:
-      "Use simple, common words and short sentences (under 12 words). Ask one simple question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.",
-  },
-  {
-    maxLevel: 5,
-    speed: 0.9,
-    guidance:
-      "Use clear, everyday business English and short sentences (under 15 words). Ask one question at a time; avoid idioms and slang. Give the learner time and encourage longer answers with gentle follow-ups.",
-  },
-  {
-    maxLevel: 7,
-    speed: 1.0,
-    guidance:
-      "Use natural business English with some common idioms. Ask follow-up questions that require explanations and challenge vague answers politely.",
-  },
-  {
-    maxLevel: 10,
-    speed: 1.1,
-    guidance:
-      "Speak like a demanding native executive: dense vocabulary, idioms, ambiguity, and strong pushback. Expect precise, well-structured answers.",
-  },
-] as const;
+/**
+ * 難易度 1〜10 ごとの AI の話し方。文の長さ・語彙・質問の圧の3軸を少しずつずらし、どの1段にも違いがあるようにする
+ */
+const SENTENCES = [
+  "Use very short sentences (under 10 words).",
+  "Use short sentences (under 10 words).",
+  "Use short sentences (under 14 words).",
+  "Use short sentences (under 14 words).",
+  "Keep most sentences under 18 words.",
+  "Keep most sentences under 18 words.",
+  "Use natural sentence length.",
+  "Use natural sentence length, including some complex sentences.",
+  "Use long, complex sentences when natural.",
+  "Use long, complex sentences and change topics quickly, as in a busy real meeting.",
+];
+const VOCABULARY = [
+  "Use only very common words; avoid idioms and phrasal verbs.",
+  "Use only very common words; avoid idioms and phrasal verbs.",
+  "Use everyday business words; avoid idioms and slang.",
+  "Use everyday business words; avoid idioms and slang.",
+  "Use natural business English with an occasional common idiom or phrasal verb.",
+  "Use natural business English with some common idioms and phrasal verbs.",
+  "Use idiomatic business English, including phrasal verbs.",
+  "Use idiomatic business English with phrasal verbs and some jargon.",
+  "Use dense, nuanced vocabulary, idioms, and industry jargon.",
+  "Use dense, nuanced vocabulary, idioms, and industry jargon, like a demanding native executive.",
+];
+const QUESTIONS = [
+  "Ask one simple yes/no or either-or question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.",
+  "Ask one simple question at a time. Be patient and supportive; if the learner seems lost, rephrase more simply.",
+  "Ask one simple open question at a time. Be patient; if the learner seems lost, rephrase more simply.",
+  "Ask one question at a time and encourage longer answers with gentle follow-ups.",
+  "Ask one question at a time and encourage longer answers with follow-ups asking why or how.",
+  "Ask follow-up questions that require explanations, and politely ask for specifics when an answer is vague.",
+  "Ask follow-up questions that require explanations, and challenge vague answers politely.",
+  "Push back on weak points and ask for numbers, examples, and specifics.",
+  "Push back firmly, introduce some ambiguity, and occasionally interrupt to redirect.",
+  "Push back strongly, leave things ambiguous on purpose, and interrupt when the learner rambles. Expect precise, well-structured answers.",
+];
 
-const bandFor = (level: number) => LEVEL_BANDS.find((b) => level <= b.maxLevel) ?? LEVEL_BANDS[LEVEL_BANDS.length - 1];
+const levelIndex = (level: number) => Math.min(10, Math.max(1, Math.round(level))) - 1;
 
-export const levelGuidance = (level: number) => bandFor(level).guidance;
-export const speechSpeed = (level: number) => bandFor(level).speed;
+export const levelGuidance = (level: number) => {
+  const i = levelIndex(level);
+  return `${SENTENCES[i]} ${VOCABULARY[i]} ${QUESTIONS[i]}`;
+};
+
+/** 話す速度（Realtime API の speed, 1.0 が標準）。1段ごとに 0.035 ずつ（1: 0.80 〜 10: 1.12） */
+export const speechSpeed = (level: number) => Math.round((0.8 + levelIndex(level) * 0.035) * 1000) / 1000;

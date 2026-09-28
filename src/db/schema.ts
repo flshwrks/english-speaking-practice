@@ -87,7 +87,13 @@ export const expressions = pgTable(
     /** seed / review / feedback */
     source: text("source").notNull().default("seed"),
     status: text("status").$type<ExpressionStatus>().notNull().default("queued"),
+    /** 間隔反復（src/lib/srs.ts）: 安定度（日）・覚えやすさ・正しく使えた回数・誤用に戻った回数・続けて使わなかった回数 */
     intervalDays: real("interval_days").notNull().default(0),
+    ease: real("ease").notNull().default(2.5),
+    reps: integer("reps").notNull().default(0),
+    lapses: integer("lapses").notNull().default(0),
+    misses: integer("misses").notNull().default(0),
+    lastPracticedAt: timestamp("last_practiced_at", { withTimezone: true }),
     nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -101,6 +107,8 @@ export type Turn = {
   text: string;
   /** user ターンのみ: utterances.seq */
   seq?: number;
+  /** user ターンのみ: AI が話し終えてから声を出し始めるまでの時間（AI の番の直後の発話だけ。2026-09-28 以降） */
+  latencyMs?: number;
 };
 
 export type Usage = {
@@ -123,9 +131,23 @@ export const sessions = pgTable("sessions", {
   topPoints: jsonb("top_points").$type<{ title: string; detail: string }[]>(),
   /** WPM, 発音スコア平均など */
   metrics: jsonb("metrics").$type<SessionMetrics>(),
+  /** 前回の最重要ポイント（宿題）を今回の会話で生かせたか。前回がなければ null */
+  homework: jsonb("homework").$type<Homework>(),
   error: text("error"),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  /** 選んだ会話の長さ（分）。サーバー側の時間制限に使う（null は古いセッション: 設定の上限を使う） */
+  maxMinutes: integer("max_minutes"),
+  /** 分析を始めた時刻。analyzing のまま一定時間たったら止まったとみなし、やり直せるようにする */
+  analysisStartedAt: timestamp("analysis_started_at", { withTimezone: true }),
 });
+
+export type Homework = {
+  /** 前回の topPoints[0].title */
+  title: string;
+  applied: boolean;
+  /** 判定の根拠（日本語） */
+  comment: string;
+};
 
 export type SessionMetrics = {
   userWords: number;
@@ -137,7 +159,34 @@ export type SessionMetrics = {
   fluency: number | null;
   prosody: number | null;
   pron: number | null;
+  /** 表示用の CEFR: 1回ごとの推定（cefrSession）の直近5回の中央値（計算は src/lib/metrics.ts） */
   estimatedCefr: string;
+  // 以下は 2026-09-28 以降の会話のみ（計算方法は src/lib/metrics.ts）
+  /** 分析 AI が付けた CEFR（補正前） */
+  cefrLlm?: string;
+  /** 今回1回分の CEFR: 分析 AI の判定を実測の目安から ±1 段階に収めたもの */
+  cefrSession?: string;
+  /** 誤りのない節の割合 0〜1（分析 AI が発話ごとに数えた節と誤りから） */
+  errorFreeClauseRatio?: number;
+  /** Azure が聞き取った語から、つなぎ語と繰り返しを除いた語数（wpm の分子） */
+  spokenWords?: number;
+  /** 発話1回あたりの語数 */
+  meanUtteranceWords?: number;
+  /** つなぎ語（uh, um）・直後の繰り返し（言い直し）の 100語あたりの回数 */
+  fillersPer100Words?: number;
+  repetitionsPer100Words?: number;
+  /** ポーズ（250ms 以上）を除いた、口が動いている間の速さ。語の時刻がある発話のみ */
+  articulationWpm?: number;
+  /** 発話中のポーズ（250ms 以上）の 1分あたりの回数と、ポーズの間に続けて言えた平均語数 */
+  pausesPerMin?: number;
+  meanLengthOfRun?: number;
+  /** AI が話し終えてから話し始めるまでの中央値（ms）と、3秒以上かかった割合 0〜1 */
+  medianLatencyMs?: number;
+  longLatencyRate?: number;
+  /** Azure が Mispronunciation とした語の 100語あたりの数 */
+  mispronouncedPer100Words?: number;
+  /** Monotone（抑揚が平板）とされた語の割合 0〜1 */
+  monotoneRate?: number;
 };
 
 export type WordAssessment = {
@@ -148,6 +197,9 @@ export type WordAssessment = {
   weakPhonemes: { phoneme: string; score: number; heardAs?: string }[];
   /** UnexpectedBreak / MissingBreak / Monotone など */
   prosodyErrors: string[];
+  /** 発話の切り出し先頭からの語の開始時刻と長さ（ms）。2026-09-28 以降の評価のみ */
+  offsetMs?: number;
+  durationMs?: number;
 };
 
 export const utterances = pgTable(
@@ -209,3 +261,37 @@ export const sessionExpressions = pgTable(
   },
   (t) => [uniqueIndex("session_expressions_idx").on(t.sessionId, t.expressionId)],
 );
+
+/** 言い直し練習の採点（台本あり評価）。score は言えなかった語を0点とした語ごとの平均 */
+export type DrillScores = {
+  score: number;
+  accuracy: number | null;
+  fluency: number | null;
+  prosody: number | null;
+  /** お手本の語のうち言えた割合（%） */
+  completeness: number;
+};
+
+/** お手本の語ごとの結果。Insertion はお手本にない語（言い足し） */
+export type DrillWord = {
+  word: string;
+  accuracy: number | null;
+  errorType: "None" | "Mispronunciation" | "Omission" | "Insertion";
+  weakPhonemes: WordAssessment["weakPhonemes"];
+};
+
+/** 添削の「言い直す」で、改善後の文を声に出して採点した記録 */
+export const drillAttempts = pgTable("drill_attempts", {
+  id: serial("id").primaryKey(),
+  feedbackItemId: integer("feedback_item_id").notNull(),
+  referenceText: text("reference_text").notNull(),
+  scores: jsonb("scores").$type<DrillScores>().notNull(),
+  words: jsonb("words").$type<DrillWord[]>().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** ログイン失敗の記録（総当たり対策: 直近の失敗が多いとしばらくログインを受け付けない） */
+export const loginFailures = pgTable("login_failures", {
+  id: serial("id").primaryKey(),
+  at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+});

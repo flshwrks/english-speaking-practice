@@ -4,11 +4,13 @@ import { db, t } from "@/db";
 import { DAY_MS, isoDateJst } from "./format";
 import { mondayOf } from "./syllabus";
 
-/** 練習日ごとの回数から、連続日数・今週の回数を求める（DB を読まない） */
-export function summarizePractice(byDay: Map<string, number>) {
-  const today = isoDateJst(new Date());
+/**
+ * 練習日ごとの回数（日本時間の日付）から、連続日数・今週（月曜始まり）の回数を求める（DB を読まない）。
+ * 今日まだ練習していなくても、昨日まで続いていれば連続は切れない
+ */
+export function summarizePractice(byDay: Map<string, number>, now = new Date()) {
+  const today = isoDateJst(now);
   const dayBefore = (d: string) => isoDateJst(new Date(Date.parse(`${d}T12:00:00+09:00`) - DAY_MS));
-  // 今日まだ練習していなくても、昨日まで続いていれば連続として数える
   let cursor = byDay.has(today) ? today : dayBefore(today);
   let streak = 0;
   while (byDay.has(cursor)) {
@@ -30,8 +32,8 @@ export function countByDay(startedAt: Date[]) {
   return byDay;
 }
 
-/** 直近 days 日の練習日ごとの回数を DB 側で集計して取得する（ホーム用） */
-export async function practiceSummary(days = 120) {
+/** 直近 days 日の練習日ごとの回数を DB 側で集計して取得する（ホーム用。連続日数がこの日数で頭打ちにならないよう長めに） */
+export async function practiceSummary(days = 400) {
   const rows = await db()
     .select({
       day: sql<string>`(${t.sessions.startedAt} at time zone 'Asia/Tokyo')::date::text`,

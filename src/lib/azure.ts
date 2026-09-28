@@ -26,7 +26,13 @@ type PaScores = {
   };
 };
 type Scored = PaScores & { PronunciationAssessment?: PaScores };
-type AzureWord = Scored & { Word: string; Phonemes?: (Scored & { Phoneme: string })[] };
+/** Offset・Duration は 100ns 単位。Offset は音声の先頭から（連続認識で文をまたいでも通し） */
+type AzureWord = Scored & {
+  Word: string;
+  Offset?: number;
+  Duration?: number;
+  Phonemes?: (Scored & { Phoneme: string })[];
+};
 type AzureResult = { NBest?: (Scored & { Lexical?: string; Words?: AzureWord[] })[] };
 
 /** SDK の JSON はスコアを PronunciationAssessment 配下に、REST はフラットに持つので両対応 */
@@ -75,8 +81,7 @@ export async function assessPronunciation(wav: Buffer, referenceText = ""): Prom
       if (e.result.reason !== sdk.ResultReason.RecognizedSpeech) return;
       out.push(JSON.parse(e.result.properties.getProperty(sdk.PropertyId.SpeechServiceResponse_JsonResult)));
     };
-    recognizer.canceled = (_s, e) =>
-      finish(e.reason === sdk.CancellationReason.Error ? e.errorDetails : undefined);
+    recognizer.canceled = (_s, e) => finish(e.reason === sdk.CancellationReason.Error ? e.errorDetails : undefined);
     recognizer.sessionStopped = () => finish();
     recognizer.startContinuousRecognitionAsync(undefined, (err) => reject(new Error(err)));
   });
@@ -107,6 +112,10 @@ function aggregate(results: AzureResult[]): Assessment {
           ...(s.Feedback?.Prosody?.Break?.ErrorTypes ?? []),
           ...(s.Feedback?.Prosody?.Intonation?.ErrorTypes ?? []),
         ].filter((e) => e !== "None"),
+        // 語の時刻（ポーズと話速の計算に使う）
+        ...(w.Offset !== undefined && w.Duration !== undefined
+          ? { offsetMs: Math.round(w.Offset / 10_000), durationMs: Math.round(w.Duration / 10_000) }
+          : {}),
       };
     }),
   );
@@ -127,7 +136,10 @@ function aggregate(results: AzureResult[]): Assessment {
   };
 
   return {
-    heard: best.map((b) => b.Lexical ?? "").join(" ").trim(),
+    heard: best
+      .map((b) => b.Lexical ?? "")
+      .join(" ")
+      .trim(),
     accuracy: weighted("AccuracyScore"),
     fluency: weighted("FluencyScore"),
     prosody: weighted("ProsodyScore"),

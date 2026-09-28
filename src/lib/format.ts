@@ -1,4 +1,5 @@
 import type { WordAssessment } from "@/db/schema";
+import { isFunctionWord } from "./metrics";
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -24,9 +25,20 @@ export function isoDateJst(d: Date) {
   return d.toLocaleDateString("sv-SE", { timeZone: "Asia/Tokyo" });
 }
 
-/** 分析にも画面にも出す「要注意の語」: 低スコア・弱い音素・韻律の誤りのいずれか */
+/**
+ * 分析にも画面にも出す「要注意の語」: 語の点数が低いか、音素がはっきり外れた（50点未満）もの。
+ * 語全体が90点以上なら、音素1つの低い点は Azure の揺れとみなす（実データで situation 91点の /s/ が0点など）。
+ * Monotone は発話全体にかかる評価で、ほぼ全語に付くので語の印には使わない。
+ * 機能語（and, the, that など）は弱く発音するのが自然なので、点数がかなり低いときだけ
+ */
 export function isWeakWord(w: WordAssessment) {
-  return w.accuracy < 70 || w.weakPhonemes.length > 0 || w.prosodyErrors.length > 0;
+  if (isFunctionWord(w.word)) return w.accuracy < 60;
+  return (
+    w.accuracy < 75 ||
+    w.errorType === "Mispronunciation" ||
+    (w.accuracy < 90 && w.weakPhonemes.some((p) => p.score < 50)) ||
+    w.prosodyErrors.some((e) => e !== "Monotone")
+  );
 }
 
 export function formatPhoneme(p: WordAssessment["weakPhonemes"][number]) {

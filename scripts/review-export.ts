@@ -9,9 +9,9 @@ config({ path: ".env.local" });
 import { mkdirSync, writeFileSync } from "node:fs";
 import { count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/db";
-import { sessionTargets } from "@/lib/expressions";
+import { leechExpressions, sessionTargets, srsHealth } from "@/lib/expressions";
 import { isoDateJst, targetMark } from "@/lib/format";
-import { getCurriculumFor } from "@/lib/lesson";
+import { getCurriculumFor, loadWeaknesses } from "@/lib/lesson";
 import { getScenario, SCENARIOS } from "@/lib/scenarios";
 import { addDays, SYLLABUS } from "@/lib/syllabus";
 
@@ -27,14 +27,18 @@ async function main() {
       weeks: [curriculum, next],
     },
     sessions,
-    patterns,
+    weaknesses,
+    srs,
+    leeches,
     statusCounts,
     queuedByCategory,
     [lastReview],
   ] = await Promise.all([
     getCurriculumFor([todayJst, addDays(todayJst, 7)]),
     d.select().from(t.sessions).where(gte(t.sessions.startedAt, since)).orderBy(t.sessions.startedAt),
-    d.select().from(t.errorPatterns).where(eq(t.errorPatterns.resolved, false)).orderBy(desc(t.errorPatterns.count)).limit(20),
+    loadWeaknesses(),
+    srsHealth(),
+    leechExpressions(),
     d.select({ status: t.expressions.status, n: count() }).from(t.expressions).groupBy(t.expressions.status),
     d
       .select({ category: t.expressions.category, kind: t.expressions.kind, n: count() })
@@ -73,8 +77,12 @@ ${
 }
 
 ## 前回の週次レビュー
-${lastReview ? `- ${lastReview.weekStart}: ${lastReview.summary}
-- ユーザーの声: ${lastReview.userComment || "（なし）"}` : "（なし）"}
+${
+  lastReview
+    ? `- ${lastReview.weekStart}: ${lastReview.summary}
+- ユーザーの声: ${lastReview.userComment || "（なし）"}`
+    : "（なし）"
+}
 
 ## カリキュラム
 - 今週: Week ${curriculum.week}/${SYLLABUS.length}（${curriculum.phase}, ${curriculum.cycle}周目, ${curriculum.weekStart}〜）${curriculum.overrideId ? "※調整あり" : ""}${profile.weekOffset ? `（累計 ${profile.weekOffset} 週繰り返し）` : ""}
@@ -109,14 +117,35 @@ ${items
   .map((i) => `- [${i.category}/${i.patternKey}] "${i.original}" → "${i.improved}"`)
   .join("\n")}
 
-## 未解決のミスの型（累計）
-${patterns.map((p) => `- ${p.key}（${p.label}, ${p.category}）: ${p.count}回, 最終 ${isoDateJst(p.lastSeenAt)}`).join("\n")}
+## ミスの型（直近40セッション, 優先度順）
+優先度 = Σ 重さ × e^(-経過日数/14)。状態: active / improving（3セッション出ていない）/ resolved（6セッション以上出ていない、または克服済みにした）/ reopened（克服後に再発）
+${
+  weaknesses
+    .map(
+      (w) =>
+        `- ${w.key}（${w.label}, ${w.category}）: 優先度 ${w.priority}, ${w.state}, ${w.count}件, 最後に出てから${w.sessionsSinceLast}セッション, 再発率 ${Math.round(w.recurrenceRate * 100)}%`,
+    )
+    .join("\n") || "（なし）"
+}
 
 ## 今日の表現の結果
+${(["new", "review"] as const)
+  .map((role) => {
+    const rs = targetResults.filter((r) => r.role === role);
+    return `- ${role === "new" ? "新規" : "復習"}: 使えた ${rs.filter((r) => r.used).length}/${rs.length}, 正しく ${rs.filter((r) => r.correct).length}/${rs.length}`;
+  })
+  .join("\n")}
+
 ${targetResults.map((r) => `- ${targetMark(r.used, r.correct)} ${r.text}${r.comment ? ` — ${r.comment}` : ""}`).join("\n")}
 
 ## 表現リストの状態
 ${statusCounts.map((c) => `- ${c.status}: ${c.n}`).join("\n")}
+
+間隔反復の健全性:
+- 練習中 ${srs.learning}件（まだ一度も使えていない ${srs.neverUsed}件）/ 習得 ${srs.mastered}件
+- 今日が期限 ${srs.due}件（うち3日以上超過 ${srs.overdue}件）/ 1週間以内に期限 ${srs.dueNextWeek}件
+- 誤用に戻った回数（lapse）累計 ${srs.lapses} / 使えた表現の安定度（中央値）${srs.medianStabilityDays}日
+- 苦手（一度も使えないまま3回続けて使わなかった）${srs.leeches}件${leeches.length ? `: ${leeches.map((e) => e.text).join(" / ")}` : ""}
 
 出題待ち（queued）のカテゴリ別件数:
 ${queuedByCategory.map((c) => `- ${c.category} / ${c.kind}: ${c.n}`).join("\n")}

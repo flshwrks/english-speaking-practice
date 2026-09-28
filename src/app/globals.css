@@ -133,6 +133,7 @@
 
 html {
   -webkit-tap-highlight-color: transparent;
+  color-scheme: light dark;
 }
 
 body {
@@ -180,10 +181,10 @@ summary::-webkit-details-marker {
     @apply inline-flex items-center justify-center gap-2 rounded-[10px] bg-accent px-5 py-2.5 text-[15px] font-bold text-accent-fg transition duration-150 select-none hover:opacity-90 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium text-fg transition duration-150 select-none hover:border-fg-2 hover:bg-sunken/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-3.5 py-1.5 text-sm font-medium text-fg transition duration-150 select-none hover:border-fg-2 hover:bg-sunken/60 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-fg-2 transition duration-150 hover:bg-sunken hover:text-fg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex min-h-9 items-center justify-center gap-1.5 rounded-[10px] px-2.5 py-1.5 text-sm font-medium text-fg-2 transition duration-150 hover:bg-sunken hover:text-fg active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40;
   }
   /* 押せる行（一覧の1行）。ホバーで面が浮き、押すと沈む */
   .row-link {
@@ -199,8 +200,9 @@ summary::-webkit-details-marker {
   .btn-round {
     @apply inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary transition duration-150 hover:bg-primary hover:text-primary-fg active:scale-95;
   }
+  /* スマホは 16px（iOS は 16px 未満の入力欄にフォーカスすると画面を拡大してしまう） */
   .field {
-    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-[15px] transition-colors outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15;
+    @apply w-full rounded-md border border-line-strong bg-surface px-3 py-2 text-base transition-colors outline-none placeholder:text-muted focus:border-primary focus:ring-2 focus:ring-primary/15 sm:text-[15px];
   }
   .meta {
     @apply text-[13px] leading-relaxed text-muted;

@@ -12,7 +12,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "review:export": "tsx scripts/review-export.ts",
     "review:import": "tsx scripts/review-import.ts",
-    "check": "tsx scripts/check-env.ts"
+    "check": "tsx scripts/check-env.ts",
+    "test": "tsx --test src/lib/*.test.ts src/lib/client/*.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

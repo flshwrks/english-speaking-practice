@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/illustrations";
-import { AUTH_COOKIE, cookieOptions, createToken } from "@/lib/auth";
+import { attemptLogin, AUTH_COOKIE, cookieOptions, createToken } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "ログイン" };
 
 async function login(formData: FormData) {
   "use server";
-  if (formData.get("password") !== process.env.APP_PASSWORD) redirect("/login?error=1");
+  const r = await attemptLogin(String(formData.get("password") ?? ""));
+  if (r !== "ok") redirect(`/login?error=${r === "locked" ? "locked" : 1}`);
   (await cookies()).set(AUTH_COOKIE, await createToken(), cookieOptions);
   redirect("/");
 }
@@ -28,9 +29,21 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <form action={login} className="mt-8 flex flex-col gap-3">
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-bold">パスワード</span>
-            <input name="password" type="password" autoFocus autoComplete="current-password" className="field" />
+            <input
+              name="password"
+              type="password"
+              required
+              autoFocus
+              autoComplete="current-password"
+              enterKeyHint="go"
+              className="field"
+            />
           </label>
-          {error && <p className="text-sm text-accent">パスワードが違います</p>}
+          {error && (
+            <p className="text-sm text-accent">
+              {error === "locked" ? "試行回数が多すぎます。しばらくしてからお試しください" : "パスワードが違います"}
+            </p>
+          )}
           <button className="btn-primary mt-2 py-3">ログイン</button>
         </form>
       </div>

@@ -15,9 +15,42 @@ const SERIES_STYLE = [
   { stroke: "var(--muted)", dash: "1.5 4" },
 ] as const;
 
-export function ScoreChart({ series }: { series: { name: string; points: Point[] }[] }) {
-  const W = 640;
-  const H = 240;
+type Series = { name: string; points: Point[] }[];
+
+export function ScoreChart({ series }: { series: Series }) {
+  const n = Math.max(...series.map((s) => s.points.length), 0);
+  if (n === 0) return <p className="meta py-16 text-center">会話をすると、ここにスコアの推移が表示されます</p>;
+
+  // SVG は縮むと文字も縮む。スマホは幅の狭い図を別に描いて、目盛りやラベルを読める大きさに保つ
+  return (
+    <figure>
+      <ScoreSvg series={series} W={640} H={240} className="hidden sm:block" />
+      <ScoreSvg series={series} W={340} H={220} className="sm:hidden" />
+      <figcaption className="meta mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        {series.map((s, si) => (
+          <span key={s.name} className="inline-flex items-center gap-1.5">
+            <svg width="22" height="6" aria-hidden>
+              <line
+                x1="1"
+                x2="21"
+                y1="3"
+                y2="3"
+                stroke={SERIES_STYLE[si % SERIES_STYLE.length].stroke}
+                strokeWidth={2}
+                strokeDasharray={SERIES_STYLE[si % SERIES_STYLE.length].dash}
+                strokeLinecap="round"
+              />
+            </svg>
+            {s.name}
+          </span>
+        ))}
+        {n < MIN_FOR_LINE && <span>· 3回以上で推移を線で表示します</span>}
+      </figcaption>
+    </figure>
+  );
+}
+
+function ScoreSvg({ series, W, H, className }: { series: Series; W: number; H: number; className: string }) {
   const pad = { l: 28, r: 84, t: 12, b: 26 };
   const lo = 40;
   const hi = 100;
@@ -37,97 +70,73 @@ export function ScoreChart({ series }: { series: { name: string; points: Point[]
     .sort((a, b) => a.y - b.y);
   for (let i = 1; i < ends.length; i++) ends[i].y = Math.max(ends[i].y, ends[i - 1].y + 14);
 
-  if (n === 0) return <p className="meta py-16 text-center">会話をすると、ここにスコアの推移が表示されます</p>;
-
   return (
-    <figure>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="発音・流暢さ・抑揚の推移">
-        {[60, 80, 100].map((g) => (
-          <g key={g}>
-            <line x1={pad.l} x2={W - pad.r} y1={y(g)} y2={y(g)} stroke="var(--line)" strokeWidth={1} />
-            <text x={pad.l - 6} y={y(g) + 3.5} fontSize={11} fill="var(--muted)" textAnchor="end">
-              {g}
-            </text>
-          </g>
-        ))}
-        {series.map((s, si) => {
-          const pts = s.points.map((p, i) => ({ ...p, i })).filter((p) => p.value !== null) as {
-            label: string;
-            value: number;
-            i: number;
-          }[];
-          const d = pts.map((p, k) => `${k ? "L" : "M"}${x(p.i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
-          const st = SERIES_STYLE[si % SERIES_STYLE.length];
-          return (
-            <g key={s.name}>
-              {drawLine && (
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={st.stroke}
-                  strokeWidth={2}
-                  strokeDasharray={st.dash}
-                  strokeLinejoin="round"
-                  strokeLinecap="round"
-                />
-              )}
-              {pts.map((p) => (
-                <g key={p.i}>
-                  <circle
-                    cx={x(p.i)}
-                    cy={y(p.value)}
-                    r={drawLine ? 2.5 : 4}
-                    fill={st.stroke}
-                    stroke="var(--bg)"
-                    strokeWidth={1.5}
-                  />
-                  <circle cx={x(p.i)} cy={y(p.value)} r={12} fill="transparent">
-                    <title>{`${p.label} ${s.name}: ${Math.round(p.value)}`}</title>
-                  </circle>
-                </g>
-              ))}
-            </g>
-          );
-        })}
-        {ends.map((e) => (
-          <text key={e.name} x={W - pad.r + 10} y={e.y + 4} fontSize={12} fill="var(--fg)">
-            {e.name} <tspan fontWeight={700}>{Math.round(e.value)}</tspan>
+    <svg viewBox={`0 0 ${W} ${H}`} className={`w-full ${className}`} role="img" aria-label="発音・流暢さ・抑揚の推移">
+      {[60, 80, 100].map((g) => (
+        <g key={g}>
+          <line x1={pad.l} x2={W - pad.r} y1={y(g)} y2={y(g)} stroke="var(--line)" strokeWidth={1} />
+          <text x={pad.l - 6} y={y(g) + 3.5} fontSize={11} fill="var(--muted)" textAnchor="end">
+            {g}
           </text>
-        ))}
-        {labels.length > 0 && (
-          <>
-            <text x={x(0)} y={H - 6} fontSize={11} fill="var(--muted)" textAnchor={n > 1 ? "start" : "middle"}>
-              {labels[0]}
-            </text>
-            {n > 1 && (
-              <text x={x(n - 1)} y={H - 6} fontSize={11} fill="var(--muted)" textAnchor="end">
-                {labels[n - 1]}
-              </text>
-            )}
-          </>
-        )}
-      </svg>
-      <figcaption className="meta mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        {series.map((s, si) => (
-          <span key={s.name} className="inline-flex items-center gap-1.5">
-            <svg width="22" height="6" aria-hidden>
-              <line
-                x1="1"
-                x2="21"
-                y1="3"
-                y2="3"
-                stroke={SERIES_STYLE[si % SERIES_STYLE.length].stroke}
+        </g>
+      ))}
+      {series.map((s, si) => {
+        const pts = s.points.map((p, i) => ({ ...p, i })).filter((p) => p.value !== null) as {
+          label: string;
+          value: number;
+          i: number;
+        }[];
+        const d = pts.map((p, k) => `${k ? "L" : "M"}${x(p.i).toFixed(1)},${y(p.value).toFixed(1)}`).join(" ");
+        const st = SERIES_STYLE[si % SERIES_STYLE.length];
+        return (
+          <g key={s.name}>
+            {drawLine && (
+              <path
+                d={d}
+                fill="none"
+                stroke={st.stroke}
                 strokeWidth={2}
-                strokeDasharray={SERIES_STYLE[si % SERIES_STYLE.length].dash}
+                strokeDasharray={st.dash}
+                strokeLinejoin="round"
                 strokeLinecap="round"
               />
-            </svg>
-            {s.name}
-          </span>
-        ))}
-        {!drawLine && <span>· 3回以上で推移を線で表示します</span>}
-      </figcaption>
-    </figure>
+            )}
+            {pts.map((p) => (
+              <g key={p.i}>
+                <circle
+                  cx={x(p.i)}
+                  cy={y(p.value)}
+                  r={drawLine ? 2.5 : 4}
+                  fill={st.stroke}
+                  stroke="var(--bg)"
+                  strokeWidth={1.5}
+                />
+                <circle cx={x(p.i)} cy={y(p.value)} r={12} fill="transparent">
+                  <title>{`${p.label} ${s.name}: ${Math.round(p.value)}`}</title>
+                </circle>
+              </g>
+            ))}
+          </g>
+        );
+      })}
+      {ends.map((e) => (
+        <text key={e.name} x={W - pad.r + 10} y={e.y + 4} fontSize={12} fill="var(--fg)">
+          {e.name} <tspan fontWeight={700}>{Math.round(e.value)}</tspan>
+        </text>
+      ))}
+      {labels.length > 0 && (
+        <>
+          <text x={x(0)} y={H - 6} fontSize={11} fill="var(--muted)" textAnchor={n > 1 ? "start" : "middle"}>
+            {labels[0]}
+          </text>
+          {n > 1 && (
+            <text x={x(n - 1)} y={H - 6} fontSize={11} fill="var(--muted)" textAnchor="end">
+              {labels[n - 1]}
+            </text>
+          )}
+        </>
+      )}
+    </svg>
   );
 }
 

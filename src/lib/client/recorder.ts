@@ -26,21 +26,48 @@ export class UtteranceRecorder {
   /** これまでに書き込んだ総サンプル数（16kHz 換算, 単調増加） */
   private written = 0;
   private srcPos = 0;
+  private prevSample = 0;
   /** 直近の入力音量（0〜1, 画面の音量メーター用） */
   private lastLevel = 0;
+  private source: MediaStreamAudioSourceNode | null = null;
 
-  private constructor(private ctx: AudioContext) {}
+  private constructor(
+    private ctx: AudioContext,
+    private node: AudioWorkletNode,
+  ) {}
 
-  static async create(stream: MediaStream) {
-    const ctx = new AudioContext();
+  /**
+   * ctx はタップ直後に同期で作ったものを渡せる（await の後で作ると iOS Safari などで停止状態のまま始まる）。
+   * 渡さなければここで作る
+   */
+  static async create(stream: MediaStream, ctx = new AudioContext()) {
     const url = URL.createObjectURL(new Blob([WORKLET], { type: "application/javascript" }));
     await ctx.audioWorklet.addModule(url);
     URL.revokeObjectURL(url);
-    const rec = new UtteranceRecorder(ctx);
     const node = new AudioWorkletNode(ctx, "tap");
+    // 出力は無音。出力先につないでおかないと処理を止めるブラウザがある
+    node.connect(ctx.destination);
+    const rec = new UtteranceRecorder(ctx, node);
     node.port.onmessage = (e: MessageEvent<Float32Array>) => rec.push(e.data);
-    ctx.createMediaStreamSource(stream).connect(node);
+    rec.attach(stream);
+    await rec.resume();
     return rec;
+  }
+
+  /** 録音する入力を差し替える（マイクの抜き差しなどで取り直したとき）。位置は続きから数える */
+  attach(stream: MediaStream) {
+    this.source?.disconnect();
+    this.source = this.ctx.createMediaStreamSource(stream);
+    this.source.connect(this.node);
+  }
+
+  /**
+   * 停止・中断状態なら再開を試みる（作成時・タブ復帰時・タップ時に呼ぶ）。
+   * ユーザー操作の外では再開が保留されたまま終わらないことがあるので、待つのは最大 0.5 秒
+   */
+  async resume() {
+    if (this.ctx.state === "running" || this.ctx.state === "closed") return;
+    await Promise.race([this.ctx.resume().catch(() => {}), new Promise((ok) => setTimeout(ok, 500))]);
   }
 
   /** 入力サンプルレートから 16kHz へ線形補間でリサンプリングしてリングに書き込む */
@@ -53,12 +80,15 @@ export class UtteranceRecorder {
     let pos = this.srcPos;
     while (pos < input.length - 1) {
       const i = Math.floor(pos);
-      const v = input[i] + (input[i + 1] - input[i]) * (pos - i);
+      // 位置が前のかたまりの最後と今回の先頭の間（i = -1）なら、前の最後のサンプルから補間する
+      const a = i < 0 ? this.prevSample : input[i];
+      const v = a + (input[i + 1] - a) * (pos - i);
       this.ring[this.written % this.ring.length] = Math.max(-1, Math.min(1, v)) * 0x7fff;
       this.written++;
       pos += step;
     }
     this.srcPos = pos - input.length;
+    this.prevSample = input[input.length - 1];
   }
 
   get position() {
@@ -77,7 +107,7 @@ export class UtteranceRecorder {
   }
 
   async close() {
-    await this.ctx.close();
+    if (this.ctx.state !== "closed") await this.ctx.close();
   }
 }
 
@@ -102,20 +132,48 @@ export function toWav(pcm: Int16Array) {
   return new Blob([buf], { type: "audio/wav" });
 }
 
+const FRAME = SAMPLE_RATE / 50;
+const FRAME_MS = 20;
+
 /**
- * 実際に声が出ていた時間（ミリ秒）を音量から推定する。手動で区切った発話は無音を含むため、話速の計算に使う。
- * 20ms ごとの音量が、その録音の静かな部分（下位20%）の3倍かつ一定以上なら「声あり」とみなす。
+ * 20ms ごとに「声あり」かを判定する。その録音の静かな部分（下位20%）の3倍かつ一定以上なら声あり。
+ * 手動で区切った発話は無音を含むため、実際に話した時間・話し始め・前後の無音の判定に使う
  */
-export function voicedMs(pcm: Int16Array) {
-  const frame = SAMPLE_RATE / 50;
+function voicedFrames(pcm: Int16Array) {
   const rms: number[] = [];
-  for (let i = 0; i + frame <= pcm.length; i += frame) {
+  for (let i = 0; i + FRAME <= pcm.length; i += FRAME) {
     let sum = 0;
-    for (let j = i; j < i + frame; j++) sum += pcm[j] * pcm[j];
-    rms.push(Math.sqrt(sum / frame));
+    for (let j = i; j < i + FRAME; j++) sum += pcm[j] * pcm[j];
+    rms.push(Math.sqrt(sum / FRAME));
   }
-  if (!rms.length) return 0;
+  if (!rms.length) return [];
   const floor = [...rms].sort((a, b) => a - b)[Math.floor(rms.length * 0.2)];
   const threshold = Math.max(400, floor * 3);
-  return rms.filter((v) => v > threshold).length * 20;
+  return rms.map((v) => v > threshold);
+}
+
+/** 実際に声が出ていた時間（ミリ秒）を音量から推定する（話速の計算に使う） */
+export function voicedMs(pcm: Int16Array) {
+  return voicedFrames(pcm).filter(Boolean).length * FRAME_MS;
+}
+
+/** 声が出始めた位置（ミリ秒）。クリック音などを拾わないよう、声ありが 60ms 続いた最初の位置。声がなければ null */
+export function voiceOnsetMs(pcm: Int16Array) {
+  const v = voicedFrames(pcm);
+  for (let i = 0; i + 2 < v.length; i++) if (v[i] && v[i + 1] && v[i + 2]) return i * FRAME_MS;
+  return null;
+}
+
+/**
+ * 前後の無音を削る（発音評価は送った音声の長さで課金されるため）。子音の出だし・語尾を切らないよう前後に余白を残す。
+ * 声が見つからなければそのまま返す
+ */
+export function trimSilence(pcm: Int16Array, padBeforeMs = 300, padAfterMs = 400) {
+  const v = voicedFrames(pcm);
+  const first = v.indexOf(true);
+  if (first < 0) return pcm;
+  const last = v.lastIndexOf(true);
+  const from = Math.max(0, first * FRAME - (padBeforeMs / FRAME_MS) * FRAME);
+  const to = Math.min(pcm.length, (last + 1) * FRAME + (padAfterMs / FRAME_MS) * FRAME);
+  return pcm.subarray(from, to);
 }

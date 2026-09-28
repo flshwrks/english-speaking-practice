@@ -1,36 +1,50 @@
-import { asc, count, desc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
+import { ChevronRight } from "lucide-react";
 import { connection } from "next/server";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES } from "@/db/schema";
 import { ScoreChart, TrendChart } from "@/components/trend-chart";
-import { EmptyState, Page, PageTitle, Section } from "@/components/ui";
+import { Badge, EmptyState, Page, PageTitle, Section, type Tone } from "@/components/ui";
 import { FEEDBACK_CATEGORY_LABEL } from "@/lib/categories";
 import { formatDateJst } from "@/lib/format";
+import { loadWeaknesses } from "@/lib/lesson";
 import { calendarWeeks, countByDay, summarizePractice } from "@/lib/stats";
+import type { Weakness, WeaknessState } from "@/lib/weakness";
 
 const WEEKDAYS = ["月", "", "水", "", "金", "", "日"];
 
 export default async function ProgressPage() {
   await connection(); // 個人データを毎回 DB から読むため静的生成しない
   const d = db();
-  const [sessions, patterns, statusCounts] = await Promise.all([
+  const [sessions, weaknesses, statusCounts] = await Promise.all([
     d
       .select({ startedAt: t.sessions.startedAt, metrics: t.sessions.metrics, durationSec: t.sessions.durationSec })
       .from(t.sessions)
       .where(eq(t.sessions.status, "done"))
       .orderBy(asc(t.sessions.startedAt)),
-    d.select().from(t.errorPatterns).orderBy(desc(t.errorPatterns.count)).limit(12),
+    loadWeaknesses(),
     d.select({ status: t.expressions.status, n: count() }).from(t.expressions).groupBy(t.expressions.status),
   ]);
   // 練習日の集計は、読み込んだ完了セッションから求める（DB を二重に読まない）
   const practice = summarizePractice(countByDay(sessions.map((s) => s.startedAt)));
 
   const series = (key: "accuracy" | "fluency" | "prosody" | "wpm" | "errorsPer100Words") =>
-    sessions.map((s) => ({ label: formatDateJst(s.startedAt), value: s.metrics?.[key] ?? null }));
+    // 話速の 0 は「未計測」（語の時刻がない古い録音）なので線に含めない
+    sessions.map((s) => {
+      const v = s.metrics?.[key] ?? null;
+      return { label: formatDateJst(s.startedAt), value: key === "wpm" && v === 0 ? null : v };
+    });
+  // 相手が話し終えてから話し始めるまで（秒）。記録が始まる前の会話は null
+  const latency = sessions.map((s) => ({
+    label: formatDateJst(s.startedAt),
+    value: s.metrics?.medianLatencyMs == null ? null : s.metrics.medianLatencyMs / 1000,
+  }));
+  const hasLatency = latency.some((p) => p.value !== null);
   const n = (st: string) => statusCounts.find((c) => c.status === st)?.n ?? 0;
   const totalMin = Math.round(sessions.reduce((s, x) => s + x.durationSec, 0) / 60);
   const calendar = calendarWeeks(practice.byDay, practice.today);
-  const maxPattern = Math.max(1, ...patterns.map((p) => p.count));
+  const open = weaknesses.filter((w) => w.state !== "resolved");
+  const resolved = weaknesses.filter((w) => w.state === "resolved");
 
   const kpis = [
     { label: "連続", value: `${practice.streak}日` },
@@ -71,9 +85,10 @@ export default async function ProgressPage() {
               ]}
             />
           </div>
-          <div className="mt-6 grid gap-6 sm:grid-cols-2">
+          <div className={`mt-6 grid gap-6 sm:grid-cols-2 ${hasLatency ? "xl:grid-cols-3" : ""}`}>
             <TrendChart title="話す速さ" unit="wpm" points={series("wpm")} />
             <TrendChart title="誤り（100語あたり）" points={series("errorsPer100Words")} higherIsBetter={false} />
+            {hasLatency && <TrendChart title="話し始めるまで" unit="秒" points={latency} higherIsBetter={false} />}
           </div>
         </section>
 
@@ -114,39 +129,56 @@ export default async function ProgressPage() {
         </section>
       </div>
 
-      <Section title="よくあるミスの型" className="mb-0">
-        {patterns.length === 0 ? (
+      <Section title="よくあるミスの型" aside="優先度の高い順" className="mb-0">
+        {weaknesses.length === 0 ? (
           <EmptyState title="まだ記録がありません">会話をすると、繰り返しがちなミスがここにまとまります</EmptyState>
         ) : (
-          <table className="w-full text-left text-sm">
-            <thead className="meta border-b border-line">
-              <tr>
-                <th className="w-32 py-2 pr-4 font-normal max-sm:w-24">種類</th>
-                <th className="py-2 pr-4 font-normal">パターン</th>
-                <th className="w-28 py-2 pr-4 text-right font-normal max-sm:w-12">回数</th>
-                <th className="w-16 py-2 text-right font-normal max-sm:hidden">最後</th>
-              </tr>
-            </thead>
-            <tbody>
-              {patterns.map((p) => (
-                <tr key={p.key} className="border-b border-line">
-                  <td className="py-3 pr-4 whitespace-nowrap text-fg-2">{FEEDBACK_CATEGORY_LABEL[p.category]}</td>
-                  <td className="py-3 pr-4 font-medium">{p.label}</td>
-                  <td className="py-3 pr-4 text-right tabular-nums">
-                    <span className="inline-flex items-center justify-end gap-2">
-                      {maxPattern >= 3 && (
-                        <span className="h-1 bg-fg" style={{ width: `${(p.count / maxPattern) * 64}px` }} aria-hidden />
-                      )}
-                      {p.count}
-                    </span>
-                  </td>
-                  <td className="meta py-3 text-right tabular-nums max-sm:hidden">{formatDateJst(p.lastSeenAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <>
+            {open.length > 0 ? (
+              <WeaknessList items={open} />
+            ) : (
+              <p className="meta border-y border-line py-4">いま気をつけたいミスの型はありません。</p>
+            )}
+            {resolved.length > 0 && (
+              <details className="group mt-4">
+                <summary className="meta inline-flex items-center gap-1 hover:text-fg">
+                  <ChevronRight size={14} strokeWidth={1.75} className="transition-transform group-open:rotate-90" />
+                  解決したミスの型 {resolved.length}
+                </summary>
+                <div className="mt-2">
+                  <WeaknessList items={resolved} />
+                </div>
+              </details>
+            )}
+          </>
         )}
       </Section>
     </Page>
+  );
+}
+
+/** 状態: 朱＝気をつけたい（要注意・再発）、黄土＝改善中、緑＝解決 */
+const WEAKNESS_STATE: Record<WeaknessState, { label: string; tone: Tone }> = {
+  active: { label: "要注意", tone: "accent" },
+  reopened: { label: "再発", tone: "accent" },
+  improving: { label: "改善中", tone: "warn" },
+  resolved: { label: "解決", tone: "good" },
+};
+
+const lastSeen = (n: number) => (n === 0 ? "前回" : `${n + 1}回前`);
+
+function WeaknessList({ items }: { items: Weakness[] }) {
+  return (
+    <ul className="divide-y divide-line border-y border-line">
+      {items.map((w) => (
+        <li key={w.key} className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-0.5 py-3">
+          <span className="font-medium">{w.label}</span>
+          <Badge tone={WEAKNESS_STATE[w.state].tone}>{WEAKNESS_STATE[w.state].label}</Badge>
+          <span className="meta col-span-2 tabular-nums">
+            {FEEDBACK_CATEGORY_LABEL[w.category]} · {w.count}回 · 最後は{lastSeen(w.sessionsSinceLast)}の会話
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }

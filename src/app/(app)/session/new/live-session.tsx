@@ -1,17 +1,25 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, Ellipsis, Mic, Square, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, Mic, Square, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useRealtimeSession, type TurnWait } from "@/lib/client/use-realtime-session";
+import { useRealtimeSession } from "@/lib/client/use-realtime-session";
 import type { ExpressionPick } from "@/lib/expressions";
-
-const TURN_WAIT_OPTIONS: { value: TurnWait; label: string; note: string }[] = [
-  { value: "manual", label: "手動", note: "「話し終えた」を押すまで待つ" },
-  { value: "low", label: "自動・長め", note: "長めの沈黙で交代" },
-  { value: "medium", label: "自動・標準", note: "ふつうの沈黙で交代" },
-];
+import {
+  AssistantTurn,
+  Breathing,
+  LENGTHS,
+  MicMeter,
+  Segmented,
+  SessionMenu,
+  Switch,
+  TargetHints,
+  TURN_WAIT_OPTIONS,
+  TypingDots,
+  useListenMode,
+  useSessionLength,
+} from "./live-parts";
 
 const mmss = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, "0")}`;
 
@@ -39,47 +47,70 @@ export function LiveSession({
     startedAt,
     turnWait,
     aiSpeaking,
+    aiThinking: thinking,
+    reconnecting,
+    connectionLost,
     start,
     end,
     endTurn,
     setTurnWait,
     getLevel,
   } = useRealtimeSession();
-  const [budgetBlocked, setBudgetBlocked] = useState(false);
+  const [minutes, setMinutes] = useSessionLength();
+  const [listen, setListen] = useListenMode();
+  // 予算の上限: soft は「それでも始める」可、hard（上限の120%）は始められない
+  const [budgetBlocked, setBudgetBlocked] = useState<"soft" | "hard" | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [sheet, setSheet] = useState(false);
+  // 「終了」は誤タップしやすい位置にあるので、確認を1回はさむ
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const [shownTargets, setShownTargets] = useState<Set<number>>(new Set());
   const bottom = useRef<HTMLDivElement>(null);
   const ending = useRef(false);
 
+  const live = status === "live";
   const elapsed = startedAt ? Math.floor((now - startedAt) / 1000) : 0;
   const remaining = maxMinutes * 60 - elapsed;
 
   const finish = async () => {
     if (ending.current) return;
     ending.current = true;
+    setConfirmEnd(false);
     const id = await end();
     router.push(`/session/${id}`);
   };
 
+  // Esc で表現シート・終了の確認を閉じる
   useEffect(() => {
-    if (status !== "live") return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [status]);
+    if (!sheet && !confirmEnd) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setSheet(false);
+      setConfirmEnd(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [sheet, confirmEnd]);
 
   useEffect(() => {
-    if (status === "live" && remaining <= 0) void finish();
+    if (!live) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [live]);
+
+  useEffect(() => {
+    if (live && remaining <= 0) void finish();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remaining, status]);
+  }, [remaining, live]);
 
   // 波かっこ必須: 新しいブラウザでは scrollIntoView が Promise を返し、それを後片付け関数として返すと React が落ちる
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [turns.length]);
 
-  // スペースキーでも「話し終えた」
+  // スペースキーでも「話し終えた」（シート・確認を開いている間は効かせない）
   useEffect(() => {
-    if (status !== "live") return;
+    if (!live || sheet || confirmEnd) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space" || e.repeat || (e.target as HTMLElement).closest("input, textarea, button")) return;
       e.preventDefault();
@@ -87,16 +118,23 @@ export function LiveSession({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [status, endTurn]);
+  }, [live, endTurn, sheet, confirmEnd]);
+
+  // 接続が切れて戻らなければ、ここまでの会話でフィードバックへ（1回だけ）
+  useEffect(() => {
+    if (connectionLost) void finish();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectionLost]);
 
   const begin = async (force = false) => {
-    setBudgetBlocked(false);
+    setBudgetBlocked(null);
     const r = await start(
       scenario.id,
       expressions.map(({ id, role }) => ({ id, role })),
       force,
+      Number(minutes),
     );
-    if (r.budgetExceeded) setBudgetBlocked(true);
+    if (r.budgetExceeded) setBudgetBlocked("hardCap" in r && r.hardCap ? "hard" : "soft");
   };
 
   // --- レッスン前（準備） ---
@@ -104,7 +142,12 @@ export function LiveSession({
     const controls = (
       <div className="flex flex-col gap-3">
         {error && <p className="rounded-md bg-accent-soft px-3 py-2 text-sm text-accent">{error}</p>}
-        {budgetBlocked ? (
+        {budgetBlocked === "hard" ? (
+          <p className="text-sm">
+            <b>今月の予算の上限（120%）に達したため、会話を始められません。</b>
+            <span className="text-fg-2"> 来月になるか、設定の予算を見直すと再開できます。</span>
+          </p>
+        ) : budgetBlocked ? (
           <>
             <p className="text-sm font-bold">今月の予算上限に達しています。</p>
             <button className="btn-primary w-full py-3" onClick={() => begin(true)}>
@@ -118,8 +161,25 @@ export function LiveSession({
           </button>
         )}
         <p className="meta text-center">
-          最大{maxMinutes}分 · イヤホン推奨<span className="max-lg:hidden"> · 言い終えたら「話し終えた」（Space）</span>
+          イヤホン推奨<span className="max-lg:hidden"> · 言い終えたら「話し終えた」（Space）</span>
         </p>
+      </div>
+    );
+    const settings = (
+      <div className="flex flex-col gap-6">
+        <Segmented
+          legend="会話の長さ"
+          options={LENGTHS.map((m) => ({ value: m, label: `${m}分` }))}
+          value={minutes}
+          onChange={setMinutes}
+        />
+        <Segmented legend="AI に番を渡す方法" options={TURN_WAIT_OPTIONS} value={turnWait} onChange={setTurnWait} />
+        <Switch
+          label="聞き取りモード"
+          note="相手の英語を文字で出さず、耳で聞きます"
+          checked={listen}
+          onChange={setListen}
+        />
       </div>
     );
 
@@ -130,12 +190,11 @@ export function LiveSession({
             <ChevronLeft size={18} strokeWidth={1.75} />
             ホーム
           </Link>
-          <p className="meta">レッスンの準備</p>
-          <h1 className="mt-0.5 text-[24px] leading-snug font-bold lg:text-[26px]">{scenario.title}</h1>
+          <h1 className="text-[24px] leading-snug font-bold lg:text-[26px]">{scenario.title}</h1>
           <p className="mt-2 text-fg-2">{scenario.brief}</p>
 
-          <div className="mt-8 hidden flex-col gap-6 lg:flex">
-            <TurnWaitPicker value={turnWait} onChange={setTurnWait} />
+          <div className="mt-8 hidden flex-col gap-8 lg:flex">
+            {settings}
             {controls}
           </div>
         </div>
@@ -145,8 +204,15 @@ export function LiveSession({
             <h2 className="text-[17px] font-bold">今日の表現</h2>
             <span className="meta">{expressions.length}</span>
           </div>
-          <p className="meta mt-0.5 mb-2">会話の中で使ってみましょう。AI が使いやすい流れを作ります。</p>
+          <p className="meta mt-0.5 mb-2">
+            会話の中で使ってみましょう。会話中は意味だけが表示されるので、ここで英語を確認しておきます。
+          </p>
           <div className="divide-y divide-line border-y border-line">{children}</div>
+          {/* スマホでも始める前に選べるように（PC は左の欄） */}
+          <div className="mt-8 lg:hidden">
+            <h2 className="mb-4 text-[17px] font-bold">会話の設定</h2>
+            {settings}
+          </div>
         </section>
 
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-float lg:hidden">
@@ -156,43 +222,32 @@ export function LiveSession({
     );
   }
 
-  const live = status === "live";
-  const yourTurn = live && !aiSpeaking;
+  const yourTurn = live && !aiSpeaking && !thinking && !reconnecting && !connectionLost;
   const progress = Math.min(1, elapsed / (maxMinutes * 60));
   const lastMinute = remaining < 60;
-
-  const targetList = (
-    <ul className="divide-y divide-line">
-      {expressions.map((e) => (
-        <li key={e.id} className="py-3">
-          <div className="text-[15px] leading-snug font-bold">{e.text}</div>
-          <div className="meta">{e.meaning}</div>
-        </li>
-      ))}
-    </ul>
+  const targets = (
+    <TargetHints items={expressions} shown={shownTargets} onShow={(id) => setShownTargets((s) => new Set(s).add(id))} />
   );
 
   // --- 会話中 ---
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex h-dvh flex-col overscroll-none">
       {/* 上部: 終了・シナリオ・時間・設定。下端の線が経過時間 */}
       <header className="relative shrink-0 border-b border-line bg-bg pt-[env(safe-area-inset-top)]">
         <div className="flex h-14 items-center gap-3 px-3 sm:px-6">
-          <button
-            className="btn-ghost px-2"
-            onClick={finish}
-            disabled={!live}
-            aria-label="会話を終了してフィードバックへ"
-          >
+          <button className="btn-ghost px-2" onClick={() => setConfirmEnd(true)} disabled={!live}>
             <X size={18} strokeWidth={1.75} />
-            <span className="hidden sm:inline">{status === "ending" ? "送信中…" : "終了"}</span>
+            {status === "ending" ? "送信中…" : "終了"}
           </button>
           <div className="min-w-0 flex-1 truncate text-center text-sm font-bold">{scenario.title}</div>
-          <div className={`text-sm tabular-nums ${lastMinute && live ? "font-bold text-accent" : "text-fg-2"}`}>
+          <div
+            className={`text-sm tabular-nums ${lastMinute && live ? "font-bold text-accent" : "text-fg-2"}`}
+            aria-label={`経過 ${mmss(elapsed)}（最大${maxMinutes}分）`}
+          >
             {mmss(elapsed)}
-            <span className="text-muted"> / {maxMinutes}:00</span>
+            <span className="text-muted max-sm:hidden"> / {maxMinutes}:00</span>
           </div>
-          <TurnWaitMenu value={turnWait} onChange={setTurnWait} />
+          <SessionMenu turnWait={turnWait} onTurnWait={setTurnWait} listen={listen} onListen={setListen} />
         </div>
         <div className="absolute inset-x-0 -bottom-px h-0.5">
           <div
@@ -203,216 +258,163 @@ export function LiveSession({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-y-auto">
-          {/* スマホ: 今日の表現はシートで */}
-          <button
-            className="flex w-full items-center justify-between border-b border-line px-4 py-2.5 text-sm lg:hidden"
-            onClick={() => setSheet(true)}
-          >
-            <span className="font-medium">今日の表現 {expressions.length}</span>
-            <ChevronDown size={16} strokeWidth={1.75} className="text-muted" />
-          </button>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+            {/* スマホ: 今日の表現はシートで */}
+            <button
+              className="flex w-full items-center justify-between border-b border-line px-4 py-2.5 text-sm lg:hidden"
+              onClick={() => setSheet(true)}
+              aria-haspopup="dialog"
+            >
+              <span className="font-medium">今日の表現 {expressions.length}</span>
+              <ChevronDown size={16} strokeWidth={1.75} className="text-muted" />
+            </button>
 
-          <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 sm:px-6" aria-live="polite">
-            {status === "connecting" && (
-              <div className="py-20 text-center">
-                <p className="font-bold">接続しています…</p>
-                <p className="meta mt-1">マイクの使用を許可してください</p>
-              </div>
-            )}
-            {turns.map((t) =>
-              t.role === "assistant" ? (
-                <div key={t.ref} className="max-w-[88%] self-start">
-                  <div className="meta mb-0.5">{partner}</div>
-                  <p className="text-[17px] leading-relaxed">{t.text || <TypingDots />}</p>
+            <div className="mx-auto flex max-w-[720px] flex-col gap-5 px-4 py-6 sm:px-6" aria-live="polite">
+              {status === "connecting" && (
+                <div className="py-20 text-center">
+                  <p className="font-bold">接続しています…</p>
+                  <p className="meta mt-1">マイクの使用を許可してください</p>
                 </div>
-              ) : (
-                <div key={t.ref} className="max-w-[85%] self-end">
-                  <div className="meta mb-0.5 text-right">あなた</div>
-                  <div className="rounded-[14px] rounded-tr-[4px] bg-primary px-4 py-2.5 text-[16px] leading-relaxed text-primary-fg">
-                    {t.text || <TypingDots light />}
+              )}
+              {turns.map((t) =>
+                t.role === "assistant" ? (
+                  <AssistantTurn key={t.ref} partner={partner} text={t.text} listen={listen} />
+                ) : (
+                  <div key={t.ref} className="max-w-[85%] self-end">
+                    <div className="meta mb-0.5 text-right">あなた</div>
+                    {t.unheard ? (
+                      <div className="rounded-[14px] rounded-tr-[4px] border border-dashed border-line-strong px-4 py-2.5 text-sm text-muted">
+                        （聞き取れませんでした）
+                      </div>
+                    ) : (
+                      <div className="rounded-[14px] rounded-tr-[4px] bg-primary px-4 py-2.5 text-[16px] leading-relaxed text-primary-fg">
+                        {t.text || <TypingDots light />}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ),
+                ),
+              )}
+              <div ref={bottom} />
+            </div>
+          </div>
+
+          {/* 下部ドック: 番によって中身が切り替わる。会話の列の幅に揃え、あなたの番は上端の線も朱色に */}
+          <div
+            className={`shrink-0 border-t-2 bg-surface pb-[env(safe-area-inset-bottom)] shadow-float transition-colors ${
+              yourTurn ? "border-accent" : "border-line"
+            }`}
+          >
+            {connectionLost ? (
+              <p className="mx-auto max-w-[720px] px-4 pt-2.5 text-[13px] font-medium text-accent sm:px-6" role="alert">
+                接続が切れました。ここまでの会話でフィードバックを作成します
+              </p>
+            ) : (
+              live &&
+              error && (
+                <p className="mx-auto max-w-[720px] px-4 pt-2.5 text-[13px] text-accent sm:px-6" role="alert">
+                  {error}
+                </p>
+              )
             )}
-            <div ref={bottom} />
+            {live && lastMinute && (
+              <p
+                className="mx-auto max-w-[720px] px-4 pt-2.5 text-[13px] font-medium text-accent sm:px-6"
+                role="status"
+              >
+                まもなく自動で終了します。区切りのよいところでまとめましょう。
+              </p>
+            )}
+            <div className="mx-auto flex min-h-[76px] max-w-[720px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:flex-nowrap sm:px-6">
+              {reconnecting ? (
+                <div className="flex items-center gap-3 text-[17px] text-fg-2">
+                  <Breathing />
+                  再接続中…
+                </div>
+              ) : yourTurn ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <MicMeter getLevel={getLevel} />
+                    <span className="text-[17px] font-bold text-accent">あなたの番です</span>
+                  </div>
+                  <button className="btn-accent w-full py-3.5 text-base sm:ml-auto sm:w-auto sm:px-8" onClick={endTurn}>
+                    <Square size={13} strokeWidth={2.5} className="fill-current" />
+                    話し終えた
+                    <kbd className="ml-1 hidden rounded border border-current/40 px-1.5 font-sans text-[11px] font-medium opacity-80 sm:inline">
+                      Space
+                    </kbd>
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 text-[17px] text-fg-2">
+                  {(aiSpeaking || thinking) && <Breathing />}
+                  {aiSpeaking
+                    ? `${partner}が話しています`
+                    : thinking
+                      ? `${partner}が考えています…`
+                      : status === "ending"
+                        ? "送信しています…"
+                        : "準備しています…"}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* PC: 今日の表現を右に */}
         <aside className="hidden w-[300px] shrink-0 overflow-y-auto border-l border-line px-6 py-6 lg:block">
           <h2 className="text-[15px] font-bold">今日の表現</h2>
-          {targetList}
+          {targets}
         </aside>
       </div>
 
-      {/* 下部ドック: 番によって中身が切り替わる */}
-      <div className="shrink-0 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] shadow-float">
-        <div className="flex min-h-[76px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:flex-nowrap sm:px-6">
-          {yourTurn ? (
-            <>
-              <div className="flex items-center gap-3">
-                <MicMeter getLevel={getLevel} />
-                <span className="text-[17px] font-bold text-accent">あなたの番です</span>
-              </div>
-              <button className="btn-accent w-full py-3.5 text-base sm:ml-auto sm:w-auto sm:px-8" onClick={endTurn}>
-                <Square size={13} strokeWidth={2.5} className="fill-current" />
-                話し終えた
-                <kbd className="ml-1 hidden rounded border border-current/40 px-1.5 font-sans text-[11px] font-medium opacity-80 sm:inline">
-                  Space
-                </kbd>
+      {confirmEnd && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="end-title"
+        >
+          <button
+            className="absolute inset-0 cursor-default bg-black/30"
+            onClick={() => setConfirmEnd(false)}
+            aria-label="会話を続ける"
+          />
+          <div className="relative w-full rounded-t-[14px] bg-surface px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-float sm:max-w-sm sm:rounded-[14px] sm:pb-5">
+            <h2 id="end-title" className="text-[17px] font-bold">
+              会話を終了しますか？
+            </h2>
+            <p className="mt-1 text-sm text-fg-2">
+              {elapsed < 180
+                ? `まだ${mmss(elapsed)}です。短い会話だと、フィードバックの材料が少なくなります。`
+                : "ここまでの会話を分析して、フィードバックを作ります。"}
+            </p>
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button className="btn py-2.5" onClick={() => setConfirmEnd(false)} autoFocus>
+                会話を続ける
               </button>
-            </>
-          ) : (
-            <div className="flex items-center gap-3 text-[17px] text-fg-2">
-              {aiSpeaking && <Breathing />}
-              {aiSpeaking ? `${partner}が話しています` : status === "ending" ? "送信しています…" : "準備しています…"}
+              <button className="btn-primary" onClick={finish}>
+                終了してフィードバックへ
+              </button>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
 
       {sheet && (
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="今日の表現">
           <button className="absolute inset-0 bg-black/30" onClick={() => setSheet(false)} aria-label="閉じる" />
-          <div className="absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto rounded-t-[14px] bg-surface px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-float">
+          <div className="absolute inset-x-0 bottom-0 max-h-[70dvh] overflow-y-auto overscroll-contain rounded-t-[14px] bg-surface px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-float">
             <div className="flex items-center justify-between">
               <h2 className="font-bold">今日の表現</h2>
-              <button className="btn-ghost px-2" onClick={() => setSheet(false)} aria-label="閉じる">
+              <button className="btn-ghost px-2" onClick={() => setSheet(false)} aria-label="閉じる" autoFocus>
                 <X size={18} strokeWidth={1.75} />
               </button>
             </div>
-            {targetList}
+            {targets}
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-/** 交代の方法（準備画面では常に表示） */
-function TurnWaitPicker({ value, onChange }: { value: TurnWait; onChange: (v: TurnWait) => void }) {
-  return (
-    <fieldset>
-      <legend className="mb-2 text-sm font-bold">AI に番を渡す方法</legend>
-      <div className="grid grid-cols-3 rounded-[10px] bg-sunken p-0.5">
-        {TURN_WAIT_OPTIONS.map((o) => (
-          <button
-            key={o.value}
-            type="button"
-            onClick={() => onChange(o.value)}
-            aria-pressed={value === o.value}
-            className={`rounded-lg py-1.5 text-[13px] transition-colors ${
-              value === o.value
-                ? "bg-surface font-bold text-primary shadow-card ring-1 ring-line"
-                : "text-fg-2 hover:text-fg"
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-      <p className="meta mt-1.5">{TURN_WAIT_OPTIONS.find((o) => o.value === value)?.note}</p>
-    </fieldset>
-  );
-}
-
-/** 会話中は「…」の中に入れる */
-function TurnWaitMenu({ value, onChange }: { value: TurnWait; onChange: (v: TurnWait) => void }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        className="btn-ghost px-2"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-label="番を渡す方法"
-      >
-        <Ellipsis size={18} strokeWidth={1.75} />
-      </button>
-      {open && (
-        <>
-          <button className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} aria-label="閉じる" />
-          <div className="absolute top-full right-0 z-50 mt-1 w-64 rounded-[12px] border border-line bg-surface p-1.5 shadow-float">
-            <p className="meta px-2.5 pt-1 pb-1.5">AI に番を渡す方法</p>
-            {TURN_WAIT_OPTIONS.map((o) => (
-              <button
-                key={o.value}
-                onClick={() => {
-                  onChange(o.value);
-                  setOpen(false);
-                }}
-                className={`flex w-full flex-col items-start rounded-lg px-2.5 py-2 text-left hover:bg-sunken ${
-                  value === o.value ? "bg-sunken" : ""
-                }`}
-              >
-                <span className={`text-sm ${value === o.value ? "font-bold" : ""}`}>{o.label}</span>
-                <span className="meta">{o.note}</span>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Breathing() {
-  return (
-    <span className="inline-flex items-center gap-1" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className="size-1.5 animate-blink rounded-full bg-fg-2"
-          style={{ animationDelay: `${i * 0.2}s` }}
-        />
-      ))}
-    </span>
-  );
-}
-
-function TypingDots({ light = false }: { light?: boolean }) {
-  return (
-    <span className="inline-flex items-center gap-1 py-1" aria-label="入力中">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={`size-1 animate-blink rounded-full ${light ? "bg-primary-fg" : "bg-muted"}`}
-          style={{ animationDelay: `${i * 0.18}s` }}
-        />
-      ))}
-    </span>
-  );
-}
-
-/** マイクの音量を5本のバーで表示する（描画はブラウザの描画周期ごとに直接更新） */
-function MicMeter({ getLevel }: { getLevel: () => number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    let raf = 0;
-    let smooth = 0;
-    let drawn = -1;
-    const tick = () => {
-      smooth = smooth * 0.7 + getLevel() * 0.3;
-      const bars = ref.current?.children;
-      // 見た目が変わらないほどの変化なら描き直さない
-      if (bars && Math.abs(smooth - drawn) > 0.02) {
-        drawn = smooth;
-        for (let i = 0; i < bars.length; i++) {
-          const h = Math.max(0.2, Math.min(1, smooth * (1.4 - Math.abs(i - 2) * 0.25) + ((i * 7) % 3) * 0.02));
-          (bars[i] as HTMLElement).style.transform = `scaleY(${h})`;
-        }
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [getLevel]);
-  return (
-    <span ref={ref} className="inline-flex h-4 items-center gap-[3px]" aria-hidden>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <span key={i} className="h-4 w-[3px] origin-center rounded-full bg-accent" />
-      ))}
-    </span>
   );
 }

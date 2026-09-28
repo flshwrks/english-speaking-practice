@@ -1,12 +1,23 @@
-/** 表現の出題と状態遷移（queued → new → attempted/correct → mastered）の唯一の置き場所 */
-import { and, asc, eq, inArray, isNotNull, lte, notInArray, sql } from "drizzle-orm";
+/** 表現の出題と状態遷移（queued → new → attempted/correct → mastered）の唯一の置き場所。間隔反復の計算は srs.ts */
+import { and, asc, desc, eq, gte, inArray, lt, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES } from "@/db/schema";
 import { EXPRESSION_CATEGORIES, EXPRESSION_KINDS, REGISTERS, type ExpressionKind } from "./categories";
-import { DAY_MS } from "./format";
+import { isoDateJst } from "./format";
 import type { Curriculum } from "./lesson";
 import type { Scenario } from "./scenarios";
+import { addDays } from "./syllabus";
+import {
+  isLeech,
+  jstMidnight,
+  LEECH_MISSES,
+  lessonSlots,
+  reviewPriority,
+  schedule,
+  type Grade,
+  type SrsState,
+} from "./srs";
 
 export type Expression = typeof t.expressions.$inferSelect;
 export type ExpressionPick = { id: number; role: "new" | "review" };
@@ -19,7 +30,11 @@ const KIND_DESCRIPTION = "word=単語・句動詞・熟語・コロケーショ�
  * 人が書く入力（ExpressionInput）では kind・category を上書きして厳密に検証する。
  */
 export const KeyExpression = z.object({
-  text: z.string().trim().min(1).describe("他の場面でも再利用できる部分（コロケーション・句動詞・言い回し）。文全体ではなく核になる部分"),
+  text: z
+    .string()
+    .trim()
+    .min(1)
+    .describe("他の場面でも再利用できる部分（コロケーション・句動詞・言い回し）。文全体ではなく核になる部分"),
   meaning: z.string().trim().min(1).describe("日本語の意味"),
   kind: z.enum(EXPRESSION_KINDS).describe(KIND_DESCRIPTION).catch("phrase"),
   category: z.enum(EXPRESSION_CATEGORIES).catch("general"),
@@ -40,53 +55,110 @@ export function inferKind(text: string): ExpressionKind {
   return text.trim().split(/\s+/).length <= 4 ? "word" : "phrase";
 }
 
-/** 1レッスンで出題する数 */
-const NEW_PER_KIND = { phrase: 2, word: 2 } as const;
+/** 間隔反復の計算に使う列（srs.ts の SrsState） */
+const srsColumns = {
+  id: t.expressions.id,
+  status: t.expressions.status,
+  intervalDays: t.expressions.intervalDays,
+  ease: t.expressions.ease,
+  reps: t.expressions.reps,
+  lapses: t.expressions.lapses,
+  misses: t.expressions.misses,
+  lastPracticedAt: t.expressions.lastPracticedAt,
+  nextReviewAt: t.expressions.nextReviewAt,
+};
+
+const today = () => isoDateJst(new Date());
+/** 今日が期限（日本時間の明日 0:00 より前）の表現 */
+const dueBy = (day: string) => lt(t.expressions.nextReviewAt, jstMidnight(addDays(day, 1)));
+
+/** 新規の枠を種類に配る。奇数のときは、練習中の表現が少ない（負荷の軽い）種類に1つ多く */
+function splitFresh(fresh: number, learning: Record<ExpressionKind, number>): Record<ExpressionKind, number> {
+  const extra = fresh % 2 ? (learning.word < learning.phrase ? "word" : "phrase") : null;
+  const half = Math.floor(fresh / 2);
+  return { phrase: half + (extra === "phrase" ? 1 : 0), word: half + (extra === "word" ? 1 : 0) };
+}
 
 /**
- * 今日の表現を選ぶ: 新しいフレーズ2つ＋新しい単語・熟語2つ＋復習1つ（出題日が来たものがあれば）。
- * 新規は「自分で追加した表現（フィードバックからの追加・手入力・週次レビュー）→ シナリオのカテゴリ（先頭優先）
- * → 今週のカテゴリ → 登録順」。自分で選んだものは初期データより先に出題する。
+ * 同じ優先順の候補から n 個選ぶ。自分で追加した表現（seed 以外）は順番どおり先に取り、
+ * 残りはカテゴリを1つずつ順に回して、同じカテゴリばかりにならないようにする（シナリオのカテゴリが先）
+ */
+function interleave(candidates: Expression[], categories: string[], n: number) {
+  const picked = candidates.filter((e) => e.source !== "seed").slice(0, n);
+  const pools = categories.map((c) => candidates.filter((e) => e.source === "seed" && e.category === c));
+  while (picked.length < n && pools.some((p) => p.length)) {
+    for (const pool of pools) {
+      const e = pool.shift();
+      if (e && picked.length < n) picked.push(e);
+    }
+  }
+  // カテゴリの指定から外れた表現しか残っていなければ、登録順で埋める
+  for (const e of candidates) if (picked.length < n && !picked.includes(e)) picked.push(e);
+  return picked;
+}
+
+/**
+ * 今日の表現を選ぶ。合計5つまで（復習が多い日は新規を減らす。枠の数は srs.ts の lessonSlots）。
+ * - 復習: 期限の来た表現を、忘れかけている順（想起確率の低い順）に。今日のシナリオ・今週のカテゴリに合うものを優先
+ * - 新規: 自分で追加した表現 → シナリオのカテゴリ（先頭優先、カテゴリを交互に）→ 今週のカテゴリ → 登録順
+ * 同じ日・同じシナリオ・同じ DB の状態なら必ず同じ組み合わせになる（ホームのプレビューと準備画面が一致する）
  */
 export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curriculum) {
+  const day = today();
   const categories = [...new Set([...scenario.categories, ...curriculum.categories])];
+  const categoryRank = sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`;
   const queued = (kind: ExpressionKind) =>
     db()
       .select()
       .from(t.expressions)
       .where(and(eq(t.expressions.status, "queued"), eq(t.expressions.kind, kind)))
-      .orderBy(
-        sql`case when ${t.expressions.source} <> 'seed' then 0 else 1 end`,
-        sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`,
-        asc(t.expressions.id),
-      )
-      .limit(NEW_PER_KIND[kind]);
-  const [[review], phrases, words] = await Promise.all([
+      .orderBy(sql`case when ${t.expressions.source} <> 'seed' then 0 else 1 end`, categoryRank, asc(t.expressions.id))
+      .limit(40);
+  const [due, learning, phrases, words] = await Promise.all([
     db()
       .select()
       .from(t.expressions)
-      .where(
-        and(
-          inArray(t.expressions.status, LEARNING_STATUSES),
-          isNotNull(t.expressions.nextReviewAt),
-          lte(t.expressions.nextReviewAt, sql`now()`),
-        ),
-      )
-      .orderBy(asc(t.expressions.nextReviewAt))
-      .limit(1),
+      .where(and(inArray(t.expressions.status, LEARNING_STATUSES), dueBy(day))),
+    db()
+      .select({ kind: t.expressions.kind, n: sql<number>`count(*)::int` })
+      .from(t.expressions)
+      .where(inArray(t.expressions.status, LEARNING_STATUSES))
+      .groupBy(t.expressions.kind),
     queued("phrase"),
     queued("word"),
   ]);
+
+  // 苦手（leech）はドリルで扱うので、枠の数を決めるときには数えない（数えると新規の流入が止まり続ける）
+  const slots = lessonSlots(due.filter((e) => !isLeech(e)).length);
+  const relevant = new Set<string>(categories);
+  const reviews = due
+    .map((e) => ({ e, p: reviewPriority(e, day, relevant.has(e.category)) }))
+    .sort((a, b) => b.p - a.p || a.e.id - b.e.id)
+    .slice(0, slots.reviews)
+    .map(({ e }) => e);
+  const learningByKind = { phrase: 0, word: 0, ...Object.fromEntries(learning.map((r) => [r.kind, r.n])) };
+  const fresh = splitFresh(slots.fresh, learningByKind);
   return [
-    ...[...phrases, ...words].map((e) => ({ ...e, role: "new" as const })),
-    ...(review ? [{ ...review, role: "review" as const }] : []),
+    ...[
+      ...interleave(phrases, scenario.categories, fresh.phrase),
+      ...interleave(words, scenario.categories, fresh.word),
+    ].map((e) => ({ ...e, role: "new" as const })),
+    ...reviews.map((e) => ({ ...e, role: "review" as const })),
   ];
 }
 
 /** 画面で提示した表現を ID から引き直す（出題はページ表示時の1回だけ） */
 export async function getPicked(picks: ExpressionPick[]) {
   if (!picks.length) return [];
-  const rows = await db().select().from(t.expressions).where(inArray(t.expressions.id, picks.map((p) => p.id)));
+  const rows = await db()
+    .select()
+    .from(t.expressions)
+    .where(
+      inArray(
+        t.expressions.id,
+        picks.map((p) => p.id),
+      ),
+    );
   return picks.flatMap((p) => {
     const e = rows.find((r) => r.id === p.id);
     return e ? [{ ...e, role: p.role }] : [];
@@ -95,17 +167,20 @@ export async function getPicked(picks: ExpressionPick[]) {
 
 /** 開始時: 出題した表現をセッションに紐付ける（状態はまだ変えない） */
 export function attachToSession(sessionId: number, picks: ExpressionPick[]) {
-  return db().insert(t.sessionExpressions).values(picks.map((p) => ({ sessionId, expressionId: p.id, role: p.role })));
+  return db()
+    .insert(t.sessionExpressions)
+    .values(picks.map((p) => ({ sessionId, expressionId: p.id, role: p.role })));
 }
 
 /**
  * 会話が成立して終了したときだけ queued → new にする。
  * 開始直後に閉じた・落ちたセッションでは表現を消費せず、次回また出題される。
+ * 分析が失敗しても復習から漏れないよう、翌日を期限にしておく（分析が成功すれば結果で上書きされる）
  */
 export function markShownQuery(sessionId: number) {
   return db()
     .update(t.expressions)
-    .set({ status: "new" })
+    .set({ status: "new", nextReviewAt: jstMidnight(addDays(today(), 1)) })
     .where(
       and(
         eq(t.expressions.status, "queued"),
@@ -120,14 +195,13 @@ export function markShownQuery(sessionId: number) {
     );
 }
 
-/** セッションで出題した表現とその結果 */
+/** セッションで出題した表現とその結果（間隔反復の状態つき） */
 export function sessionTargets(sessionIds: number[]) {
   return db()
     .select({
+      ...srsColumns,
       sessionId: t.sessionExpressions.sessionId,
-      id: t.expressions.id,
       text: t.expressions.text,
-      intervalDays: t.expressions.intervalDays,
       role: t.sessionExpressions.role,
       used: t.sessionExpressions.used,
       correct: t.sessionExpressions.correct,
@@ -138,14 +212,17 @@ export function sessionTargets(sessionIds: number[]) {
     .where(inArray(t.sessionExpressions.sessionId, sessionIds));
 }
 
-/** 練習済みの表現（今回の出題以外）。自発的に使えたら習得扱いにするため分析に渡す */
+/**
+ * 練習中の表現（今回の出題以外）。自発的に使えたかを分析に判定させるため渡す。
+ * 最近練習したものほど会話に出やすいので、新しい順に上限まで
+ */
 export function practicedExpressions(sessionId: number) {
   return db()
-    .select({ id: t.expressions.id, text: t.expressions.text })
+    .select({ ...srsColumns, text: t.expressions.text })
     .from(t.expressions)
     .where(
       and(
-        inArray(t.expressions.status, ["attempted", "correct"]),
+        inArray(t.expressions.status, LEARNING_STATUSES),
         notInArray(
           t.expressions.id,
           db()
@@ -155,30 +232,120 @@ export function practicedExpressions(sessionId: number) {
         ),
       ),
     )
+    .orderBy(sql`${t.expressions.lastPracticedAt} desc nulls last`, desc(t.expressions.id))
     .limit(40);
 }
 
-/** 使用結果の反映（簡易的な間隔反復）。正しく使えたら間隔を伸ばし、誤用・未使用なら翌日に戻す */
+const updateSrsQuery = (s: SrsState, grade: Grade, day = today()) =>
+  db()
+    .update(t.expressions)
+    .set(schedule(s, grade, day))
+    .where(eq(t.expressions.id, s.id));
+
+const gradeOf = (r: { used: boolean; correct: boolean }): Grade =>
+  r.used ? (r.correct ? "correct" : "incorrect") : "unused";
+
+/** 使用結果の反映。target は sessionTargets の行（間隔反復の状態を含む） */
 export function recordUseQueries(
   sessionId: number,
-  target: { id: number; intervalDays: number },
+  target: SrsState,
   r: { used: boolean; correct: boolean; comment: string },
 ) {
-  const interval = r.used && r.correct ? Math.max(2, target.intervalDays * 2.5) : 1;
-  const status = r.used ? (r.correct ? ("correct" as const) : ("attempted" as const)) : undefined;
   return [
     db()
       .update(t.sessionExpressions)
       .set({ used: r.used, correct: r.correct, comment: r.comment })
       .where(and(eq(t.sessionExpressions.sessionId, sessionId), eq(t.sessionExpressions.expressionId, target.id))),
-    db()
-      .update(t.expressions)
-      .set({
-        ...(status ? { status, intervalDays: interval } : {}),
-        nextReviewAt: new Date(Date.now() + interval * DAY_MS),
-      })
-      .where(eq(t.expressions.id, target.id)),
+    updateSrsQuery(target, gradeOf(r)),
   ] as const;
+}
+
+/** 出題した表現すべての結果を反映する。分析の結果に含まれなかった表現は「使わなかった」として扱う */
+export function recordTargetsQueries(
+  sessionId: number,
+  targets: SrsState[],
+  results: { id: number; used: boolean; correct: boolean; comment: string }[],
+) {
+  return targets.flatMap((target) =>
+    recordUseQueries(
+      sessionId,
+      target,
+      results.find((r) => r.id === target.id) ?? { used: false, correct: false, comment: "" },
+    ),
+  );
+}
+
+/** 促されずに正しく使えた練習中の表現（practicedExpressions の行）を反映する */
+export function recordSpontaneousQueries(items: SrsState[]) {
+  return items.map((s) => updateSrsQuery(s, "spontaneous"));
+}
+
+/** ドリルで正しく言えた表現を反映する（練習中の表現だけ。苦手扱いも解除される）。反映したら true */
+export async function recordDrillSuccess(expressionId: number) {
+  const [s] = await db()
+    .select(srsColumns)
+    .from(t.expressions)
+    .where(and(eq(t.expressions.id, expressionId), inArray(t.expressions.status, LEARNING_STATUSES)));
+  if (!s) return false;
+  await updateSrsQuery(s, "drill");
+  return true;
+}
+
+/** 苦手（一度も使えないまま3回続けて使わなかった）表現。会話の復習から外れている間にドリルで練習する */
+export function leechExpressions(limit = 10) {
+  return db()
+    .select()
+    .from(t.expressions)
+    .where(
+      and(
+        inArray(t.expressions.status, LEARNING_STATUSES),
+        eq(t.expressions.reps, 0),
+        gte(t.expressions.misses, LEECH_MISSES),
+      ),
+    )
+    .orderBy(desc(t.expressions.misses), asc(t.expressions.id))
+    .limit(limit);
+}
+
+/** 間隔反復の状態のまとめ（週次レビュー・画面用） */
+export async function srsHealth() {
+  const day = today();
+  const rows = await db()
+    .select({ ...srsColumns, kind: t.expressions.kind })
+    .from(t.expressions)
+    .where(inArray(t.expressions.status, [...LEARNING_STATUSES, "mastered"]));
+  const learning = rows.filter((r) => r.status !== "mastered");
+  const due = learning.filter((r) => r.nextReviewAt && r.nextReviewAt < jstMidnight(addDays(day, 1)));
+  const median = (xs: number[]) => (xs.length ? [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)] : 0);
+  return {
+    learning: learning.length,
+    mastered: rows.length - learning.length,
+    due: due.length,
+    /** 期限を3日以上過ぎたもの */
+    overdue: due.filter((r) => r.nextReviewAt! < jstMidnight(addDays(day, -2))).length,
+    dueNextWeek: learning.filter((r) => r.nextReviewAt && r.nextReviewAt < jstMidnight(addDays(day, 8))).length,
+    leeches: learning.filter(isLeech).length,
+    lapses: rows.reduce((s, r) => s + r.lapses, 0),
+    neverUsed: learning.filter((r) => r.reps === 0).length,
+    medianStabilityDays: median(learning.filter((r) => r.reps > 0).map((r) => r.intervalDays)),
+  };
+}
+
+/** 苦手な表現カテゴリ（誤用した・使えずに終わることが続いた練習中の表現が多い順に最大3つ）。おすすめのシナリオ選びに使う */
+export async function weakExpressionCategories() {
+  const rows = await db()
+    .select({ category: t.expressions.category, n: sql<number>`count(*)::int` })
+    .from(t.expressions)
+    .where(
+      and(
+        inArray(t.expressions.status, LEARNING_STATUSES),
+        sql`(${t.expressions.status} = 'attempted' or ${t.expressions.lapses} > 0 or ${t.expressions.misses} >= 2)`,
+      ),
+    )
+    .groupBy(t.expressions.category)
+    .orderBy(sql`2 desc`, asc(t.expressions.category))
+    .limit(3);
+  return rows.map((r) => r.category);
 }
 
 export function markMasteredQuery(ids: number[]) {

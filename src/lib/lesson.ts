@@ -1,8 +1,11 @@
-import { asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db, t } from "@/db";
 import { settings, usdToJpy } from "./config";
+import { ERROR_MIN_SEVERITY } from "./categories";
+import { canonicalPatternKey } from "./error-patterns";
 import { DAY_MS, isoDateJst } from "./format";
 import { addDays, mondayOf, SYLLABUS, syllabusPosition, type SyllabusPosition } from "./syllabus";
+import { weaknessPriorities } from "./weakness";
 
 type Profile = typeof t.profile.$inferSelect;
 type ProfilePatch = Partial<Pick<Profile, "about" | "goals" | "interests" | "level" | "learnerModel">>;
@@ -18,8 +21,15 @@ export const clampLevel = (level: number) => Math.min(10, Math.max(1, Math.round
 
 /** プロフィール（1行だけの表）の更新。行がなければ作る */
 export function updateProfileQuery(patch: ProfilePatch) {
-  const set = { ...patch, ...(patch.level !== undefined ? { level: clampLevel(patch.level) } : {}), updatedAt: new Date() };
-  return db().insert(t.profile).values({ id: 1, ...set }).onConflictDoUpdate({ target: t.profile.id, set });
+  const set = {
+    ...patch,
+    ...(patch.level !== undefined ? { level: clampLevel(patch.level) } : {}),
+    updatedAt: new Date(),
+  };
+  return db()
+    .insert(t.profile)
+    .values({ id: 1, ...set })
+    .onConflictDoUpdate({ target: t.profile.id, set });
 }
 
 type Override = typeof t.curriculum.$inferSelect;
@@ -90,8 +100,17 @@ const REVIEW_INTERVAL_MS = 7 * DAY_MS;
 /** 最後の週次レビュー（なければ最初のセッション）から7日以上たっているか */
 export async function isReviewDue() {
   const [[review], [first]] = await Promise.all([
-    db().select({ at: t.weeklyReviews.createdAt }).from(t.weeklyReviews).orderBy(desc(t.weeklyReviews.createdAt)).limit(1),
-    db().select({ at: t.sessions.startedAt }).from(t.sessions).where(eq(t.sessions.status, "done")).orderBy(asc(t.sessions.startedAt)).limit(1),
+    db()
+      .select({ at: t.weeklyReviews.createdAt })
+      .from(t.weeklyReviews)
+      .orderBy(desc(t.weeklyReviews.createdAt))
+      .limit(1),
+    db()
+      .select({ at: t.sessions.startedAt })
+      .from(t.sessions)
+      .where(eq(t.sessions.status, "done"))
+      .orderBy(asc(t.sessions.startedAt))
+      .limit(1),
   ]);
   const since = review?.at ?? first?.at;
   return Boolean(since && Date.now() - since.getTime() > REVIEW_INTERVAL_MS);
@@ -101,17 +120,62 @@ export async function budgetStatus() {
   const [r] = await db()
     .select({ total: sql<number>`coalesce(sum(${t.sessions.costUsd}), 0)` })
     .from(t.sessions)
-    .where(gte(t.sessions.startedAt, sql`date_trunc('month', now())`));
+    // 月の区切りは日本時間（UTC の月初は日本時間の月初 9:00 で、1日の朝の練習が前月に入ってしまう）
+    .where(
+      gte(t.sessions.startedAt, sql`date_trunc('month', now() at time zone 'Asia/Tokyo') at time zone 'Asia/Tokyo'`),
+    );
   const spentJpy = usdToJpy(Number(r.total));
   const budgetJpy = settings().monthlyBudgetJpy;
   return { spentJpy, budgetJpy, exceeded: spentJpy >= budgetJpy };
 }
 
+/** 優先度と状態の計算に使う、直近の完了セッションの数 */
+const WEAKNESS_WINDOW = 40;
+
+/**
+ * ミスの型の優先度と状態（weakness.ts）。直近の完了セッションの指摘（重大度2以上）から毎回計算する。
+ * 週次レビューで克服済みにした型（error_patterns.resolved。再発すると分析が false に戻す）は resolved として扱う
+ */
+export async function loadWeaknesses() {
+  const d = db();
+  const sessions = await d
+    .select({ id: t.sessions.id, startedAt: t.sessions.startedAt })
+    .from(t.sessions)
+    .where(eq(t.sessions.status, "done"))
+    .orderBy(desc(t.sessions.startedAt))
+    .limit(WEAKNESS_WINDOW);
+  if (!sessions.length) return [];
+  const [items, resolved] = await Promise.all([
+    d
+      .select({
+        key: t.feedbackItems.patternKey,
+        sessionId: t.feedbackItems.sessionId,
+        severity: t.feedbackItems.severity,
+      })
+      .from(t.feedbackItems)
+      .where(
+        and(
+          inArray(
+            t.feedbackItems.sessionId,
+            sessions.map((s) => s.id),
+          ),
+          gte(t.feedbackItems.severity, ERROR_MIN_SEVERITY),
+        ),
+      ),
+    d.select({ key: t.errorPatterns.key }).from(t.errorPatterns).where(eq(t.errorPatterns.resolved, true)),
+  ]);
+  const index = new Map(sessions.map((s, i) => [s.id, { i, at: s.startedAt }]));
+  const now = Date.now();
+  return weaknessPriorities(
+    items.map((it) => {
+      const s = index.get(it.sessionId)!;
+      return { key: it.key, severity: it.severity, sessionIndex: s.i, daysAgo: (now - s.at.getTime()) / DAY_MS };
+    }),
+    new Set(resolved.map((r) => canonicalPatternKey(r.key))),
+  );
+}
+
+/** 克服していないミスの型を優先度の高い順に（分析の「既存の key」や会話の指示に使う） */
 export async function topErrorPatterns(limit = 8) {
-  return db()
-    .select()
-    .from(t.errorPatterns)
-    .where(eq(t.errorPatterns.resolved, false))
-    .orderBy(desc(t.errorPatterns.lastSeenAt), desc(t.errorPatterns.count))
-    .limit(limit);
+  return (await loadWeaknesses()).filter((w) => w.state !== "resolved").slice(0, limit);
 }
