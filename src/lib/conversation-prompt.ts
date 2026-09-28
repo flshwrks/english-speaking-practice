@@ -57,7 +57,9 @@ ${card.role ? `The learner's role: ${card.role}` : "The learner speaks as themse
 ${card.role ? "Facts the learner can use" : "Material for this conversation"}:
 ${bullets(card.facts)}
 The learner's goal: ${card.goal}
+What this card trains (the learner's skill focus): ${card.focus}
 Your side of the scene: ${card.partner}
+- Steer the conversation so that the skill focus is clearly needed at least once or twice (e.g. a moment where they must summarise, push back, ask a clarifying question or propose something), without naming it.
 ${rules}
 - Open with something specific to this card rather than a generic "tell me about yourself" (unless the card is an interview), and keep the conversation on this card's situation.
 - Never read the card out. The learner already has it: set the scene in one or two short sentences, then reveal details only when they become relevant or the learner asks.

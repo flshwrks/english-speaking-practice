@@ -2,659 +2,1079 @@
   "self-intro": [
     {
       "title": "物流DXプロジェクトの初顔合わせ",
+      "focus": "名前・所属・担当を30秒で、順番よく伝える",
       "situation": "シンガポール主導の倉庫自動化プロジェクトに、日本側メンバーとして今週から加わりました。初めてのオンライン会議で、PMに自己紹介します。",
       "role": "日系物流会社の新卒社員（入社3か月）",
       "facts": ["チームは5か国・9人", "あなたの担当は日本の倉庫データの整理", "定例は毎週水曜、日本時間17時", "3か月で自動化の効果を試算するのがチームの目標"],
       "goal": "自己紹介をして、自分の担当範囲と最初の1か月で期待されることを確認する",
       "partner": "You are Alex, the project manager based in Singapore. You are welcoming but busy, and you want to know quickly what the new member can take on. You are slightly worried that the Japan data is messy and late. Open by welcoming them and asking them to introduce themselves.",
-      "topic": "logistics automation project onboarding"
+      "topic": "logistics automation project onboarding",
+      "expressions": [
+        { "text": "I've just joined the team as ___", "meaning": "〜としてチームに加わったばかりです", "kind": "phrase", "category": "small_talk", "example": "I've just joined the team as the Japan-side data coordinator." },
+        { "text": "I'll be working on ___", "meaning": "〜を担当します", "kind": "phrase", "category": "small_talk", "example": "I'll be working on cleaning up the warehouse data in Japan." },
+        { "text": "look forward to working with you", "meaning": "一緒に仕事ができるのを楽しみにしています", "kind": "word", "category": "small_talk", "example": "I really look forward to working with you all." }
+      ]
     },
     {
       "title": "植物性プロテイン飲料の日本発売チーム",
+      "focus": "相手の期待や優先事項を、質問して聞き出す",
       "situation": "外資系消費財メーカーの東京オフィスで、ロンドン本社のブランドチームとの初めての会議に出ます。新商品の日本発売に向けたチームです。",
       "role": "東京オフィスのマーケティングアシスタント（入社半年）",
       "facts": ["新商品は植物性プロテイン飲料", "日本発売は来年3月の予定", "あなたの担当は日本の競合商品の調査", "調査結果は隔週で共有する"],
       "goal": "自己紹介をして、競合調査で本社が特に知りたいことを聞き出す",
       "partner": "You are Sophie, a brand manager at the London headquarters. You are friendly and curious about Japan, but you know little about the Japanese market. You especially want to understand local price levels. Open by thanking them for joining and asking about their role.",
-      "topic": "consumer goods product launch Japan team intro"
+      "topic": "consumer goods product launch Japan team intro",
+      "expressions": [
+        { "text": "What would be most helpful for you?", "meaning": "何があれば一番助かりますか", "kind": "phrase", "category": "clarifying", "example": "For the competitor research, what would be most helpful for you?" },
+        { "text": "get up to speed", "meaning": "（状況・知識に）追いつく", "kind": "word", "category": "general", "example": "I'm still getting up to speed on the product details." },
+        { "text": "What are your main priorities for ___?", "meaning": "〜で一番重視していることは何ですか", "kind": "phrase", "category": "clarifying", "example": "What are your main priorities for the Japan launch?" }
+      ]
     },
     {
       "title": "新CRMのグローバル導入チーム",
+      "focus": "自分の背景や強みを、仕事の役割と結びつけて話す",
       "situation": "ベルリンのIT部門が進める新しい顧客管理システム（CRM）の世界展開に、東京オフィスの代表として参加することになりました。キックオフ前の1対1の顔合わせです。",
       "role": "日系IT企業の新卒2年目・社内システム担当",
       "facts": ["導入は欧州→アジアの順で、東京は来年4月", "東京オフィスの営業担当は約120人", "現在は表計算ソフトで顧客情報を管理している", "あなたの役割は現場の要望のとりまとめ"],
       "goal": "自己紹介をして、東京の現場の事情を伝え、自分の役割をはっきりさせる",
       "partner": "You are Daniel, the IT lead for the rollout in Berlin. You are structured and a bit direct. You worry that the Tokyo sales team will resist the change. Open with a quick hello and ask them to introduce themselves and their team.",
-      "topic": "CRM rollout Tokyo representative intro"
-    },
-    {
-      "title": "洋上風力の調査チームにインターン参加",
-      "situation": "デンマークのエネルギー企業の日本法人で、洋上風力発電の事業調査チームに2か月のインターンとして参加しました。初日にチームリーダーと話します。",
-      "role": "2か月のインターン生（大学生）",
-      "facts": ["調査対象は日本の北海道・秋田の沿岸", "チームは日本人3人とデンマーク人2人", "あなたの担当は地元の漁業関係者への影響の資料集め", "最終週にチーム内で発表がある"],
-      "goal": "自己紹介をして、インターン期間で何を学び、何に貢献したいかを伝える",
-      "partner": "You are Emma, the team leader from Copenhagen, now based in Tokyo. You are warm and like interns who ask questions. You want the intern to own one clear piece of work. Open by welcoming them and asking what brought them to this internship.",
-      "topic": "offshore wind research internship first day"
+      "topic": "CRM rollout Tokyo representative intro",
+      "expressions": [
+        { "text": "My background is in ___", "meaning": "私の経歴は〜の分野です", "kind": "phrase", "category": "small_talk", "example": "My background is in internal IT support for our sales team." },
+        { "text": "bring ___ to the team", "meaning": "（経験・視点を）チームにもたらす", "kind": "word", "category": "general", "example": "I can bring the sales team's perspective to the project." },
+        { "text": "on the ground", "meaning": "現場で・現場の", "kind": "word", "category": "general", "example": "People on the ground still use spreadsheets every day." }
+      ]
     },
     {
       "title": "インド市場参入案件のキックオフ",
+      "focus": "役割分担と連絡方法を、具体的に取り決める",
       "situation": "戦略コンサルティング会社で、日本の自動車部品メーカーのインド進出を支援する案件が始まります。ムンバイオフィスのマネージャーとの初めての打ち合わせです。",
       "role": "戦略コンサル会社の東京オフィスのアナリスト（入社1年目）",
       "facts": ["クライアントは日本の中堅自動車部品メーカー", "期間は8週間", "あなたの担当は日本側の経営陣へのインタビュー調整", "ムンバイ側は現地の顧客候補を調べる"],
       "goal": "自己紹介をして、東京とムンバイの役割分担と連絡の取り方を決める",
       "partner": "You are Raj, the engagement manager at the Mumbai office. You are energetic and fast-talking. You want a clear division of work and a daily check-in time that works for both time zones. Open by introducing yourself briefly and asking the learner to do the same.",
-      "topic": "consulting India market entry kickoff"
+      "topic": "consulting India market entry kickoff",
+      "expressions": [
+        { "text": "Shall we split it so that ___?", "meaning": "〜という分担にしませんか", "kind": "phrase", "category": "meetings", "example": "Shall we split it so that Tokyo handles the client interviews?" },
+        { "text": "touch base", "meaning": "（短く）連絡を取り合う・確認し合う", "kind": "word", "category": "meetings", "example": "Let's touch base every morning at 10 India time." },
+        { "text": "What's the best way to reach you?", "meaning": "一番連絡がつきやすい方法は何ですか", "kind": "phrase", "category": "clarifying", "example": "What's the best way to reach you if something urgent comes up?" }
+      ]
+    },
+    {
+      "title": "洋上風力の調査チームにインターン参加",
+      "focus": "この機会で学びたいこと・貢献したいことを、理由とともに語る",
+      "situation": "デンマークのエネルギー企業の日本法人で、洋上風力発電の事業調査チームに2か月のインターンとして参加しました。初日にチームリーダーと話します。",
+      "role": "2か月のインターン生（大学生）",
+      "facts": ["調査対象は日本の北海道・秋田の沿岸", "チームは日本人3人とデンマーク人2人", "あなたの担当は地元の漁業関係者への影響の資料集め", "最終週にチーム内で発表がある"],
+      "goal": "自己紹介をして、インターン期間で何を学び、何に貢献したいかを伝える",
+      "partner": "You are Emma, the team leader from Copenhagen, now based in Tokyo. You are warm and like interns who ask questions. You want the intern to own one clear piece of work. Open by welcoming them and asking what brought them to this internship.",
+      "topic": "offshore wind research internship first day",
+      "expressions": [
+        { "text": "I'm keen to learn about ___", "meaning": "〜についてぜひ学びたいです", "kind": "phrase", "category": "small_talk", "example": "I'm keen to learn about how projects balance local interests." },
+        { "text": "make a real contribution", "meaning": "しっかり貢献する", "kind": "word", "category": "general", "example": "I hope I can make a real contribution in two months." },
+        { "text": "What I'd like to get out of this is ___", "meaning": "この機会で得たいのは〜です", "kind": "phrase", "category": "general", "example": "What I'd like to get out of this is hands-on research experience." }
+      ]
     }
   ],
   "status-report": [
     {
-      "title": "東南アジア市場調査の遅れを報告",
-      "situation": "外資系コンサル会社の週次ミーティングです。担当している東南アジア市場の調査レポートが予定より1週間遅れています。",
-      "role": "新卒アナリスト",
-      "facts": ["締切は先週金曜だった", "対象はタイ・ベトナム・インドネシア", "遅れの原因はベトナムの政府統計の更新が遅れたこと", "進捗はタイ80%・ベトナム45%・インドネシア90%", "レポートは来週のクライアント提案で使う"],
-      "goal": "遅れの理由を簡潔に説明し、現実的な完成日と挽回策を示す",
-      "partner": "You are Priya, the team lead. You need the report for a client pitch next week and you are worried about credibility. You don't want excuses; you want a clear recovery plan with dates. Open by asking for a quick status update on the Southeast Asia work.",
-      "topic": "market research report delay Southeast Asia"
-    },
-    {
-      "title": "ECサイト改修のテスト状況",
-      "situation": "アメリカ本社と進めているECサイト改修プロジェクトの定例です。テスト工程で不具合が多く見つかっています。",
-      "role": "日本法人のプロジェクトアシスタント（入社1年目）",
-      "facts": ["全体の進捗は70%", "テストで見つかった不具合は42件（うち重大なもの5件）", "このままだとリリースが2週間遅れる可能性", "重大な不具合は決済画面に集中している"],
-      "goal": "現状を数字で伝え、リリースを守るための選択肢を提案する",
-      "partner": "You are Mark, the product owner at the US headquarters. You care most about the payment flow, because last year's outage cost a lot. You'd accept a smaller launch if payments are solid. Open by asking how testing is going.",
-      "topic": "e-commerce site testing status bugs"
-    },
-    {
-      "title": "ドイツの展示会準備",
-      "situation": "来月ドイツ・ハノーバーで開かれる産業見本市への出展準備について、現地法人の担当者に報告します。",
-      "role": "日系機械メーカーの海外営業部・新卒社員",
-      "facts": ["ブースの設営業者は手配済み", "展示する機械2台は来週船で出荷", "英語・ドイツ語のパンフレットの翻訳が1週間遅れている", "来場者向けのデモ動画は完成済み"],
-      "goal": "準備の進み具合を伝え、翻訳の遅れにどう対応するかを相談する",
-      "partner": "You are Hans, the sales manager at the German subsidiary. You are practical and punctual. The brochures matter to you because German buyers expect printed material in German. Open by asking where things stand for the trade fair.",
-      "topic": "trade fair Hannover preparation status"
-    },
-    {
-      "title": "新しい部品サプライヤーの選定",
-      "situation": "上海の調達チームと、新しい部品サプライヤー選びの進み具合を共有する会議です。",
-      "role": "日系電機メーカーの調達部・新卒社員",
-      "facts": ["候補は中国2社・ベトナム1社", "見積もりはベトナムの会社が最も安い（約12%安）", "中国のA社の品質監査がまだ終わっていない", "決定の期限は月末"],
-      "goal": "3社の比較と残っている作業を伝え、期限までに決める段取りを確認する",
-      "partner": "You are Li Wei, the sourcing manager in Shanghai. You prefer the Chinese supplier you have worked with before and you are skeptical about the Vietnamese one's quality. Open by asking for an update on the supplier selection.",
-      "topic": "supplier selection comparison procurement"
-    },
-    {
       "title": "社内アンケートの回収状況",
+      "focus": "結論から、数字で進み具合を報告する",
       "situation": "シドニーの人事チームと進めている、全社の働き方アンケートの定例です。回答が思うように集まっていません。",
       "role": "人事部のアシスタント（インターン）",
       "facts": ["回答率は現在42%（目標は60%）", "締切まであと5日", "工場勤務の社員の回答率が特に低い（18%）", "アンケートはパソコンからしか答えられない"],
       "goal": "数字で現状を報告し、回答率を上げる具体策と締切延長を提案する",
       "partner": "You are Karen, the HR manager in Sydney. You need the results for a board meeting and don't want to extend the deadline unless there is a strong reason. Open by asking how the survey responses are coming along.",
-      "topic": "employee survey response rate status"
+      "topic": "employee survey response rate status",
+      "expressions": [
+        { "text": "We're currently at ___", "meaning": "現在〜（の数値）です", "kind": "phrase", "category": "reporting", "example": "We're currently at 42%, against a target of 60%." },
+        { "text": "behind schedule", "meaning": "予定より遅れて", "kind": "word", "category": "reporting", "example": "We're a little behind schedule on the factory side." },
+        { "text": "The bottom line is ___", "meaning": "要するに〜です（結論は〜）", "kind": "phrase", "category": "reporting", "example": "The bottom line is we need five more days to hit 60%." }
+      ]
+    },
+    {
+      "title": "東南アジア市場調査の遅れを報告",
+      "focus": "遅れの理由を、言い訳にせず簡潔に説明する",
+      "situation": "外資系コンサル会社の週次ミーティングです。担当している東南アジア市場の調査レポートが予定より1週間遅れています。",
+      "role": "新卒アナリスト",
+      "facts": ["締切は先週金曜だった", "対象はタイ・ベトナム・インドネシア", "遅れの原因はベトナムの政府統計の更新が遅れたこと", "進捗はタイ80%・ベトナム45%・インドネシア90%", "レポートは来週のクライアント提案で使う"],
+      "goal": "遅れの理由を簡潔に説明し、現実的な完成日と挽回策を示す",
+      "partner": "You are Priya, the team lead. You need the report for a client pitch next week and you are worried about credibility. You don't want excuses; you want a clear recovery plan with dates. Open by asking for a quick status update on the Southeast Asia work.",
+      "topic": "market research report delay Southeast Asia",
+      "expressions": [
+        { "text": "The main reason for the delay is ___", "meaning": "遅れの主な理由は〜です", "kind": "phrase", "category": "reporting", "example": "The main reason for the delay is that the Vietnam data came out late." },
+        { "text": "run into", "meaning": "（問題に）ぶつかる", "kind": "word", "category": "reporting", "example": "We ran into a problem with the government statistics." },
+        { "text": "take longer than expected", "meaning": "予想より時間がかかる", "kind": "word", "category": "reporting", "example": "The data collection took longer than expected." }
+      ]
+    },
+    {
+      "title": "ECサイト改修のテスト状況",
+      "focus": "挽回策と新しい期日を、具体的に示す",
+      "situation": "アメリカ本社と進めているECサイト改修プロジェクトの定例です。テスト工程で不具合が多く見つかっています。",
+      "role": "日本法人のプロジェクトアシスタント（入社1年目）",
+      "facts": ["全体の進捗は70%", "テストで見つかった不具合は42件（うち重大なもの5件）", "このままだとリリースが2週間遅れる可能性", "重大な不具合は決済画面に集中している"],
+      "goal": "現状を数字で伝え、リリースを守るための選択肢を提案する",
+      "partner": "You are Mark, the product owner at the US headquarters. You care most about the payment flow, because last year's outage cost a lot. You'd accept a smaller launch if payments are solid. Open by asking how testing is going.",
+      "topic": "e-commerce site testing status bugs",
+      "expressions": [
+        { "text": "To get back on track, we plan to ___", "meaning": "予定を取り戻すために〜する予定です", "kind": "phrase", "category": "reporting", "example": "To get back on track, we plan to fix the payment bugs first." },
+        { "text": "revised deadline", "meaning": "見直した締切", "kind": "word", "category": "reporting", "example": "Our revised deadline for the fixes is next Friday." },
+        { "text": "prioritize", "meaning": "優先する", "kind": "word", "category": "meetings", "example": "I suggest we prioritize the five critical bugs." }
+      ]
+    },
+    {
+      "title": "新しい部品サプライヤーの選定",
+      "focus": "選択肢を比べて示し、自分の推奨を理由つきで伝える",
+      "situation": "上海の調達チームと、新しい部品サプライヤー選びの進み具合を共有する会議です。",
+      "role": "日系電機メーカーの調達部・新卒社員",
+      "facts": ["候補は中国2社・ベトナム1社", "見積もりはベトナムの会社が最も安い（約12%安）", "中国のA社の品質監査がまだ終わっていない", "決定の期限は月末"],
+      "goal": "3社の比較と残っている作業を伝え、期限までに決める段取りを確認する",
+      "partner": "You are Li Wei, the sourcing manager in Shanghai. You prefer the Chinese supplier you have worked with before and you are skeptical about the Vietnamese one's quality. Open by asking for an update on the supplier selection.",
+      "topic": "supplier selection comparison procurement",
+      "expressions": [
+        { "text": "We have two options: ___", "meaning": "選択肢は2つあります：〜", "kind": "phrase", "category": "meetings", "example": "We have two options: wait for the audit, or go with the Vietnamese supplier." },
+        { "text": "trade-off", "meaning": "（あちらを立てればこちらが立たずの）兼ね合い", "kind": "word", "category": "meetings", "example": "The trade-off is lower cost versus proven quality." },
+        { "text": "I'd recommend ___ because ___", "meaning": "〜なので、〜をおすすめします", "kind": "phrase", "category": "meetings", "example": "I'd recommend finishing the audit first because quality is our biggest risk." }
+      ]
+    },
+    {
+      "title": "ドイツの展示会準備",
+      "focus": "起きそうなリスクを先回りして伝え、対策を相談する",
+      "situation": "来月ドイツ・ハノーバーで開かれる産業見本市への出展準備について、現地法人の担当者に報告します。",
+      "role": "日系機械メーカーの海外営業部・新卒社員",
+      "facts": ["ブースの設営業者は手配済み", "展示する機械2台は来週船で出荷", "英語・ドイツ語のパンフレットの翻訳が1週間遅れている", "来場者向けのデモ動画は完成済み"],
+      "goal": "準備の進み具合を伝え、翻訳の遅れにどう対応するかを相談する",
+      "partner": "You are Hans, the sales manager at the German subsidiary. You are practical and punctual. The brochures matter to you because German buyers expect printed material in German. Open by asking where things stand for the trade fair.",
+      "topic": "trade fair Hannover preparation status",
+      "expressions": [
+        { "text": "One risk I want to flag is ___", "meaning": "お伝えしておきたいリスクが1つあります：〜", "kind": "phrase", "category": "reporting", "example": "One risk I want to flag is the brochure translation." },
+        { "text": "contingency plan", "meaning": "（うまくいかないときの）代替策", "kind": "word", "category": "reporting", "example": "As a contingency plan, we could print the English version first." },
+        { "text": "give you a heads-up", "meaning": "前もって知らせておく", "kind": "word", "category": "reporting", "example": "I just wanted to give you a heads-up about the delay." }
+      ]
     }
   ],
   "pushback": [
     {
-      "title": "英語の広告をそのまま日本で使う案",
-      "situation": "本社のマーケティング責任者が、アメリカで作った広告動画を日本でもそのまま使おうと提案しています。あなたは効果に不安を感じています。",
-      "role": "日本法人のマーケティング担当（入社1年目）",
-      "facts": ["前回そのまま使った広告のクリック率は0.4%", "日本向けに作り直した広告は1.2%だった", "作り直しの費用は約300万円", "発売まで6週間"],
-      "goal": "角を立てずに懸念を伝え、費用を抑えた代案（字幕・一部の撮り直しなど）を出す",
-      "partner": "You are Michael, the global marketing director. You like your ad and want one consistent global campaign to save money and time. You can be convinced by data, but you dislike vague objections. Open by sharing your plan to run the same video in Japan.",
-      "topic": "global ad localization disagreement"
-    },
-    {
-      "title": "出張を全部オンラインにする案",
-      "situation": "コスト削減のため、上司が海外の顧客訪問をすべてオンライン会議に切り替えると言い出しました。",
-      "role": "海外営業部の若手社員",
-      "facts": ["出張費は年間約800万円", "大口顧客2社（全体の売上の35%）は対面を重視している", "昨年の契約更新はどちらも訪問のときに決まった", "オンライン会議だけの顧客は今年2社が取引を減らした"],
-      "goal": "全面廃止に反対し、重要な顧客だけ訪問を残す代案を出す",
-      "partner": "You are Laura, the head of sales. You are under pressure to cut costs by 15% this year. You think online meetings are good enough. Open by announcing that all customer visits will move online from next quarter.",
-      "topic": "travel budget cut pushback key accounts"
-    },
-    {
-      "title": "新システムの一斉導入",
-      "situation": "IT部長が、新しい経費精算システムを全拠点で来月一斉に導入する計画を発表しました。あなたは混乱を心配しています。",
-      "role": "経理部の新卒社員",
-      "facts": ["拠点は国内外に7か所", "月末は経費申請が普段の3倍になる", "新システムの操作研修はまだ1回しか行われていない", "海外拠点の一部は現地の税制に合わせた設定が必要"],
-      "goal": "懸念を丁寧に伝え、1拠点で試してから広げる段階的な導入を提案する",
-      "partner": "You are Tom, the IT director. You want a single go-live date to avoid running two systems at once. You worry that a pilot will drag on for months. Open by explaining the rollout plan and asking if there are any questions.",
-      "topic": "system rollout phased pilot pushback"
-    },
-    {
-      "title": "生産をすべてベトナムに移す案",
-      "situation": "経営企画の上司が、コスト削減のため国内工場の生産をすべてベトナムに移す案を出しています。あなたはリスクが高いと考えています。",
-      "role": "経営企画部のアシスタント（入社1年目）",
-      "facts": ["移管すると人件費は約40%下がる", "主要な顧客の一部は「日本製」を条件にしている", "昨年、港の混雑で海外からの部品が3週間遅れた", "国内工場の設備はあと5年使える"],
-      "goal": "サプライチェーンのリスクを根拠に反論し、一部を国内に残す分散案を出す",
-      "partner": "You are Kevin, the head of corporate planning. The CEO wants a bold cost-cutting plan, and you believe a full move is the cleanest option. You are open to evidence about risk. Open by presenting your proposal and asking for the learner's view.",
-      "topic": "production relocation Vietnam supply chain risk"
-    },
-    {
       "title": "週次の報告を毎日にする案",
+      "focus": "相手の意図をまず認めてから、懸念を伝える",
       "situation": "新しく来たマネージャーが、進み具合の報告を週1回から毎日に変えたいと言っています。チームの負担が増えることを心配しています。",
       "role": "プロジェクトチームの若手メンバー",
       "facts": ["今の週次報告は1回あたり約1時間かかる", "チームは6人で、全員が複数の案件を兼務している", "進捗はすでに共有のタスク管理ツールで見られる", "先月、報告の遅れで問題が起きたことはない"],
       "goal": "負担を具体的に伝え、ダッシュボードを使った代案を出して折り合う",
       "partner": "You are Nina, the new team manager. Your previous team missed a deadline because problems surfaced too late, so you want daily visibility. You will accept another solution if it really shows problems early. Open by explaining your plan for daily reports.",
-      "topic": "daily reporting overhead pushback"
+      "topic": "daily reporting overhead pushback",
+      "expressions": [
+        { "text": "I see where you're coming from, but ___", "meaning": "おっしゃる意図は分かりますが、〜", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I see where you're coming from, but daily reports would take a lot of time." },
+        { "text": "I'm a bit concerned that ___", "meaning": "〜ではないかと少し心配しています", "kind": "phrase", "category": "hedging", "example": "I'm a bit concerned that we'll have less time for the actual work." },
+        { "text": "workload", "meaning": "仕事量・負担", "kind": "word", "category": "meetings", "example": "Everyone's workload is already quite heavy." }
+      ]
+    },
+    {
+      "title": "英語の広告をそのまま日本で使う案",
+      "focus": "データを根拠に反対し、相手が納得しやすくする",
+      "situation": "本社のマーケティング責任者が、アメリカで作った広告動画を日本でもそのまま使おうと提案しています。あなたは効果に不安を感じています。",
+      "role": "日本法人のマーケティング担当（入社1年目）",
+      "facts": ["前回そのまま使った広告のクリック率は0.4%", "日本向けに作り直した広告は1.2%だった", "作り直しの費用は約300万円", "発売まで6週間"],
+      "goal": "角を立てずに懸念を伝え、費用を抑えた代案（字幕・一部の撮り直しなど）を出す",
+      "partner": "You are Michael, the global marketing director. You like your ad and want one consistent global campaign to save money and time. You can be convinced by data, but you dislike vague objections. Open by sharing your plan to run the same video in Japan.",
+      "topic": "global ad localization disagreement",
+      "expressions": [
+        { "text": "The data suggests ___", "meaning": "データからは〜ということが分かります", "kind": "phrase", "category": "agreeing_disagreeing", "example": "The data suggests localized ads perform three times better." },
+        { "text": "click-through rate", "meaning": "クリック率", "kind": "word", "category": "presenting", "example": "The click-through rate was only 0.4% last time." },
+        { "text": "compared with", "meaning": "〜と比べて", "kind": "word", "category": "presenting", "example": "That's low compared with our localized version." }
+      ]
+    },
+    {
+      "title": "新システムの一斉導入",
+      "focus": "反対するだけでなく、代わりの案を出す",
+      "situation": "IT部長が、新しい経費精算システムを全拠点で来月一斉に導入する計画を発表しました。あなたは混乱を心配しています。",
+      "role": "経理部の新卒社員",
+      "facts": ["拠点は国内外に7か所", "月末は経費申請が普段の3倍になる", "新システムの操作研修はまだ1回しか行われていない", "海外拠点の一部は現地の税制に合わせた設定が必要"],
+      "goal": "懸念を丁寧に伝え、1拠点で試してから広げる段階的な導入を提案する",
+      "partner": "You are Tom, the IT director. You want a single go-live date to avoid running two systems at once. You worry that a pilot will drag on for months. Open by explaining the rollout plan and asking if there are any questions.",
+      "topic": "system rollout phased pilot pushback",
+      "expressions": [
+        { "text": "What if we ___ instead?", "meaning": "代わりに〜するのはどうでしょう", "kind": "phrase", "category": "meetings", "example": "What if we start with the Tokyo office instead?" },
+        { "text": "run a pilot", "meaning": "試験導入をする", "kind": "word", "category": "meetings", "example": "We could run a pilot for one month first." },
+        { "text": "phased approach", "meaning": "段階的な進め方", "kind": "word", "category": "meetings", "example": "A phased approach would reduce the risk at month-end." }
+      ]
+    },
+    {
+      "title": "出張を全部オンラインにする案",
+      "focus": "お互いが受け入れられる落とし所を探る",
+      "situation": "コスト削減のため、上司が海外の顧客訪問をすべてオンライン会議に切り替えると言い出しました。",
+      "role": "海外営業部の若手社員",
+      "facts": ["出張費は年間約800万円", "大口顧客2社（全体の売上の35%）は対面を重視している", "昨年の契約更新はどちらも訪問のときに決まった", "オンライン会議だけの顧客は今年2社が取引を減らした"],
+      "goal": "全面廃止に反対し、重要な顧客だけ訪問を残す代案を出す",
+      "partner": "You are Laura, the head of sales. You are under pressure to cut costs by 15% this year. You think online meetings are good enough. Open by announcing that all customer visits will move online from next quarter.",
+      "topic": "travel budget cut pushback key accounts",
+      "expressions": [
+        { "text": "Could we find a middle ground?", "meaning": "間を取った案にできませんか", "kind": "phrase", "category": "agreeing_disagreeing", "example": "Could we find a middle ground, like visiting only our top two clients?" },
+        { "text": "key accounts", "meaning": "重要顧客", "kind": "word", "category": "negotiating", "example": "Our two key accounts make up 35% of sales." },
+        { "text": "strike a balance", "meaning": "バランスを取る", "kind": "word", "category": "agreeing_disagreeing", "example": "We need to strike a balance between cost and relationships." }
+      ]
+    },
+    {
+      "title": "生産をすべてベトナムに移す案",
+      "focus": "戦略的なリスクを筋道立てて説明し、上の立場の人を説得する",
+      "situation": "経営企画の上司が、コスト削減のため国内工場の生産をすべてベトナムに移す案を出しています。あなたはリスクが高いと考えています。",
+      "role": "経営企画部のアシスタント（入社1年目）",
+      "facts": ["移管すると人件費は約40%下がる", "主要な顧客の一部は「日本製」を条件にしている", "昨年、港の混雑で海外からの部品が3週間遅れた", "国内工場の設備はあと5年使える"],
+      "goal": "サプライチェーンのリスクを根拠に反論し、一部を国内に残す分散案を出す",
+      "partner": "You are Kevin, the head of corporate planning. The CEO wants a bold cost-cutting plan, and you believe a full move is the cleanest option. You are open to evidence about risk. Open by presenting your proposal and asking for the learner's view.",
+      "topic": "production relocation Vietnam supply chain risk",
+      "expressions": [
+        { "text": "put all our eggs in one basket", "meaning": "一つのところに全部を賭ける（リスクを集中させる）", "kind": "word", "category": "agreeing_disagreeing", "example": "Moving everything to Vietnam would put all our eggs in one basket." },
+        { "text": "The downside is that ___", "meaning": "欠点は〜という点です", "kind": "phrase", "category": "hedging", "example": "The downside is that one port problem could stop our production." },
+        { "text": "diversify", "meaning": "分散させる・多様化する", "kind": "word", "category": "general", "example": "I'd suggest we diversify and keep some production in Japan." }
+      ]
     }
   ],
   "clarify": [
     {
-      "title": "「若者向けのSNSキャンペーン」の依頼",
-      "situation": "クライアントから「若者向けのSNSキャンペーンを来月までに」とだけ依頼が来ました。電話で詳しく確認します。",
-      "role": "広告代理店の新卒社員",
-      "facts": ["クライアントはスポーツ飲料のメーカー", "「若者」が何歳を指すかは不明", "予算・使うSNS・成果の測り方は聞いていない", "来月のいつまでかも決まっていない"],
-      "goal": "質問して、対象・予算・期限・成果の基準をはっきりさせる",
-      "partner": "You are Jessica, the client's brand manager. You are busy and speak in general terms, assuming the agency understands. You have a budget of about 5 million yen in mind but won't say it unless asked. Open by restating your request briefly and asking when they can send a plan.",
-      "topic": "vague social media campaign request"
-    },
-    {
-      "title": "「在庫データを見やすく」の依頼",
-      "situation": "海外拠点の部長から「在庫のデータを見やすくしてほしい」と頼まれました。作り始める前に確認します。",
-      "role": "日系商社のデータ分析チームの新人",
-      "facts": ["在庫データは毎日、表計算ソフトで届く", "扱う商品は約3,000品目", "誰が・何を判断するために見るのかは不明", "今の資料は部長が「読みにくい」と言っている"],
-      "goal": "誰が何のために見るのか、どの数字が大事かを聞き出し、作るものを決める",
-      "partner": "You are Mr. Tan, the head of the Singapore branch. You mainly want to spot items that are about to run out, but you haven't said so. You get impatient with too many technical questions. Open by asking if the learner can make the inventory data easier to read.",
-      "topic": "unclear inventory dashboard request"
-    },
-    {
       "title": "イベント会場の手配",
+      "focus": "数字や日程など、基本の条件を聞き返して確認する",
       "situation": "アメリカ本社の上司から、東京でのイベントの会場を押さえるよう頼まれました。条件が分からないので確認します。",
       "role": "日本法人の総務アシスタント",
       "facts": ["イベントは顧客向けのセミナー", "人数・日程・予算は聞いていない", "東京の人気会場は2か月前には埋まりやすい", "去年は80人規模で都内のホテルを使った"],
       "goal": "人数・日程・場所・予算・必要な設備を確認し、手配を進められる状態にする",
       "partner": "You are Rachel, the event manager at the US headquarters. You assume the details are obvious. You expect around 100 guests in late November and need simultaneous interpretation, but you only mention these when asked. Open by asking the learner to book a venue in Tokyo.",
-      "topic": "event venue booking requirements"
-    },
-    {
-      "title": "「競合を簡単にまとめて」の依頼",
-      "situation": "上司から「競合を簡単にまとめて」と頼まれました。どの程度の資料を作ればよいか確認します。",
-      "role": "IT企業のマーケティング部・新卒社員",
-      "facts": ["自社はオンライン会議ツールを販売している", "競合として考えられる会社は10社以上ある", "観点・分量・締切は聞いていない", "来週、役員会議がある"],
-      "goal": "対象の範囲・比べる観点・分量・締切を確認し、作業量を見積もる",
-      "partner": "You are Chris, the learner's manager. You need a one-page comparison of the top three competitors on price and features for the board meeting next Tuesday, but you phrase it vaguely. Open by asking the learner to put together a quick summary of the competition.",
-      "topic": "vague competitor analysis request"
+      "topic": "event venue booking requirements",
+      "expressions": [
+        { "text": "Just to confirm, ___?", "meaning": "確認ですが、〜ですよね？", "kind": "phrase", "category": "clarifying", "example": "Just to confirm, it's for about 100 guests?" },
+        { "text": "headcount", "meaning": "人数", "kind": "word", "category": "clarifying", "example": "Do you have a rough headcount?" },
+        { "text": "When do you need it by?", "meaning": "いつまでに必要ですか", "kind": "phrase", "category": "clarifying", "example": "When do you need the booking confirmed by?" }
+      ]
     },
     {
       "title": "打ち合わせ資料の準備",
+      "focus": "依頼の目的と相手（誰に向けたものか）を聞き出す",
       "situation": "来週の取引先との打ち合わせに向けて、先輩から「資料を用意しておいて」とだけ言われました。",
       "role": "海外営業部の新卒社員",
       "facts": ["取引先はオーストラリアの小売チェーン", "打ち合わせの目的・出席者・形式は聞いていない", "過去に同じ相手に使った資料が3種類ある", "打ち合わせは来週木曜"],
       "goal": "目的・出席者・時間・形式を確認して、どの資料をどう準備するか決める",
       "partner": "You are Ben, the learner's senior colleague. The meeting is actually a price negotiation with the buyer and their finance manager, and you want a short deck with sales figures. You forget to say this unless asked. Open by reminding them to prepare materials for next week.",
-      "topic": "meeting materials unclear purpose"
+      "topic": "meeting materials unclear purpose",
+      "expressions": [
+        { "text": "What's the main goal of ___?", "meaning": "〜の一番の目的は何ですか", "kind": "phrase", "category": "clarifying", "example": "What's the main goal of the meeting on Thursday?" },
+        { "text": "Who's the audience?", "meaning": "誰に向けたもの（聞き手）ですか", "kind": "phrase", "category": "clarifying", "example": "Who's the audience — the buyer, or their finance team too?" },
+        { "text": "key takeaway", "meaning": "（相手に）持ち帰ってほしい要点", "kind": "word", "category": "presenting", "example": "What's the key takeaway you want them to have?" }
+      ]
+    },
+    {
+      "title": "「競合を簡単にまとめて」の依頼",
+      "focus": "作業の範囲と分量を絞り込む",
+      "situation": "上司から「競合を簡単にまとめて」と頼まれました。どの程度の資料を作ればよいか確認します。",
+      "role": "IT企業のマーケティング部・新卒社員",
+      "facts": ["自社はオンライン会議ツールを販売している", "競合として考えられる会社は10社以上ある", "観点・分量・締切は聞いていない", "来週、役員会議がある"],
+      "goal": "対象の範囲・比べる観点・分量・締切を確認し、作業量を見積もる",
+      "partner": "You are Chris, the learner's manager. You need a one-page comparison of the top three competitors on price and features for the board meeting next Tuesday, but you phrase it vaguely. Open by asking the learner to put together a quick summary of the competition.",
+      "topic": "vague competitor analysis request",
+      "expressions": [
+        { "text": "How detailed should it be?", "meaning": "どのくらい詳しくすべきですか", "kind": "phrase", "category": "clarifying", "example": "How detailed should it be — a one-pager or a full report?" },
+        { "text": "out of scope", "meaning": "（作業の）範囲外", "kind": "word", "category": "clarifying", "example": "So smaller competitors are out of scope?" },
+        { "text": "one-pager", "meaning": "1枚にまとめた資料", "kind": "word", "category": "reporting", "example": "I'll prepare a one-pager comparing the top three." }
+      ]
+    },
+    {
+      "title": "「若者向けのSNSキャンペーン」の依頼",
+      "focus": "あいまいな言葉の意味と、成功の基準をはっきりさせる",
+      "situation": "クライアントから「若者向けのSNSキャンペーンを来月までに」とだけ依頼が来ました。電話で詳しく確認します。",
+      "role": "広告代理店の新卒社員",
+      "facts": ["クライアントはスポーツ飲料のメーカー", "「若者」が何歳を指すかは不明", "予算・使うSNS・成果の測り方は聞いていない", "来月のいつまでかも決まっていない"],
+      "goal": "質問して、対象・予算・期限・成果の基準をはっきりさせる",
+      "partner": "You are Jessica, the client's brand manager. You are busy and speak in general terms, assuming the agency understands. You have a budget of about 5 million yen in mind but won't say it unless asked. Open by restating your request briefly and asking when they can send a plan.",
+      "topic": "vague social media campaign request",
+      "expressions": [
+        { "text": "When you say ___, do you mean ___?", "meaning": "〜とおっしゃるのは、〜という意味ですか", "kind": "phrase", "category": "clarifying", "example": "When you say young people, do you mean university students?" },
+        { "text": "target audience", "meaning": "ターゲット層", "kind": "word", "category": "clarifying", "example": "Could you tell me more about the target audience?" },
+        { "text": "What does success look like?", "meaning": "何ができたら成功ですか（成功の基準は）", "kind": "phrase", "category": "clarifying", "example": "For this campaign, what does success look like for you?" }
+      ]
+    },
+    {
+      "title": "「在庫データを見やすく」の依頼",
+      "focus": "聞いた内容を言い換えて要約し、理解が合っているか確かめる",
+      "situation": "海外拠点の部長から「在庫のデータを見やすくしてほしい」と頼まれました。作り始める前に確認します。",
+      "role": "日系商社のデータ分析チームの新人",
+      "facts": ["在庫データは毎日、表計算ソフトで届く", "扱う商品は約3,000品目", "誰が・何を判断するために見るのかは不明", "今の資料は部長が「読みにくい」と言っている"],
+      "goal": "誰が何のために見るのか、どの数字が大事かを聞き出し、作るものを決める",
+      "partner": "You are Mr. Tan, the head of the Singapore branch. You mainly want to spot items that are about to run out, but you haven't said so. You get impatient with too many technical questions. Open by asking if the learner can make the inventory data easier to read.",
+      "topic": "unclear inventory dashboard request",
+      "expressions": [
+        { "text": "So if I understand correctly, ___", "meaning": "つまり、私の理解では〜ということですね", "kind": "phrase", "category": "clarifying", "example": "So if I understand correctly, you want to see which items are running low." },
+        { "text": "at a glance", "meaning": "ひと目で", "kind": "word", "category": "reporting", "example": "You'd be able to see the risky items at a glance." },
+        { "text": "Let me summarize what I've heard", "meaning": "伺ったことをまとめさせてください", "kind": "phrase", "category": "clarifying", "example": "Let me summarize what I've heard before I start." }
+      ]
     }
   ],
   "negotiate": [
     {
-      "title": "納期を2週間早めたい依頼",
-      "situation": "クライアントから、システム開発の納期を2週間早めてほしいと頼まれました。条件つきで合意を目指します。",
-      "role": "IT企業のプロジェクトチームの若手",
-      "facts": ["今の納期は12月15日", "早めるには開発者を2人追加する必要がある（約150万円）", "一部の機能を次の段階に回せば人を増やさずに間に合う", "クライアントの年末セールに間に合わせたい事情がある"],
-      "goal": "無条件で受けず、範囲の縮小か追加費用かを選んでもらう形で合意する",
-      "partner": "You are Susan, the client's project director. You need the system before a year-end sale and you think the vendor has buffer in the schedule. You'd rather not pay more, but losing the sale would cost far more. Open by asking to move the deadline two weeks earlier.",
-      "topic": "deadline acceleration negotiation"
-    },
-    {
-      "title": "15%の値下げ要求",
-      "situation": "長く取引しているアメリカの顧客から、来年の価格を15%下げてほしいと言われました。",
-      "role": "部品メーカーの営業部・新卒社員",
-      "facts": ["原材料費は今年8%上がった", "値下げの余地は最大5%", "発注量が2割増えるなら、単価をもう少し下げられる", "3年契約なら生産計画が立てやすい"],
-      "goal": "15%は断り、数量増や長期契約と引き換えに一部の値下げで折り合う",
-      "partner": "You are Robert, the procurement manager. Your company has a new cost-cutting target, and a competitor offered a lower price. You are willing to commit to larger volumes if the price is right. Open by saying you need a 15% price reduction next year.",
-      "topic": "price reduction request negotiation"
-    },
-    {
-      "title": "支払い期日の短縮",
-      "situation": "資金繰りの改善のため、取引先に支払い期日を60日から30日に短くしてもらう交渉をします。",
-      "role": "中堅メーカーの経理部の若手",
-      "facts": ["取引先はイギリスの販売代理店", "今の支払い期日は請求から60日", "代わりに2%の早期支払い割引を出せる", "過去3年、支払いの遅れは一度もない"],
-      "goal": "30日への変更を提案し、割引などの条件で合意点を探す",
-      "partner": "You are James, the finance manager at the UK distributor. You like the current 60-day terms because they help your cash flow. A discount could interest you, but you'd prefer 45 days. Open by asking what they wanted to discuss.",
-      "topic": "payment terms negotiation"
-    },
-    {
-      "title": "追加の要望を無償で",
-      "situation": "開発中のアプリに、クライアントが新しい機能を無料で追加してほしいと言ってきました。",
-      "role": "アプリ開発会社のプロジェクトアシスタント",
-      "facts": ["追加したい機能は多言語対応（5言語）", "作業量は約3週間分", "契約書には追加の要望は別料金と書いてある", "クライアントとは来年も別の案件がありそう"],
-      "goal": "関係を保ちながら、有料にするか次の段階に回すかで合意する",
-      "partner": "You are Olivia, the client's product manager. You think multi-language support was implied from the start. You don't have extra budget this quarter but might next quarter. Open by asking them to add multi-language support before launch.",
-      "topic": "scope creep free feature negotiation"
-    },
-    {
       "title": "最低発注数量の交渉",
+      "focus": "相手の方針を尊重しつつ、こちらの希望を伝えて打診する",
       "situation": "新しく取引を始めたいタイの工場に、最低発注数量を下げてもらう交渉をします。",
       "role": "日系雑貨メーカーの調達担当（入社1年目）",
       "facts": ["工場の最低発注数量は1回5,000個", "自社が最初に必要なのは1,500個", "売れ行きがよければ半年後に月1万個になる見込み", "単価が多少上がっても少量から始めたい"],
       "goal": "将来の見込みを示して、少量から始める条件で合意する",
       "partner": "You are Somchai, the sales manager at the factory in Thailand. Small orders are not profitable for you, but you want new long-term customers. You could accept 2,000 units at a higher unit price. Open by explaining your minimum order policy.",
-      "topic": "minimum order quantity negotiation supplier"
+      "topic": "minimum order quantity negotiation supplier",
+      "expressions": [
+        { "text": "Would you be open to ___?", "meaning": "〜をご検討いただけますか", "kind": "phrase", "category": "negotiating", "example": "Would you be open to a smaller first order?" },
+        { "text": "minimum order quantity", "meaning": "最低発注数量", "kind": "word", "category": "negotiating", "example": "Your minimum order quantity is a bit high for us at first." },
+        { "text": "in the long run", "meaning": "長い目で見れば", "kind": "word", "category": "negotiating", "example": "In the long run, we could order 10,000 units a month." }
+      ]
+    },
+    {
+      "title": "納期を2週間早めたい依頼",
+      "focus": "「もし〜なら〜できます」と条件つきで提案する",
+      "situation": "クライアントから、システム開発の納期を2週間早めてほしいと頼まれました。条件つきで合意を目指します。",
+      "role": "IT企業のプロジェクトチームの若手",
+      "facts": ["今の納期は12月15日", "早めるには開発者を2人追加する必要がある（約150万円）", "一部の機能を次の段階に回せば人を増やさずに間に合う", "クライアントの年末セールに間に合わせたい事情がある"],
+      "goal": "無条件で受けず、範囲の縮小か追加費用かを選んでもらう形で合意する",
+      "partner": "You are Susan, the client's project director. You need the system before a year-end sale and you think the vendor has buffer in the schedule. You'd rather not pay more, but losing the sale would cost far more. Open by asking to move the deadline two weeks earlier.",
+      "topic": "deadline acceleration negotiation",
+      "expressions": [
+        { "text": "If we ___, we could ___", "meaning": "もし〜すれば、〜できます", "kind": "phrase", "category": "negotiating", "example": "If we move two features to phase two, we could finish by December 1st." },
+        { "text": "scale back", "meaning": "（規模・範囲を）縮小する", "kind": "word", "category": "negotiating", "example": "We'd need to scale back the first release." },
+        { "text": "on one condition", "meaning": "一つ条件があります", "kind": "word", "category": "negotiating", "example": "We can do it, on one condition." }
+      ]
+    },
+    {
+      "title": "支払い期日の短縮",
+      "focus": "譲歩と引き換えに、こちらの条件を通す",
+      "situation": "資金繰りの改善のため、取引先に支払い期日を60日から30日に短くしてもらう交渉をします。",
+      "role": "中堅メーカーの経理部の若手",
+      "facts": ["取引先はイギリスの販売代理店", "今の支払い期日は請求から60日", "代わりに2%の早期支払い割引を出せる", "過去3年、支払いの遅れは一度もない"],
+      "goal": "30日への変更を提案し、割引などの条件で合意点を探す",
+      "partner": "You are James, the finance manager at the UK distributor. You like the current 60-day terms because they help your cash flow. A discount could interest you, but you'd prefer 45 days. Open by asking what they wanted to discuss.",
+      "topic": "payment terms negotiation",
+      "expressions": [
+        { "text": "In return, ___", "meaning": "その代わりに、〜", "kind": "phrase", "category": "negotiating", "example": "In return, we could offer a 2% discount." },
+        { "text": "payment terms", "meaning": "支払い条件", "kind": "word", "category": "negotiating", "example": "We'd like to review our payment terms." },
+        { "text": "Would that work for you?", "meaning": "それでよろしいでしょうか（ご都合に合いますか）", "kind": "phrase", "category": "negotiating", "example": "Thirty days with a 2% discount — would that work for you?" }
+      ]
+    },
+    {
+      "title": "追加の要望を無償で",
+      "focus": "関係を保ちながら、できないことははっきり断る",
+      "situation": "開発中のアプリに、クライアントが新しい機能を無料で追加してほしいと言ってきました。",
+      "role": "アプリ開発会社のプロジェクトアシスタント",
+      "facts": ["追加したい機能は多言語対応（5言語）", "作業量は約3週間分", "契約書には追加の要望は別料金と書いてある", "クライアントとは来年も別の案件がありそう"],
+      "goal": "関係を保ちながら、有料にするか次の段階に回すかで合意する",
+      "partner": "You are Olivia, the client's product manager. You think multi-language support was implied from the start. You don't have extra budget this quarter but might next quarter. Open by asking them to add multi-language support before launch.",
+      "topic": "scope creep free feature negotiation",
+      "expressions": [
+        { "text": "I'm afraid we can't ___, but ___", "meaning": "申し訳ありませんが〜はできません。ただ〜", "kind": "phrase", "category": "negotiating", "example": "I'm afraid we can't add it for free, but we could include it in phase two." },
+        { "text": "change request", "meaning": "（契約後の）変更依頼", "kind": "word", "category": "negotiating", "example": "We'd handle this as a change request." },
+        { "text": "I understand this is important to you", "meaning": "これが大切なことは理解しています", "kind": "phrase", "category": "negotiating", "example": "I understand this is important to you, so let's find a way." }
+      ]
+    },
+    {
+      "title": "15%の値下げ要求",
+      "focus": "大きすぎる要求を分解し、現実的な落とし所まで持っていく",
+      "situation": "長く取引しているアメリカの顧客から、来年の価格を15%下げてほしいと言われました。",
+      "role": "部品メーカーの営業部・新卒社員",
+      "facts": ["原材料費は今年8%上がった", "値下げの余地は最大5%", "発注量が2割増えるなら、単価をもう少し下げられる", "3年契約なら生産計画が立てやすい"],
+      "goal": "15%は断り、数量増や長期契約と引き換えに一部の値下げで折り合う",
+      "partner": "You are Robert, the procurement manager. Your company has a new cost-cutting target, and a competitor offered a lower price. You are willing to commit to larger volumes if the price is right. Open by saying you need a 15% price reduction next year.",
+      "topic": "price reduction request negotiation",
+      "expressions": [
+        { "text": "That's more than we can do", "meaning": "それは私たちにはできる範囲を超えています", "kind": "phrase", "category": "negotiating", "example": "Fifteen percent is more than we can do, I'm afraid." },
+        { "text": "meet you halfway", "meaning": "歩み寄る・折衷する", "kind": "word", "category": "negotiating", "example": "We could meet you halfway if you increase your volume." },
+        { "text": "volume discount", "meaning": "数量割引", "kind": "word", "category": "negotiating", "example": "A volume discount would be possible with a 20% increase." }
+      ]
     }
   ],
   "presentation-qa": [
     {
-      "title": "サブスクリプション型サービスの提案",
-      "situation": "社内の新規事業コンテストで、家電の定額レンタルサービスを提案し終えたところです。審査員から質問を受けます。",
-      "role": "家電メーカーの若手社員（提案チームの発表者）",
-      "facts": ["月額2,980円で最新の家電を使える", "3年目に黒字化する計画", "初期投資は約2億円", "競合の大手レンタル会社が1社ある"],
-      "goal": "数字の根拠とリスクへの備えを、落ち着いて簡潔に答える",
-      "partner": "You are Mr. Clarke, a board member judging the contest. You are sharp and skeptical about subscription models. You will ask about the break-even assumptions, churn, and what happens if a big competitor copies the idea. Open by thanking them and asking your first tough question.",
-      "topic": "subscription business proposal Q&A"
-    },
-    {
-      "title": "物流拠点の統合案",
-      "situation": "国内の物流倉庫を3か所から1か所にまとめる案を、経営陣に発表し終えました。質疑に移ります。",
-      "role": "物流会社の経営企画部・若手",
-      "facts": ["統合すると年間約1億2,000万円の削減", "移行には8か月かかる", "移行中は一部地域で配達が1日遅れる可能性", "新しい倉庫は自動化率が高い"],
-      "goal": "削減額の根拠と移行中のリスク対策を、質問の意図に沿って答える",
-      "partner": "You are Ms. Wright, the COO. You like savings but fear service problems during the transition, especially for your biggest retail client. Ask about the assumptions and the contingency plan. Open by saying the numbers look attractive but you have concerns.",
-      "topic": "warehouse consolidation proposal Q&A"
-    },
-    {
-      "title": "新興国向けの低価格モデル",
-      "situation": "インドネシア向けに機能を絞った低価格スマホを出す案を発表しました。海外事業部の部長から質問を受けます。",
-      "role": "電機メーカーの商品企画部・新卒社員",
-      "facts": ["販売価格は約1万5,000円", "インドネシアのスマホ市場は年8%成長", "利益率は今の主力モデルの半分", "現地の販売店2社と話を始めている"],
-      "goal": "ブランドへの影響や利益率への懸念に、根拠を示して答える",
-      "partner": "You are David, head of the international division. You worry that a cheap model will damage the premium brand and cannibalize sales. You also want to know how they will compete with Chinese brands. Open by asking about the brand risk.",
-      "topic": "low-cost model emerging market Q&A"
-    },
-    {
-      "title": "生成AIで問い合わせ対応を自動化",
-      "situation": "カスタマーサポートに生成AIを導入する案を発表しました。サポート部門の責任者から質問を受けます。",
-      "role": "通信会社のDX推進チームの若手",
-      "facts": ["問い合わせの約60%は定型的な質問", "導入費用は約3,000万円、1年で回収見込み", "試験運用では正答率は92%だった", "難しい問い合わせは人に引き継ぐ"],
-      "goal": "精度・顧客満足・社員の仕事への影響について、誠実に答える",
-      "partner": "You are Helen, head of customer support. You worry about wrong answers damaging customer trust and about what happens to your team. You are not against AI, but you want safeguards. Open by asking what happens when the AI gets it wrong.",
-      "topic": "generative AI customer support proposal Q&A"
-    },
-    {
       "title": "環境に配慮した包装への切り替え",
+      "focus": "質問を受け止めて、まず一言で答えてから補足する",
       "situation": "食品のパッケージをプラスチックから紙素材に切り替える案を発表しました。営業部長から質問が来ます。",
       "role": "食品メーカーのサステナビリティ推進室・新卒社員",
       "facts": ["包装コストは1個あたり約4円上がる", "調査では消費者の約45%が「多少高くても買う」と回答", "大手スーパー2社が環境配慮の商品を優先すると発表", "賞味期限への影響は試験中"],
       "goal": "コスト増と売上への影響について、データを使って説得力のある答えをする",
       "partner": "You are Paul, the head of sales. Retailers are pushing you for lower prices, so any cost increase worries you. You doubt that consumers will really pay more. Open by asking who is going to pay for the extra four yen per pack.",
-      "topic": "sustainable packaging switch proposal Q&A"
+      "topic": "sustainable packaging switch proposal Q&A",
+      "expressions": [
+        { "text": "That's a fair question.", "meaning": "もっともなご質問です", "kind": "phrase", "category": "presenting", "example": "That's a fair question. In short, part of it would be passed on to price." },
+        { "text": "In short, ___", "meaning": "手短に言うと〜", "kind": "phrase", "category": "presenting", "example": "In short, the retailers are asking for it." },
+        { "text": "willingness to pay", "meaning": "（消費者の）支払い意欲", "kind": "word", "category": "presenting", "example": "Our survey shows a clear willingness to pay among 45% of shoppers." }
+      ]
+    },
+    {
+      "title": "物流拠点の統合案",
+      "focus": "数字の根拠（前提）を分かりやすく説明する",
+      "situation": "国内の物流倉庫を3か所から1か所にまとめる案を、経営陣に発表し終えました。質疑に移ります。",
+      "role": "物流会社の経営企画部・若手",
+      "facts": ["統合すると年間約1億2,000万円の削減", "移行には8か月かかる", "移行中は一部地域で配達が1日遅れる可能性", "新しい倉庫は自動化率が高い"],
+      "goal": "削減額の根拠と移行中のリスク対策を、質問の意図に沿って答える",
+      "partner": "You are Ms. Wright, the COO. You like savings but fear service problems during the transition, especially for your biggest retail client. Ask about the assumptions and the contingency plan. Open by saying the numbers look attractive but you have concerns.",
+      "topic": "warehouse consolidation proposal Q&A",
+      "expressions": [
+        { "text": "This is based on ___", "meaning": "これは〜に基づいています", "kind": "phrase", "category": "presenting", "example": "This is based on last year's shipping volume." },
+        { "text": "key assumption", "meaning": "重要な前提", "kind": "word", "category": "presenting", "example": "Our key assumption is that volume stays flat." },
+        { "text": "cost savings", "meaning": "コスト削減（額）", "kind": "word", "category": "presenting", "example": "Most of the cost savings come from rent and staffing." }
+      ]
+    },
+    {
+      "title": "生成AIで問い合わせ対応を自動化",
+      "focus": "答えられない質問に、誠実に対応する",
+      "situation": "カスタマーサポートに生成AIを導入する案を発表しました。サポート部門の責任者から質問を受けます。",
+      "role": "通信会社のDX推進チームの若手",
+      "facts": ["問い合わせの約60%は定型的な質問", "導入費用は約3,000万円、1年で回収見込み", "試験運用では正答率は92%だった", "難しい問い合わせは人に引き継ぐ"],
+      "goal": "精度・顧客満足・社員の仕事への影響について、誠実に答える",
+      "partner": "You are Helen, head of customer support. You worry about wrong answers damaging customer trust and about what happens to your team. You are not against AI, but you want safeguards. Open by asking what happens when the AI gets it wrong.",
+      "topic": "generative AI customer support proposal Q&A",
+      "expressions": [
+        { "text": "I don't have that figure right now, but I'll ___", "meaning": "今その数字は手元にありませんが、〜します", "kind": "phrase", "category": "presenting", "example": "I don't have that figure right now, but I'll send it to you today." },
+        { "text": "follow up", "meaning": "（後で）追って対応・連絡する", "kind": "word", "category": "presenting", "example": "Let me follow up with the exact numbers." },
+        { "text": "safeguard", "meaning": "安全策・歯止め", "kind": "word", "category": "presenting", "example": "As a safeguard, complex cases go to a human agent." }
+      ]
+    },
+    {
+      "title": "新興国向けの低価格モデル",
+      "focus": "批判や懸念に、角を立てずに反論する",
+      "situation": "インドネシア向けに機能を絞った低価格スマホを出す案を発表しました。海外事業部の部長から質問を受けます。",
+      "role": "電機メーカーの商品企画部・新卒社員",
+      "facts": ["販売価格は約1万5,000円", "インドネシアのスマホ市場は年8%成長", "利益率は今の主力モデルの半分", "現地の販売店2社と話を始めている"],
+      "goal": "ブランドへの影響や利益率への懸念に、根拠を示して答える",
+      "partner": "You are David, head of the international division. You worry that a cheap model will damage the premium brand and cannibalize sales. You also want to know how they will compete with Chinese brands. Open by asking about the brand risk.",
+      "topic": "low-cost model emerging market Q&A",
+      "expressions": [
+        { "text": "I'd push back a little on that", "meaning": "その点には少し異論があります", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I'd push back a little on that — our premium customers are in different markets." },
+        { "text": "cannibalize", "meaning": "（自社の既存商品の売上を）食い合う", "kind": "word", "category": "presenting", "example": "We don't expect it to cannibalize our main model." },
+        { "text": "Our view is that ___", "meaning": "私たちの考えでは〜です", "kind": "phrase", "category": "presenting", "example": "Our view is that growth will come from first-time buyers." }
+      ]
+    },
+    {
+      "title": "サブスクリプション型サービスの提案",
+      "focus": "続けざまの厳しい質問を、整理して一つずつ答える",
+      "situation": "社内の新規事業コンテストで、家電の定額レンタルサービスを提案し終えたところです。審査員から質問を受けます。",
+      "role": "家電メーカーの若手社員（提案チームの発表者）",
+      "facts": ["月額2,980円で最新の家電を使える", "3年目に黒字化する計画", "初期投資は約2億円", "競合の大手レンタル会社が1社ある"],
+      "goal": "数字の根拠とリスクへの備えを、落ち着いて簡潔に答える",
+      "partner": "You are Mr. Clarke, a board member judging the contest. You are sharp and skeptical about subscription models. Ask about the break-even assumptions, churn, and what happens if a big competitor copies the idea — sometimes two questions at once. Open by thanking them and asking your first tough question.",
+      "topic": "subscription business proposal Q&A",
+      "expressions": [
+        { "text": "Let me take those one at a time", "meaning": "一つずつお答えします", "kind": "phrase", "category": "presenting", "example": "Good questions — let me take those one at a time." },
+        { "text": "churn rate", "meaning": "解約率", "kind": "word", "category": "presenting", "example": "We assumed a monthly churn rate of 3%." },
+        { "text": "worst-case scenario", "meaning": "最悪の場合（のシナリオ）", "kind": "word", "category": "presenting", "example": "In the worst-case scenario, we break even in year four." }
+      ]
     }
   ],
   "small-talk": [
     {
       "title": "会議前、シンガポールの同僚と週末の話",
+      "focus": "質問に答えたら、質問を返して会話をつなぐ",
       "situation": "オンライン会議が始まるまでの数分間、シンガポールの同僚と雑談します。",
       "role": "インターン生（週末や趣味の話は、あなた自身のことを話してOK）",
       "facts": ["今日は月曜の朝", "相手は最近ランニングを始めたらしい", "シンガポールは先週末、大雨だった"],
       "goal": "相手の話に反応しながら、自分の週末のことも話して会話を続ける",
       "partner": "You are Mei, a colleague in Singapore. You are cheerful and chatty. You ran your first 10K this weekend in the rain and are proud of it. Open by asking how their weekend was.",
-      "topic": "weekend small talk before meeting"
-    },
-    {
-      "title": "来日した同僚に東京を案内",
-      "situation": "出張で初めて東京に来たアメリカ人の同僚と、仕事終わりに少し話します。",
-      "role": "インターン生（おすすめの場所などは、あなた自身の好みで話してOK）",
-      "facts": ["相手は東京に3日間滞在する", "日本食は寿司しか食べたことがない", "明日の夜が空いている"],
-      "goal": "おすすめの場所や食べ物を、理由をつけて紹介する",
-      "partner": "You are Jake, a colleague from Chicago on his first trip to Tokyo. You are excited but a bit overwhelmed. You love trying local food but can't handle very spicy things. Open by saying Tokyo is amazing and asking what you should not miss.",
-      "topic": "recommending Tokyo to visiting colleague"
-    },
-    {
-      "title": "ロンドンの同僚と季節の話",
-      "situation": "会議の開始を待つ間、ロンドンの同僚と天気や季節の話になりました。",
-      "role": "インターン生（日本の季節や暮らしは、あなた自身の感覚で話してOK）",
-      "facts": ["ロンドンは最近、暗くなるのが早い", "日本は紅葉の季節", "相手は来年、日本旅行を考えている"],
-      "goal": "日本の季節の楽しみ方を伝え、旅行のアドバイスもする",
-      "partner": "You are Oliver, a colleague in London. You joke about the grey weather and are planning a trip to Japan next year with your partner. Open by complaining lightly about the weather and asking what it's like in Tokyo.",
-      "topic": "seasons weather small talk London"
+      "topic": "weekend small talk before meeting",
+      "expressions": [
+        { "text": "Not much, I just ___", "meaning": "特に何も。ただ〜しただけです", "kind": "phrase", "category": "small_talk", "example": "Not much, I just stayed home and caught up on some reading." },
+        { "text": "take it easy", "meaning": "のんびりする", "kind": "word", "category": "small_talk", "example": "I decided to take it easy this weekend." },
+        { "text": "Good for you!", "meaning": "よかったね！／すごいね！", "kind": "phrase", "category": "small_talk", "example": "Your first 10K? Good for you!" }
+      ]
     },
     {
       "title": "ランチで趣味とスポーツの話",
+      "focus": "相手の話を広げる質問をする",
       "situation": "オフィスのランチで、アメリカから来た社員と隣の席になりました。",
       "role": "インターン生（趣味の話は、あなた自身のことでOK）",
       "facts": ["相手は大の野球ファン", "日本の野球を球場で見たことがない", "あなたの好きなことを聞かれそう"],
       "goal": "共通の話題を見つけて、質問を返しながら会話を広げる",
       "partner": "You are Mike, an American employee on a six-month assignment in Tokyo. You love baseball and want to see a game in Japan. You are also curious about what young Japanese people do for fun. Open by asking if the seat is free and making small talk about lunch.",
-      "topic": "lunch small talk hobbies sports"
+      "topic": "lunch small talk hobbies sports",
+      "expressions": [
+        { "text": "What got you into ___?", "meaning": "〜を始めたきっかけは何ですか", "kind": "phrase", "category": "small_talk", "example": "What got you into baseball?" },
+        { "text": "be into", "meaning": "〜にはまっている", "kind": "word", "category": "small_talk", "example": "Lately I've been into bouldering." },
+        { "text": "I've always wanted to ___", "meaning": "ずっと〜してみたいと思っていました", "kind": "phrase", "category": "small_talk", "example": "I've always wanted to see a game at Koshien." }
+      ]
+    },
+    {
+      "title": "来日した同僚に東京を案内",
+      "focus": "おすすめを、理由をつけて伝える",
+      "situation": "出張で初めて東京に来たアメリカ人の同僚と、仕事終わりに少し話します。",
+      "role": "インターン生（おすすめの場所などは、あなた自身の好みで話してOK）",
+      "facts": ["相手は東京に3日間滞在する", "日本食は寿司しか食べたことがない", "明日の夜が空いている"],
+      "goal": "おすすめの場所や食べ物を、理由をつけて紹介する",
+      "partner": "You are Jake, a colleague from Chicago on his first trip to Tokyo. You are excited but a bit overwhelmed. You love trying local food but can't handle very spicy things. Open by saying Tokyo is amazing and asking what you should not miss.",
+      "topic": "recommending Tokyo to visiting colleague",
+      "expressions": [
+        { "text": "If I were you, I'd ___", "meaning": "私があなたなら〜します", "kind": "phrase", "category": "small_talk", "example": "If I were you, I'd try an izakaya in Ebisu." },
+        { "text": "off the beaten path", "meaning": "観光客があまり行かない（穴場の）", "kind": "word", "category": "small_talk", "example": "Yanaka is a bit off the beaten path, but it's lovely." },
+        { "text": "It's worth ___ing", "meaning": "〜する価値があります", "kind": "phrase", "category": "small_talk", "example": "It's worth getting up early for the fish market." }
+      ]
     },
     {
       "title": "年末の休みの予定",
+      "focus": "日本の文化や習慣を、背景とともに説明する",
       "situation": "年末が近づき、オーストラリアの同僚と休暇の予定の話になりました。",
       "role": "インターン生（予定の話は、あなた自身のことでOK）",
       "facts": ["オーストラリアの年末は夏", "相手は家族とビーチに行く予定", "日本の年末年始の過ごし方に興味がある"],
       "goal": "日本の年末年始の習慣を説明し、相手の予定にも反応する",
       "partner": "You are Chloe, a colleague in Melbourne. You are going to the beach with your family for Christmas and find it funny that it's winter in Japan. You want to know about New Year traditions in Japan. Open by asking about their holiday plans.",
-      "topic": "year-end holiday plans small talk"
+      "topic": "year-end holiday plans small talk",
+      "expressions": [
+        { "text": "It's a tradition to ___", "meaning": "〜するのが習わしです", "kind": "phrase", "category": "small_talk", "example": "It's a tradition to visit a shrine on New Year's Day." },
+        { "text": "The idea is that ___", "meaning": "（その習慣の）意味は〜ということです", "kind": "phrase", "category": "small_talk", "example": "The idea is that you start the year with a clean slate." },
+        { "text": "get-together", "meaning": "（気軽な）集まり", "kind": "word", "category": "small_talk", "example": "We usually have a family get-together on the 1st." }
+      ]
+    },
+    {
+      "title": "ロンドンの同僚と季節の話",
+      "focus": "旅行のアドバイスを、条件や比較を交えて少し長く話す",
+      "situation": "会議の開始を待つ間、ロンドンの同僚と天気や季節の話になりました。",
+      "role": "インターン生（日本の季節や暮らしは、あなた自身の感覚で話してOK）",
+      "facts": ["ロンドンは最近、暗くなるのが早い", "日本は紅葉の季節", "相手は来年、日本旅行を考えている"],
+      "goal": "日本の季節の楽しみ方を伝え、旅行のアドバイスもする",
+      "partner": "You are Oliver, a colleague in London. You joke about the grey weather and are planning a trip to Japan next year with your partner. Open by complaining lightly about the weather and asking what it's like in Tokyo.",
+      "topic": "seasons weather small talk London",
+      "expressions": [
+        { "text": "The best time to ___ is ___", "meaning": "〜するのに一番いい時期は〜です", "kind": "phrase", "category": "small_talk", "example": "The best time to see the autumn leaves is late November." },
+        { "text": "peak season", "meaning": "（観光の）繁忙期", "kind": "word", "category": "small_talk", "example": "Hotels are expensive during peak season." },
+        { "text": "avoid the crowds", "meaning": "人混みを避ける", "kind": "word", "category": "small_talk", "example": "If you go early in the morning, you can avoid the crowds." }
+      ]
     }
   ],
   "feedback-1on1": [
     {
       "title": "初めての報告資料へのフィードバック",
+      "focus": "指摘を受け止め、具体例を聞いて理解を深める",
       "situation": "初めて作った報告資料について、マネージャーとの1on1でフィードバックを受けます。",
       "role": "コンサル会社の新卒アナリスト",
       "facts": ["資料は20枚あった", "マネージャーは「結論が最後まで出てこない」と感じている", "データの正確さは褒められそう", "次の資料は来週金曜が締切"],
       "goal": "指摘を受け止めて具体的に確認し、次にどう直すかを自分から提案する",
       "partner": "You are Anna, the learner's manager. You liked the data work but the deck buried the conclusion on slide 18. You want them to lead with the answer. Be supportive and specific. Open by thanking them for the deck and asking how they felt it went.",
-      "topic": "feedback on first report deck"
+      "topic": "feedback on first report deck",
+      "expressions": [
+        { "text": "Could you give me an example of ___?", "meaning": "〜の例を挙げていただけますか", "kind": "phrase", "category": "feedback", "example": "Could you give me an example of a slide that worked well?" },
+        { "text": "lead with", "meaning": "（結論などを）先に出す", "kind": "word", "category": "feedback", "example": "Next time I'll lead with the recommendation." },
+        { "text": "That makes sense.", "meaning": "なるほど、納得です", "kind": "phrase", "category": "feedback", "example": "That makes sense. The conclusion should come first." }
+      ]
     },
     {
       "title": "会議で発言が少ない",
+      "focus": "自分の事情を正直に説明し、改善を約束する",
       "situation": "マネージャーから、チーム会議での発言が少ないことについて話がありました。",
       "role": "IT企業の新卒社員",
       "facts": ["会議は週2回、全員英語", "あなたは準備はしているが、話すタイミングがつかめない", "マネージャーはあなたの意見を聞きたいと思っている"],
       "goal": "事情を正直に説明し、発言しやすくするための工夫を一緒に決める",
       "partner": "You are Greg, the learner's manager. You think the learner has good ideas because their written updates are strong. You want to help, not criticize. Open by saying you'd like to hear their view in meetings more often.",
-      "topic": "speaking up in meetings feedback"
+      "topic": "speaking up in meetings feedback",
+      "expressions": [
+        { "text": "To be honest, I find it hard to ___", "meaning": "正直に言うと、〜するのが難しいです", "kind": "phrase", "category": "feedback", "example": "To be honest, I find it hard to jump into fast discussions." },
+        { "text": "chime in", "meaning": "（会話に）口をはさむ・意見を加える", "kind": "word", "category": "meetings", "example": "I'm never sure when it's okay to chime in." },
+        { "text": "I'll make a point of ___ing", "meaning": "意識して〜するようにします", "kind": "phrase", "category": "feedback", "example": "I'll make a point of sharing one idea in every meeting." }
+      ]
     },
     {
       "title": "締切直前の相談が多い",
+      "focus": "謝ったうえで、再発防止の具体策を示す",
       "situation": "締切の直前になってから相談することが多いと、1on1で指摘されました。",
       "role": "マーケティング部の若手社員",
       "facts": ["この1か月で3回、締切前日に相談した", "どれも途中で問題に気づいていた", "マネージャーは忙しそうで声をかけづらかった"],
       "goal": "理由を説明して謝り、早めに相談するための具体的なルールを提案する",
       "partner": "You are Sarah, the learner's manager. You are not angry, but late surprises make you nervous. You'd welcome a quick message as soon as a problem appears. Open by mentioning the last-minute questions and asking what's been happening.",
-      "topic": "last-minute escalation feedback"
+      "topic": "last-minute escalation feedback",
+      "expressions": [
+        { "text": "I should have ___ earlier", "meaning": "もっと早く〜すべきでした", "kind": "phrase", "category": "feedback", "example": "I should have told you about the problem earlier." },
+        { "text": "escalate", "meaning": "（上の人に）問題を上げる・相談する", "kind": "word", "category": "feedback", "example": "I wasn't sure when to escalate small issues." },
+        { "text": "Going forward, I'll ___", "meaning": "今後は〜します", "kind": "phrase", "category": "feedback", "example": "Going forward, I'll message you as soon as I see a risk." }
+      ]
     },
     {
       "title": "良い評価と次の役割",
+      "focus": "評価にお礼を言い、不安と必要な支援を率直に伝える",
       "situation": "半年間の振り返りの1on1です。仕事ぶりを評価され、次の役割の話になりました。",
       "role": "総合商社の新卒社員（入社半年）",
       "facts": ["担当した顧客2社から良い評価をもらった", "次は海外の取引先との窓口を任されそう", "英語での電話対応にはまだ自信がない"],
       "goal": "評価にお礼を言い、新しい役割への意欲と不安、必要なサポートを伝える",
       "partner": "You are Mr. Harris, the learner's manager. You are impressed and want to give them a client-facing role with overseas partners. You'd like to hear what support they need. Open by congratulating them on a strong first half.",
-      "topic": "positive review next role discussion"
+      "topic": "positive review next role discussion",
+      "expressions": [
+        { "text": "I really appreciate ___", "meaning": "〜に本当に感謝しています", "kind": "phrase", "category": "feedback", "example": "I really appreciate you giving me this chance." },
+        { "text": "step up", "meaning": "（より大きな役割に）踏み出す・一段上がる", "kind": "word", "category": "feedback", "example": "I'm ready to step up and take on overseas clients." },
+        { "text": "It would help me if ___", "meaning": "〜していただけると助かります", "kind": "phrase", "category": "feedback", "example": "It would help me if I could join a few calls with you first." }
+      ]
     },
     {
       "title": "自分から改善提案をする",
+      "focus": "気づいた問題を示し、小さく試す改善案を提案する",
       "situation": "1on1で「何か改善したいことはある？」と聞かれました。チームのタスク管理について提案します。",
       "role": "プロジェクトチームの若手メンバー",
       "facts": ["タスクはメールと表計算ソフトでばらばらに管理されている", "先月、担当の重複が2件あった", "無料で使えるタスク管理ツールを試したことがある"],
       "goal": "問題を具体的に説明し、小さく試す形で改善案を提案する",
       "partner": "You are Mark, the learner's team lead. You are open to ideas but worried about adding yet another tool the team won't use. Open by asking if there's anything they'd like to improve in how the team works.",
-      "topic": "proposing team process improvement 1on1"
+      "topic": "proposing team process improvement 1on1",
+      "expressions": [
+        { "text": "One thing I've noticed is ___", "meaning": "一つ気づいたのは〜ということです", "kind": "phrase", "category": "feedback", "example": "One thing I've noticed is that tasks get duplicated." },
+        { "text": "streamline", "meaning": "（仕事の流れを）効率化する", "kind": "word", "category": "meetings", "example": "A shared board could streamline how we track tasks." },
+        { "text": "Why don't we try ___ for a month?", "meaning": "1か月だけ〜を試してみませんか", "kind": "phrase", "category": "meetings", "example": "Why don't we try one shared board for a month?" }
+      ]
     }
   ],
   "free-talk": [
     {
-      "title": "AIは仕事を奪うか、生み出すか",
-      "situation": "生成AIが仕事に与える影響について、海外の友人と意見を交わします。",
-      "role": null,
-      "facts": ["事務や翻訳などの仕事は変わりつつある", "AIを使いこなす人の生産性が上がるという調査もある", "新しい職種（AIの監督・評価など）も生まれている", "自分の将来の仕事への影響も話せる"],
-      "goal": "自分の立場をはっきりさせ、理由と具体例をつけて話す",
-      "partner": "You are Sam, a friend who works in tech in San Francisco. You are optimistic about AI but worried about entry-level jobs disappearing. You enjoy a good debate. Open by asking whether they think AI will take their future job.",
-      "topic": "AI and jobs discussion"
-    },
-    {
-      "title": "サプライチェーンの国内回帰",
-      "situation": "コロナ禍や地政学リスクをきっかけに進む、生産の国内回帰について議論します。",
-      "role": null,
-      "facts": ["半導体などで国内に工場を戻す動きがある", "国内生産は人件費が高い", "一国に頼るリスクは実際に表面化した", "「分散」という中間の選択肢もある"],
-      "goal": "メリットとデメリットを比べて、自分の考えを述べる",
-      "partner": "You are Laura, a researcher at a think tank in Washington. You think reshoring is mostly political and economically inefficient. You like concrete examples. Open by asking what they think about companies bringing factories back home.",
-      "topic": "reshoring supply chain debate"
-    },
-    {
-      "title": "英語を社内公用語にすべきか",
-      "situation": "日本企業が英語を社内の公用語にすることの是非について、海外の友人と話します。",
-      "role": null,
-      "facts": ["一部の日本企業はすでに導入している", "海外の人材を採用しやすくなる", "社員の負担や意思疎通の質の低下という声もある"],
-      "goal": "自分の意見を理由とともに述べ、相手の反論にも答える",
-      "partner": "You are Ethan, a British friend who has worked in Tokyo. You have seen English-only policies work well and badly. You'll challenge whatever side they take. Open by asking if Japanese companies should make English their official language.",
-      "topic": "English as corporate language debate"
-    },
-    {
       "title": "リモートワークと出社",
+      "focus": "身近なテーマで、自分の意見と理由をはっきり言う",
       "situation": "リモートワークと出社のどちらが良いかについて、雑談から議論になりました。",
       "role": null,
       "facts": ["出社を求める大企業が増えている", "通勤時間がなくなるのは大きい", "新人は対面のほうが学びやすいという意見もある", "自分が働くならどちらがいいかも話せる"],
       "goal": "新人の立場から、どちらが良いかを具体的な理由で話す",
       "partner": "You are Rachel, a manager in Toronto who works fully remote. You love remote work but admit onboarding new graduates is hard. Open by asking whether they'd prefer to work from home or in the office when they start their career.",
-      "topic": "remote work vs office discussion"
+      "topic": "remote work vs office discussion",
+      "expressions": [
+        { "text": "Personally, I'd prefer ___ because ___", "meaning": "個人的には〜なので〜がいいです", "kind": "phrase", "category": "agreeing_disagreeing", "example": "Personally, I'd prefer the office because I'd learn faster." },
+        { "text": "On the other hand, ___", "meaning": "一方で〜", "kind": "phrase", "category": "hedging", "example": "On the other hand, commuting takes a lot of time." },
+        { "text": "work-life balance", "meaning": "仕事と生活のバランス", "kind": "word", "category": "general", "example": "Remote work can improve work-life balance." }
+      ]
+    },
+    {
+      "title": "AIは仕事を奪うか、生み出すか",
+      "focus": "具体例を挙げて、自分の意見を支える",
+      "situation": "生成AIが仕事に与える影響について、海外の友人と意見を交わします。",
+      "role": null,
+      "facts": ["事務や翻訳などの仕事は変わりつつある", "AIを使いこなす人の生産性が上がるという調査もある", "新しい職種（AIの監督・評価など）も生まれている", "自分の将来の仕事への影響も話せる"],
+      "goal": "自分の立場をはっきりさせ、理由と具体例をつけて話す",
+      "partner": "You are Sam, a friend who works in tech in San Francisco. You are optimistic about AI but worried about entry-level jobs disappearing. You enjoy a good debate. Open by asking whether they think AI will take their future job.",
+      "topic": "AI and jobs discussion",
+      "expressions": [
+        { "text": "Take ___, for example.", "meaning": "〜を例に取ると", "kind": "phrase", "category": "agreeing_disagreeing", "example": "Take translation, for example. The job is changing fast." },
+        { "text": "automate", "meaning": "自動化する", "kind": "word", "category": "general", "example": "Routine tasks are easy to automate." },
+        { "text": "It depends on ___", "meaning": "〜次第です", "kind": "phrase", "category": "hedging", "example": "It depends on how quickly companies retrain people." }
+      ]
+    },
+    {
+      "title": "英語を社内公用語にすべきか",
+      "focus": "良い面と悪い面を比べて、結論を出す",
+      "situation": "日本企業が英語を社内の公用語にすることの是非について、海外の友人と話します。",
+      "role": null,
+      "facts": ["一部の日本企業はすでに導入している", "海外の人材を採用しやすくなる", "社員の負担や意思疎通の質の低下という声もある"],
+      "goal": "自分の意見を理由とともに述べ、相手の反論にも答える",
+      "partner": "You are Ethan, a British friend who has worked in Tokyo. You have seen English-only policies work well and badly. You'll challenge whatever side they take. Open by asking if Japanese companies should make English their official language.",
+      "topic": "English as corporate language debate",
+      "expressions": [
+        { "text": "There are pros and cons.", "meaning": "良い点も悪い点もあります", "kind": "phrase", "category": "hedging", "example": "There are pros and cons, but overall I'm in favor." },
+        { "text": "outweigh", "meaning": "（〜より）上回る・勝る", "kind": "word", "category": "agreeing_disagreeing", "example": "I think the benefits outweigh the costs." },
+        { "text": "All things considered, ___", "meaning": "すべてを考え合わせると〜", "kind": "phrase", "category": "agreeing_disagreeing", "example": "All things considered, a gradual approach makes more sense." }
+      ]
+    },
+    {
+      "title": "サプライチェーンの国内回帰",
+      "focus": "複雑な時事の論点を、要因に分けて論じる",
+      "situation": "コロナ禍や地政学リスクをきっかけに進む、生産の国内回帰について議論します。",
+      "role": null,
+      "facts": ["半導体などで国内に工場を戻す動きがある", "国内生産は人件費が高い", "一国に頼るリスクは実際に表面化した", "「分散」という中間の選択肢もある"],
+      "goal": "メリットとデメリットを比べて、自分の考えを述べる",
+      "partner": "You are Laura, a researcher at a think tank in Washington. You think reshoring is mostly political and economically inefficient. You like concrete examples. Open by asking what they think about companies bringing factories back home.",
+      "topic": "reshoring supply chain debate",
+      "expressions": [
+        { "text": "It comes down to ___", "meaning": "結局は〜の問題です", "kind": "phrase", "category": "agreeing_disagreeing", "example": "It comes down to how much risk a company can accept." },
+        { "text": "resilience", "meaning": "（混乱からの）回復力・しなやかさ", "kind": "word", "category": "general", "example": "Reshoring is about resilience, not just cost." },
+        { "text": "geopolitical risk", "meaning": "地政学的リスク", "kind": "word", "category": "general", "example": "Geopolitical risk has become a real business issue." }
+      ]
     },
     {
       "title": "国際ルールは今も機能しているか",
+      "focus": "自分の専門の視点から論じ、反論に答える",
       "situation": "貿易摩擦が増える中で、WTOのような国際ルールが機能しているかについて議論します。",
       "role": null,
       "facts": ["関税の引き上げ合戦が起きている", "WTOの紛争解決の仕組みは止まっている部分がある", "地域ごとの貿易協定は増えている", "国際法を学ぶ立場から意見を言える"],
       "goal": "具体例を挙げて、国際ルールの役割と限界を自分の言葉で説明する",
       "partner": "You are Professor Grant, a visiting scholar in international economics. You are skeptical that global rules still matter and you ask probing questions. Open by asking whether they think international trade rules still work today.",
-      "topic": "international trade rules WTO discussion"
+      "topic": "international trade rules WTO discussion",
+      "expressions": [
+        { "text": "From a legal standpoint, ___", "meaning": "法的な観点からは〜", "kind": "phrase", "category": "agreeing_disagreeing", "example": "From a legal standpoint, the rules still bind member states." },
+        { "text": "enforce", "meaning": "（法・ルールを）執行する・守らせる", "kind": "word", "category": "general", "example": "The problem is that no one can enforce the rulings." },
+        { "text": "That said, ___", "meaning": "とはいえ〜", "kind": "phrase", "category": "hedging", "example": "That said, regional agreements are filling the gap." }
+      ]
     }
   ],
   "internship-interview": [
     {
+      "title": "外資系IT・ビジネス職",
+      "focus": "自己紹介を1分で、学年・専攻・関心の順に構成する",
+      "situation": "外資系IT企業のビジネス職インターンの面接です。",
+      "role": null,
+      "facts": ["聞かれそうなこと: 自己紹介と経歴", "課題を自分で解決した経験", "好きなサービス・プロダクトとその理由", "チームでの役割"],
+      "goal": "学ぶ速さと課題解決力を、具体的なエピソードで示す",
+      "partner": "You are Sarah, a hiring manager at a global tech company. You ask behavioral questions and like answers with clear actions and results. You'll ask about a product they love and how they'd improve it. Open by asking them to walk you through their background.",
+      "topic": "tech company business internship interview",
+      "expressions": [
+        { "text": "I'm currently a ___-year student at ___, majoring in ___", "meaning": "現在〜大学の〜年生で、〜を専攻しています", "kind": "phrase", "category": "presenting", "example": "I'm currently a third-year student at Waseda, majoring in law." },
+        { "text": "passionate about", "meaning": "〜に強い関心・情熱がある", "kind": "word", "category": "presenting", "example": "I'm passionate about using data to solve real problems." },
+        { "text": "walk you through", "meaning": "（順を追って）説明する", "kind": "word", "category": "presenting", "example": "Let me walk you through my background briefly." }
+      ]
+    },
+    {
       "title": "外資系コンサル・一次面接",
+      "focus": "志望動機を、自分の経験に結びつけて具体的に語る",
       "situation": "外資系コンサルティング会社のサマーインターン選考。英語での一次面接です。",
       "role": null,
       "facts": ["聞かれそうなこと: 志望動機（なぜコンサルか）", "チームで何かをやり遂げた経験", "困難をどう乗り越えたか", "最後に逆質問の時間がある"],
       "goal": "自分の経験を具体的に話し、志望動機に説得力を持たせる",
       "partner": "You are Ms. Lee, a manager interviewing candidates for the summer internship at a global consulting firm. You probe with 'why' and 'what exactly did you do' follow-ups and look for structured answers. Open with a friendly greeting and ask them to introduce themselves briefly.",
-      "topic": "consulting internship interview motivation teamwork"
-    },
-    {
-      "title": "外資系メーカー・サプライチェーン部門",
-      "situation": "外資系メーカーのサプライチェーン部門のインターン面接です。",
-      "role": null,
-      "facts": ["聞かれそうなこと: なぜサプライチェーンに興味があるか", "データや数字を扱った経験", "最近気になったサプライチェーンのニュース", "国際的な環境で働く意欲"],
-      "goal": "サプライチェーンへの関心を、自分の学びやニュースと結びつけて話す",
-      "partner": "You are David, a supply chain manager at a global manufacturer. You care about genuine curiosity and analytical thinking more than perfect English. You will ask about a recent supply chain news story. Open by asking why they are interested in supply chain.",
-      "topic": "supply chain internship interview"
+      "topic": "consulting internship interview motivation teamwork",
+      "expressions": [
+        { "text": "The reason I'm interested in ___ is ___", "meaning": "〜に関心がある理由は〜です", "kind": "phrase", "category": "presenting", "example": "The reason I'm interested in consulting is that I enjoy structuring messy problems." },
+        { "text": "problem-solving", "meaning": "問題解決（の力）", "kind": "word", "category": "presenting", "example": "Consulting would let me build my problem-solving skills." },
+        { "text": "I'd like to develop ___", "meaning": "〜を伸ばしたいと考えています", "kind": "phrase", "category": "presenting", "example": "I'd like to develop the ability to work with clients directly." }
+      ]
     },
     {
       "title": "総合商社・海外インターン",
+      "focus": "経験を「状況→行動→結果」の順で語る",
       "situation": "総合商社の海外拠点でのインターン選考。英語での面接です。",
       "role": null,
       "facts": ["聞かれそうなこと: 挑戦した経験", "意見が対立したときの対応", "海外で働くことへの考え", "どの地域・事業に関心があるか"],
       "goal": "失敗や対立の経験も含めて正直に話し、行動力を伝える",
       "partner": "You are Mr. Brown, a senior manager at the trading company's overseas office. You like candidates who take initiative and can handle conflict. You will ask for a time when things went wrong. Open by welcoming them and asking about a challenge they took on.",
-      "topic": "trading company overseas internship interview"
+      "topic": "trading company overseas internship interview",
+      "expressions": [
+        { "text": "In that situation, I ___", "meaning": "その状況で、私は〜しました", "kind": "phrase", "category": "presenting", "example": "In that situation, I set up a meeting with everyone involved." },
+        { "text": "take the initiative", "meaning": "自分から率先して動く", "kind": "word", "category": "presenting", "example": "I took the initiative to organize the event myself." },
+        { "text": "As a result, ___", "meaning": "その結果、〜", "kind": "phrase", "category": "presenting", "example": "As a result, attendance went up by 30%." }
+      ]
     },
     {
-      "title": "外資系IT・ビジネス職",
-      "situation": "外資系IT企業のビジネス職インターンの面接です。",
+      "title": "外資系メーカー・サプライチェーン部門",
+      "focus": "自分の関心分野を、最近のニュースや学びと結びつける",
+      "situation": "外資系メーカーのサプライチェーン部門のインターン面接です。",
       "role": null,
-      "facts": ["聞かれそうなこと: 課題を自分で解決した経験", "新しいことを短期間で学んだ経験", "好きなサービス・プロダクトとその理由", "チームでの役割"],
-      "goal": "学ぶ速さと課題解決力を、具体的なエピソードで示す",
-      "partner": "You are Sarah, a hiring manager at a global tech company. You ask behavioral questions and like answers with clear actions and results. You'll ask about a product they love and how they'd improve it. Open by asking them to walk you through their background.",
-      "topic": "tech company business internship interview"
+      "facts": ["聞かれそうなこと: なぜサプライチェーンに興味があるか", "データや数字を扱った経験", "最近気になったサプライチェーンのニュース", "国際的な環境で働く意欲"],
+      "goal": "サプライチェーンへの関心を、自分の学びやニュースと結びつけて話す",
+      "partner": "You are David, a supply chain manager at a global manufacturer. You care about genuine curiosity and analytical thinking more than perfect English. You will ask about a recent supply chain news story. Open by asking why they are interested in supply chain.",
+      "topic": "supply chain internship interview",
+      "expressions": [
+        { "text": "Something I've been following closely is ___", "meaning": "最近注目しているのは〜です", "kind": "phrase", "category": "presenting", "example": "Something I've been following closely is the shift of production to Southeast Asia." },
+        { "text": "bottleneck", "meaning": "（流れを滞らせる）ボトルネック・隘路", "kind": "word", "category": "general", "example": "Port congestion became a major bottleneck." },
+        { "text": "That's what sparked my interest in ___", "meaning": "それが〜に興味を持ったきっかけです", "kind": "phrase", "category": "presenting", "example": "That's what sparked my interest in supply chains." }
+      ]
     },
     {
       "title": "国際機関のインターン",
+      "focus": "価値観と関心を語り、最後に良い逆質問をする",
       "situation": "国際機関（貿易・開発分野）のインターン選考。英語での面接です。",
       "role": null,
-      "facts": ["聞かれそうなこと: なぜ国際機関か", "国際法・国際関係で学んでいること", "多様な背景の人と働いた経験", "関心のある国際課題"],
+      "facts": ["聞かれそうなこと: なぜ国際機関か", "国際法・国際関係で学んでいること", "多様な背景の人と働いた経験", "関心のある国際課題", "最後に逆質問の時間がある"],
       "goal": "専攻での学びと関心のある課題を結びつけて、志望理由を伝える",
-      "partner": "You are Dr. Mensah, a program officer at an international organization working on trade and development. You value clear reasoning about global issues and humility. Open by asking what draws them to international organizations.",
-      "topic": "international organization internship interview"
+      "partner": "You are Dr. Mensah, a program officer at an international organization working on trade and development. You value clear reasoning about global issues and humility. Near the end, invite their questions. Open by asking what draws them to international organizations.",
+      "topic": "international organization internship interview",
+      "expressions": [
+        { "text": "I'm particularly interested in ___", "meaning": "特に〜に関心があります", "kind": "phrase", "category": "presenting", "example": "I'm particularly interested in how trade rules affect developing countries." },
+        { "text": "make an impact", "meaning": "（良い）影響を与える", "kind": "word", "category": "presenting", "example": "I want to make an impact on how rules are designed." },
+        { "text": "Could I ask what ___?", "meaning": "〜について伺ってもよろしいですか", "kind": "phrase", "category": "clarifying", "example": "Could I ask what a typical intern project looks like?" }
+      ]
     }
   ],
   "case-interview": [
     {
-      "title": "日本の食品メーカーのタイ進出",
-      "situation": "コンサル会社のケース面接です。日本の食品メーカーがタイの冷凍食品市場に参入すべきか考えます。",
-      "role": null,
-      "facts": ["会社の年間売上は約500億円（ほぼ国内）", "タイの冷凍食品市場は年3,000億円、年8〜10%成長", "工場の稼働率は70%で余力がある", "現地の大手3社がシェア70%", "タイでの知名度はほぼゼロ"],
-      "goal": "論点を整理し、前提を置いて、参入の是非を提案する",
-      "partner": "You are a case interviewer at a strategy consulting firm. Present the market-entry case briefly, let the candidate ask clarifying questions, and share data only when asked. Challenge weak assumptions politely. Open by setting up the case in two sentences.",
-      "topic": "market entry case frozen food Thailand"
-    },
-    {
       "title": "電動キックボードの市場規模",
+      "focus": "仮定を言葉にしながら、数字を積み上げて推定する",
       "situation": "ケース面接で、日本の電動キックボードのシェアサービスの市場規模を推定します。",
       "role": null,
       "facts": ["対象は日本の都市部", "利用者の年齢層や利用頻度は自分で仮定する", "1回の利用料金は約300円が目安", "考え方の筋道が評価される"],
       "goal": "市場を分解し、仮定を言葉にしながら数字を出す",
       "partner": "You are a case interviewer. Ask the candidate to estimate the annual market size of e-scooter sharing in urban Japan. Push them to state assumptions and sanity-check the result. Open by giving the question in one sentence.",
-      "topic": "market sizing e-scooter sharing Japan"
-    },
-    {
-      "title": "地方のホテルチェーンの利益減少",
-      "situation": "ケース面接で、地方のホテルチェーンの利益が3年で30%減った理由と対策を考えます。",
-      "role": null,
-      "facts": ["客室数は変わっていない", "外国人観光客は増えているが都市部に集中している", "人件費と光熱費が上がっている", "データは質問すれば出てくる"],
-      "goal": "売上と費用に分けて原因を探り、打ち手を提案する",
-      "partner": "You are a case interviewer. The client is a regional hotel chain whose profit fell 30% over three years. Reveal data only when asked: occupancy dropped from 78% to 64%, average room price is flat, costs rose 12%. Open by stating the problem briefly.",
-      "topic": "profitability case regional hotel chain"
-    },
-    {
-      "title": "物流会社のドローン配送参入",
-      "situation": "ケース面接で、中堅の物流会社がドローン配送に参入すべきかを考えます。",
-      "role": null,
-      "facts": ["会社は地方の配送に強い", "山間部や離島への配送コストが高い", "法規制は少しずつ緩和されている", "初期投資は数十億円規模"],
-      "goal": "市場・自社の強み・リスクの観点で整理し、結論を出す",
-      "partner": "You are a case interviewer. Ask whether a mid-sized logistics company should enter drone delivery. Probe on regulation, unit economics, and where drones actually beat trucks. Open by presenting the question.",
-      "topic": "new business case drone delivery logistics"
+      "topic": "market sizing e-scooter sharing Japan",
+      "expressions": [
+        { "text": "Let me start with a few assumptions.", "meaning": "いくつか仮定を置いて始めます", "kind": "phrase", "category": "presenting", "example": "Let me start with a few assumptions about who uses e-scooters." },
+        { "text": "roughly", "meaning": "おおよそ", "kind": "word", "category": "presenting", "example": "That's roughly 10 million people in big cities." },
+        { "text": "That gives us about ___", "meaning": "それでおよそ〜になります", "kind": "phrase", "category": "presenting", "example": "That gives us about 30 billion yen a year." }
+      ]
     },
     {
       "title": "カフェチェーンの定額制",
+      "focus": "分析に入る前に、確認の質問で前提をそろえる",
       "situation": "ケース面接で、カフェチェーンがコーヒーの月額定額サービスを導入すべきかを考えます。",
       "role": null,
       "facts": ["店舗数は全国150店", "常連客が売上の約40%を占める", "コーヒー1杯の原価は約60円", "定額制は来店回数を増やす狙い"],
       "goal": "価格の決め方と利益への影響を考え、導入の是非を提案する",
       "partner": "You are a case interviewer. The client is a coffee chain considering a monthly unlimited coffee subscription. Push the candidate on pricing, cannibalization of regular customers, and extra food sales. Open by explaining the client's idea.",
-      "topic": "pricing strategy case coffee subscription"
+      "topic": "pricing strategy case coffee subscription",
+      "expressions": [
+        { "text": "Before I dive in, can I clarify ___?", "meaning": "本題に入る前に、〜を確認してもいいですか", "kind": "phrase", "category": "clarifying", "example": "Before I dive in, can I clarify what the client's main goal is?" },
+        { "text": "Are we assuming ___?", "meaning": "〜という前提でよいですか", "kind": "phrase", "category": "clarifying", "example": "Are we assuming the price is the same in every store?" },
+        { "text": "profit margin", "meaning": "利益率", "kind": "word", "category": "presenting", "example": "The profit margin on coffee is very high." }
+      ]
+    },
+    {
+      "title": "地方のホテルチェーンの利益減少",
+      "focus": "問題を枠組みで分けて、順番に話す（構造化）",
+      "situation": "ケース面接で、地方のホテルチェーンの利益が3年で30%減った理由と対策を考えます。",
+      "role": null,
+      "facts": ["客室数は変わっていない", "外国人観光客は増えているが都市部に集中している", "人件費と光熱費が上がっている", "データは質問すれば出てくる"],
+      "goal": "売上と費用に分けて原因を探り、打ち手を提案する",
+      "partner": "You are a case interviewer. The client is a regional hotel chain whose profit fell 30% over three years. Reveal data only when asked: occupancy dropped from 78% to 64%, average room price is flat, costs rose 12%. Open by stating the problem briefly.",
+      "topic": "profitability case regional hotel chain",
+      "expressions": [
+        { "text": "I'd like to look at this from two angles: ___", "meaning": "これを2つの観点から見たいと思います：〜", "kind": "phrase", "category": "presenting", "example": "I'd like to look at this from two angles: revenue and costs." },
+        { "text": "on the revenue side", "meaning": "売上の面では", "kind": "word", "category": "presenting", "example": "On the revenue side, occupancy seems to be the issue." },
+        { "text": "drill down into", "meaning": "（原因を）掘り下げる", "kind": "word", "category": "presenting", "example": "Let me drill down into why occupancy fell." }
+      ]
+    },
+    {
+      "title": "日本の食品メーカーのタイ進出",
+      "focus": "仮説を立て、それを確かめるための情報を求める",
+      "situation": "コンサル会社のケース面接です。日本の食品メーカーがタイの冷凍食品市場に参入すべきか考えます。",
+      "role": null,
+      "facts": ["会社の年間売上は約500億円（ほぼ国内）", "タイの冷凍食品市場は年3,000億円、年8〜10%成長", "工場の稼働率は70%で余力がある", "現地の大手3社がシェア70%", "タイでの知名度はほぼゼロ"],
+      "goal": "論点を整理し、前提を置いて、参入の是非を提案する",
+      "partner": "You are a case interviewer at a strategy consulting firm. Present the market-entry case briefly, let the candidate ask clarifying questions, and share data only when asked. Challenge weak assumptions politely. Open by setting up the case in two sentences.",
+      "topic": "market entry case frozen food Thailand",
+      "expressions": [
+        { "text": "My hypothesis is that ___", "meaning": "私の仮説は〜です", "kind": "phrase", "category": "presenting", "example": "My hypothesis is that a partnership is better than entering alone." },
+        { "text": "To test this, I'd want to know ___", "meaning": "これを確かめるには〜が知りたいです", "kind": "phrase", "category": "clarifying", "example": "To test this, I'd want to know the margins of the local players." },
+        { "text": "market share", "meaning": "市場シェア", "kind": "word", "category": "presenting", "example": "Three players hold 70% market share." }
+      ]
+    },
+    {
+      "title": "物流会社のドローン配送参入",
+      "focus": "結論から推奨を述べ、主なリスクと次の一手を示す",
+      "situation": "ケース面接で、中堅の物流会社がドローン配送に参入すべきかを考えます。",
+      "role": null,
+      "facts": ["会社は地方の配送に強い", "山間部や離島への配送コストが高い", "法規制は少しずつ緩和されている", "初期投資は数十億円規模"],
+      "goal": "市場・自社の強み・リスクの観点で整理し、結論を出す",
+      "partner": "You are a case interviewer. Ask whether a mid-sized logistics company should enter drone delivery. Probe on regulation, unit economics, and where drones actually beat trucks. At the end, ask for a clear recommendation. Open by presenting the question.",
+      "topic": "new business case drone delivery logistics",
+      "expressions": [
+        { "text": "My recommendation is to ___", "meaning": "私の推奨は〜することです", "kind": "phrase", "category": "presenting", "example": "My recommendation is to start with island routes only." },
+        { "text": "The key risk is ___", "meaning": "主なリスクは〜です", "kind": "phrase", "category": "presenting", "example": "The key risk is that regulation changes slowly." },
+        { "text": "unit economics", "meaning": "（1件・1単位あたりの）採算", "kind": "word", "category": "presenting", "example": "The unit economics only work for remote areas." }
+      ]
     }
   ],
   "group-discussion": [
     {
       "title": "大学の授業は英語で行うべきか",
+      "focus": "自分の立場を最初にはっきり述べる",
       "situation": "選考のグループディスカッションを想定。「日本の大学は授業を英語で行うべきか」を別の候補者と議論します。",
       "role": null,
       "facts": ["留学生の受け入れや国際競争力の観点がある", "理解度が下がるという懸念もある", "一部の授業だけ英語にする中間案もある", "最後に結論をまとめる"],
       "goal": "自分の立場を示し、相手の意見を受けて議論を前に進め、結論に導く",
       "partner": "You are Alex, another candidate in the discussion. Argue that most university classes in Japan should be taught in English, with reasons and examples. Respond to their points and help reach a conclusion like a good teammate. Open by stating your position briefly.",
-      "topic": "group discussion English-taught university classes"
+      "topic": "group discussion English-taught university classes",
+      "expressions": [
+        { "text": "I'm in favor of ___", "meaning": "〜に賛成です", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I'm in favor of teaching some classes in English." },
+        { "text": "I'd argue that ___", "meaning": "〜だと主張したいです", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I'd argue that understanding matters more than the language." },
+        { "text": "mandatory", "meaning": "必須の・義務の", "kind": "word", "category": "general", "example": "Making it mandatory for all classes would be too much." }
+      ]
     },
     {
       "title": "週休3日制を導入すべきか",
+      "focus": "相手に同意しつつ、自分の視点を付け加える",
       "situation": "グループディスカッションで「企業は週休3日制を導入すべきか」を議論します。",
       "role": null,
       "facts": ["生産性や採用で有利という意見がある", "顧客対応や給与の扱いが課題", "海外では試験的な導入例がある"],
       "goal": "論点を整理し、条件つきの結論を一緒に作る",
       "partner": "You are Jordan, another candidate. Argue against a four-day work week, focusing on customer service and small companies. Engage with their arguments and work toward a shared conclusion. Open by stating your view.",
-      "topic": "group discussion four-day work week"
+      "topic": "group discussion four-day work week",
+      "expressions": [
+        { "text": "I agree with you on ___, but ___", "meaning": "〜の点は同感ですが、〜", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I agree with you on customer service, but productivity could improve." },
+        { "text": "build on", "meaning": "（相手の意見を）発展させる・土台にする", "kind": "word", "category": "meetings", "example": "Can I build on what you just said?" },
+        { "text": "Fair enough.", "meaning": "それはもっともです", "kind": "phrase", "category": "agreeing_disagreeing", "example": "Fair enough. Small companies might struggle." }
+      ]
     },
     {
       "title": "自動運転の事故の責任",
+      "focus": "反対意見を、丁寧かつはっきり伝える",
       "situation": "グループディスカッションで「自動運転車の事故の責任は誰が負うべきか」を議論します。",
       "role": null,
       "facts": ["責任の候補: メーカー、運転者、ソフトウェア会社", "技術のレベルによって考え方が変わる", "保険の仕組みも関係する", "法的な観点から意見を言える"],
       "goal": "法的・実務的な観点から整理し、筋の通った結論を出す",
       "partner": "You are Mia, another candidate. Argue that the car manufacturer should bear most of the responsibility. Challenge their reasoning with scenarios and help reach a conclusion. Open by stating your position.",
-      "topic": "group discussion autonomous vehicle liability"
+      "topic": "group discussion autonomous vehicle liability",
+      "expressions": [
+        { "text": "I see it a bit differently.", "meaning": "私は少し違う見方をしています", "kind": "phrase", "category": "agreeing_disagreeing", "example": "I see it a bit differently. The driver still has a role." },
+        { "text": "accountable", "meaning": "責任を負う（説明責任がある）", "kind": "word", "category": "general", "example": "Someone has to be held accountable." },
+        { "text": "What about cases where ___?", "meaning": "〜という場合はどうでしょう", "kind": "phrase", "category": "agreeing_disagreeing", "example": "What about cases where the driver ignores a warning?" }
+      ]
     },
     {
       "title": "ESG情報の開示を義務化すべきか",
+      "focus": "議論の論点を整理して、話を前に進める",
       "situation": "グループディスカッションで「企業の環境・社会への取り組みの情報開示を義務化すべきか」を議論します。",
       "role": null,
       "facts": ["投資家は比較できる情報を求めている", "中小企業には負担が大きい", "見せかけの環境配慮（グリーンウォッシュ）の問題がある"],
       "goal": "賛否の論点を比べ、対象や段階を工夫した結論を出す",
       "partner": "You are Ryan, another candidate. Argue that mandatory disclosure is too costly for smaller companies and should stay voluntary. Engage constructively and help build a conclusion. Open by stating your view.",
-      "topic": "group discussion mandatory ESG disclosure"
+      "topic": "group discussion mandatory ESG disclosure",
+      "expressions": [
+        { "text": "There seem to be two issues here: ___", "meaning": "ここには2つの論点がありそうです：〜", "kind": "phrase", "category": "meetings", "example": "There seem to be two issues here: cost and credibility." },
+        { "text": "level playing field", "meaning": "公平な競争条件", "kind": "word", "category": "general", "example": "Mandatory rules create a level playing field." },
+        { "text": "Can we agree that ___?", "meaning": "〜という点は合意できますか", "kind": "phrase", "category": "meetings", "example": "Can we agree that large companies should disclose first?" }
+      ]
     },
     {
       "title": "観光地に入域料を課すべきか",
+      "focus": "共通点を見つけ、議論を結論にまとめる",
       "situation": "グループディスカッションで「混雑する観光地は観光客から入域料を取るべきか」を議論します。",
       "role": null,
       "facts": ["オーバーツーリズムで住民の生活に影響が出ている", "海外には導入例がある", "観光客が減る心配もある", "集めたお金の使い道も論点"],
       "goal": "住民・観光客・地域経済の立場を整理し、結論を出す",
-      "partner": "You are Emma, another candidate. Argue in favor of an entry fee for crowded tourist spots, using overseas examples. Respond to their counterpoints and help reach a conclusion. Open by stating your position.",
-      "topic": "group discussion tourist entry fee overtourism"
+      "partner": "You are Emma, another candidate. Argue in favor of an entry fee for crowded tourist spots, using overseas examples. Respond to their counterpoints and help reach a conclusion; near the end, invite them to summarize. Open by stating your position.",
+      "topic": "group discussion tourist entry fee overtourism",
+      "expressions": [
+        { "text": "So, to wrap up, ___", "meaning": "では、まとめると〜", "kind": "phrase", "category": "meetings", "example": "So, to wrap up, we support a fee with clear rules." },
+        { "text": "common ground", "meaning": "共通点・一致点", "kind": "word", "category": "agreeing_disagreeing", "example": "I think we have common ground on protecting residents." },
+        { "text": "Shall we go with ___?", "meaning": "〜で行きましょうか", "kind": "phrase", "category": "meetings", "example": "Shall we go with a fee only during peak season?" }
+      ]
     }
   ],
   "research-talk": [
     {
       "title": "研究テーマを1分で説明する",
+      "focus": "研究の「何を・なぜ・どうやって」を短くまとめる",
       "situation": "海外から来た社会人に「大学で何を研究しているの？」と聞かれました。",
       "role": null,
       "facts": ["話すこと: 何を研究しているか", "なぜそのテーマを選んだか", "どうやって調べているか", "専門用語はかみ砕いて説明する"],
       "goal": "専門外の相手に、要点を短く分かりやすく伝える",
       "partner": "You are Kate, a marketing professional from Canada who is not an expert in the learner's field. You are genuinely curious and ask simple but smart questions. Open by asking what they study at university.",
-      "topic": "explain research topic to non-expert"
-    },
-    {
-      "title": "研究は実務でどう役立つか",
-      "situation": "インターン先の社員に、研究テーマが実際のビジネスにどう関係するか聞かれました。",
-      "role": null,
-      "facts": ["話すこと: 研究の内容を短く", "企業や社会にとっての意味", "具体的な場面や事例", "自分が働くときにどう生かしたいか"],
-      "goal": "研究と実務のつながりを、具体例で説明する",
-      "partner": "You are Tom, a business development manager. You are practical and keep asking 'so what does this mean for a company?' Open by asking what their research is about and why it matters for business.",
-      "topic": "research relevance to business"
+      "topic": "explain research topic to non-expert",
+      "expressions": [
+        { "text": "My research looks at ___", "meaning": "私の研究は〜を扱っています", "kind": "phrase", "category": "presenting", "example": "My research looks at how trade rules affect supply chains." },
+        { "text": "In simple terms, ___", "meaning": "簡単に言うと〜", "kind": "phrase", "category": "presenting", "example": "In simple terms, I study who pays when trade rules change." },
+        { "text": "focus on", "meaning": "〜に焦点を当てる", "kind": "word", "category": "presenting", "example": "I focus on disputes between Japan and Southeast Asia." }
+      ]
     },
     {
       "title": "たとえ話で説明する",
+      "focus": "難しい内容を、身近なたとえで説明し、理解を確かめる",
       "situation": "留学生との交流会で、あなたの専門分野について、たとえを使って説明してほしいと頼まれました。",
       "role": null,
       "facts": ["話すこと: 専門分野の基本的な考え方", "身近なものにたとえる", "相手の理解を確認しながら進める"],
       "goal": "難しい内容を、たとえを使って分かりやすく伝える",
       "partner": "You are Lucas, an exchange student in engineering. You find law and economics confusing and ask for everyday analogies. Tell them honestly when you don't follow. Open by asking them to explain their field like you're five.",
-      "topic": "explain field with analogies"
+      "topic": "explain field with analogies",
+      "expressions": [
+        { "text": "It's a bit like ___", "meaning": "〜に少し似ています", "kind": "phrase", "category": "presenting", "example": "It's a bit like the rules of a sports league." },
+        { "text": "Does that make sense?", "meaning": "分かりますか（伝わっていますか）", "kind": "phrase", "category": "clarifying", "example": "Does that make sense so far?" },
+        { "text": "in a nutshell", "meaning": "一言で言えば", "kind": "word", "category": "presenting", "example": "In a nutshell, it's about fair rules between countries." }
+      ]
+    },
+    {
+      "title": "研究は実務でどう役立つか",
+      "focus": "研究の意味を、ビジネスの具体的な場面に結びつける",
+      "situation": "インターン先の社員に、研究テーマが実際のビジネスにどう関係するか聞かれました。",
+      "role": null,
+      "facts": ["話すこと: 研究の内容を短く", "企業や社会にとっての意味", "具体的な場面や事例", "自分が働くときにどう生かしたいか"],
+      "goal": "研究と実務のつながりを、具体例で説明する",
+      "partner": "You are Tom, a business development manager. You are practical and keep asking 'so what does this mean for a company?' Open by asking what their research is about and why it matters for business.",
+      "topic": "research relevance to business",
+      "expressions": [
+        { "text": "In practical terms, ___", "meaning": "実務的に言うと〜", "kind": "phrase", "category": "presenting", "example": "In practical terms, it helps companies plan for tariff changes." },
+        { "text": "implication", "meaning": "（そこから導かれる）意味・影響", "kind": "word", "category": "presenting", "example": "The main implication for companies is higher costs." },
+        { "text": "This matters because ___", "meaning": "これが重要なのは〜だからです", "kind": "phrase", "category": "presenting", "example": "This matters because many firms rely on one supplier." }
+      ]
     },
     {
       "title": "研究の限界と今後",
+      "focus": "弱点を正直に認めつつ、今後の方向を筋道立てて話す",
       "situation": "ゼミに来た海外の研究者から、研究の弱い点と今後の展開について質問されます。",
       "role": null,
       "facts": ["話すこと: 研究の主な主張", "足りないデータや限界", "今後調べたいこと", "反論への答え"],
       "goal": "限界を正直に認めつつ、今後の方向を筋道立てて話す",
       "partner": "You are Dr. Evans, a visiting researcher. You are kind but rigorous and ask about limitations, counterarguments and next steps. Open by asking them to summarize their main argument.",
-      "topic": "research limitations and next steps"
+      "topic": "research limitations and next steps",
+      "expressions": [
+        { "text": "One limitation is that ___", "meaning": "一つの限界は〜という点です", "kind": "phrase", "category": "hedging", "example": "One limitation is that I only looked at three countries." },
+        { "text": "further research", "meaning": "さらなる研究（今後の課題）", "kind": "word", "category": "presenting", "example": "This needs further research with company data." },
+        { "text": "I haven't looked into that yet, but ___", "meaning": "その点はまだ調べていませんが、〜", "kind": "phrase", "category": "hedging", "example": "I haven't looked into that yet, but it's a great point." }
+      ]
     },
     {
       "title": "研究と将来のキャリア",
+      "focus": "研究・身につけた力・将来の目標を一本の話につなげる",
       "situation": "キャリアイベントで出会った社会人に、研究と将来やりたい仕事のつながりを聞かれました。",
       "role": null,
       "facts": ["話すこと: 研究していること", "興味のある業界・仕事", "研究で身についた力", "5年後にどうなっていたいか"],
       "goal": "研究と将来の目標を一本の話としてつなげて伝える",
       "partner": "You are Nadia, a recruiter at a global company. You want to see how the student connects their studies to a career. Ask follow-ups about skills and long-term goals. Open by asking what they are studying and what they want to do after graduation.",
-      "topic": "research and future career connection"
+      "topic": "research and future career connection",
+      "expressions": [
+        { "text": "What I've learned from my research is ___", "meaning": "研究から学んだのは〜です", "kind": "phrase", "category": "presenting", "example": "What I've learned from my research is how to handle messy data." },
+        { "text": "transferable skills", "meaning": "（他の仕事にも）生かせる力", "kind": "word", "category": "presenting", "example": "Research gave me transferable skills like analysis and writing." },
+        { "text": "In five years, I hope to ___", "meaning": "5年後には〜していたいです", "kind": "phrase", "category": "presenting", "example": "In five years, I hope to manage cross-border projects." }
+      ]
     }
   ],
   "ob-visit": [
     {
       "title": "シンガポールの物流会社で働く先輩",
+      "focus": "基本の質問をして、相手の仕事を具体的に聞く",
       "situation": "シンガポールの物流会社で働く社会人に、オンラインで話を聞きます。あなたから質問します。",
       "role": null,
       "facts": ["聞きたいこと: 仕事の内容と1日の流れ", "アジアの物流の今の課題", "新卒で海外で働くには何が必要か"],
       "goal": "自分から質問を重ね、相手の話を深掘りする",
       "partner": "You are Aaron, a regional logistics manager in Singapore with 8 years of experience. Let the student lead with questions and answer with concrete stories. Occasionally ask about their interests. Open by saying hello and inviting their questions.",
-      "topic": "career chat logistics Singapore"
+      "topic": "career chat logistics Singapore",
+      "expressions": [
+        { "text": "What does a typical day look like for you?", "meaning": "普段の1日はどんな感じですか", "kind": "phrase", "category": "small_talk", "example": "What does a typical day look like for you in Singapore?" },
+        { "text": "day-to-day", "meaning": "日々の・日常の", "kind": "word", "category": "general", "example": "What are your day-to-day responsibilities?" },
+        { "text": "Could you tell me more about ___?", "meaning": "〜についてもう少し教えていただけますか", "kind": "phrase", "category": "clarifying", "example": "Could you tell me more about the regional hub?" }
+      ]
     },
     {
       "title": "ロンドンの金融機関で働く先輩",
+      "focus": "答えに合わせて、深掘りの質問を重ねる",
       "situation": "ロンドンの金融機関で働く社会人に話を聞く機会をもらいました。",
       "role": null,
       "facts": ["聞きたいこと: 働き方と忙しさ", "日本人として海外で働く難しさ", "学生のうちにやっておくべきこと"],
       "goal": "準備した質問をしつつ、相手の答えに合わせて質問を変える",
       "partner": "You are Priya, an analyst at an investment bank in London who studied in Japan for a year. Answer honestly, including the hard parts. Let the student lead. Open by greeting them and asking what they'd like to know.",
-      "topic": "career chat finance London"
-    },
-    {
-      "title": "国際法律事務所で働く先輩",
-      "situation": "国際法律事務所で働く弁護士に、国際法の分野でのキャリアについて話を聞きます。",
-      "role": null,
-      "facts": ["聞きたいこと: どんな案件を扱っているか", "国際法を仕事にするまでの道のり", "英語で法律の仕事をする難しさ"],
-      "goal": "自分の関心を伝えながら、具体的なキャリアの道筋を聞き出す",
-      "partner": "You are Michael, a lawyer at an international law firm working on trade disputes. You are generous with advice but expect thoughtful questions. Open by thanking them for reaching out and asking about their interest in international law.",
-      "topic": "career chat international law firm"
+      "topic": "career chat finance London",
+      "expressions": [
+        { "text": "What was the hardest part of ___?", "meaning": "〜で一番大変だったことは何ですか", "kind": "phrase", "category": "small_talk", "example": "What was the hardest part of moving to London?" },
+        { "text": "adjust to", "meaning": "〜に慣れる・適応する", "kind": "word", "category": "general", "example": "How long did it take you to adjust to the pace?" },
+        { "text": "How did you deal with ___?", "meaning": "〜にどう対処しましたか", "kind": "phrase", "category": "small_talk", "example": "How did you deal with the long hours?" }
+      ]
     },
     {
       "title": "外資系メーカーのサプライチェーン責任者",
+      "focus": "自分の知識や関心を示しながら質問する",
       "situation": "外資系メーカーでサプライチェーンを担当する社会人に、仕事について聞きます。",
       "role": null,
       "facts": ["聞きたいこと: サプライチェーンの仕事で大変なこと", "最近の混乱（物流の停滞など）への対応", "新人に求めること"],
       "goal": "ニュースで知ったことも交えて、具体的な質問をする",
       "partner": "You are Laura, a supply chain director at a global consumer goods company. You love talking about real crises you handled. Let the student lead with questions. Open by greeting them and asking what they'd like to learn.",
-      "topic": "career chat supply chain manager"
+      "topic": "career chat supply chain manager",
+      "expressions": [
+        { "text": "I've read that ___. How did that affect ___?", "meaning": "〜と読みました。それは〜にどう影響しましたか", "kind": "phrase", "category": "clarifying", "example": "I've read that shipping costs tripled. How did that affect your team?" },
+        { "text": "disruption", "meaning": "（供給などの）混乱・途絶", "kind": "word", "category": "general", "example": "How do you prepare for supply disruption?" },
+        { "text": "I'm curious about ___", "meaning": "〜に興味があります（知りたいです）", "kind": "phrase", "category": "small_talk", "example": "I'm curious about how you decide where to hold inventory." }
+      ]
+    },
+    {
+      "title": "国際法律事務所で働く先輩",
+      "focus": "相手のキャリアの道筋と判断の理由を聞き出す",
+      "situation": "国際法律事務所で働く弁護士に、国際法の分野でのキャリアについて話を聞きます。",
+      "role": null,
+      "facts": ["聞きたいこと: どんな案件を扱っているか", "国際法を仕事にするまでの道のり", "英語で法律の仕事をする難しさ"],
+      "goal": "自分の関心を伝えながら、具体的なキャリアの道筋を聞き出す",
+      "partner": "You are Michael, a lawyer at an international law firm working on trade disputes. You are generous with advice but expect thoughtful questions. Open by thanking them for reaching out and asking about their interest in international law.",
+      "topic": "career chat international law firm",
+      "expressions": [
+        { "text": "How did you end up in ___?", "meaning": "どういう経緯で〜に就かれたのですか", "kind": "phrase", "category": "small_talk", "example": "How did you end up in trade law?" },
+        { "text": "career path", "meaning": "キャリアの道筋", "kind": "word", "category": "general", "example": "What was your career path after law school?" },
+        { "text": "Looking back, would you have done anything differently?", "meaning": "振り返って、何か違うやり方をしたと思いますか", "kind": "phrase", "category": "small_talk", "example": "Looking back, would you have done anything differently?" }
+      ]
     },
     {
       "title": "国際機関で働く職員",
+      "focus": "話を聞いたお礼と、今後につなげる一言で締めくくる",
       "situation": "国際機関で働く職員に、仕事の内容とキャリアについて話を聞きます。",
       "role": null,
-      "facts": ["聞きたいこと: 日々の仕事の内容", "国際機関に入るまでの経歴", "求められる語学力や専門性"],
+      "facts": ["聞きたいこと: 日々の仕事の内容", "国際機関に入るまでの経歴", "求められる語学力や専門性", "最後にお礼とお願いを伝える"],
       "goal": "相手の経験を具体的に聞き、自分の進路の参考にする",
-      "partner": "You are Grace, a program officer at a UN agency with experience in several countries. Share concrete stories about your path. Let the student lead. Open by greeting them and asking what they are curious about.",
-      "topic": "career chat international organization"
+      "partner": "You are Grace, a program officer at a UN agency with experience in several countries. Share concrete stories about your path. Let the student lead, and near the end, give them a natural chance to wrap up. Open by greeting them and asking what they are curious about.",
+      "topic": "career chat international organization",
+      "expressions": [
+        { "text": "That's really helpful advice.", "meaning": "とても参考になるアドバイスです", "kind": "phrase", "category": "small_talk", "example": "That's really helpful advice. Thank you." },
+        { "text": "keep in touch", "meaning": "連絡を取り続ける", "kind": "word", "category": "small_talk", "example": "I'd love to keep in touch if that's okay." },
+        { "text": "Would it be okay if I ___?", "meaning": "〜してもよろしいでしょうか", "kind": "phrase", "category": "clarifying", "example": "Would it be okay if I emailed you with a follow-up question?" }
+      ]
     }
   ]
 }

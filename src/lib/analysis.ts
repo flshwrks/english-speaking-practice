@@ -350,6 +350,7 @@ Situation: ${card.situation}
 Learner's role: ${card.role ?? "themselves (a university student)"}
 Facts / material: ${card.facts.join(" / ")}
 Goal: ${card.goal}
+Skill focus of this card: ${card.focus ?? "(none)"} — judge whether they showed this skill and, if not, make it one of the top points with a concrete model line
 `
     : ""
 }

@@ -8,18 +8,34 @@ export function ScenarioCardView({
   card,
   compact = false,
   label = "今回のお題",
+  step,
   children,
 }: {
   card: ScenarioCard;
   compact?: boolean;
   label?: string;
+  /** シナリオの何枚目か（ステップ n / 全体） */
+  step?: { step: number; total: number } | null;
   children?: React.ReactNode;
 }) {
   const body = (
     <>
-      <p className="text-[13px] font-bold text-primary">{label}</p>
+      <p className="flex items-baseline justify-between gap-3 text-[13px] font-bold text-primary">
+        {label}
+        {step && (
+          <span className="meta font-normal tabular-nums">
+            ステップ {step.step}/{step.total}
+          </span>
+        )}
+      </p>
       <h2 className={`mt-0.5 leading-snug font-bold ${compact ? "text-[15px]" : "text-[17px]"}`}>{card.title}</h2>
-      {!compact && <p className="mt-1.5 text-fg-2">{card.situation}</p>}
+      {card.focus && (
+        <p className={`mt-1.5 rounded-md bg-primary-soft/60 px-2.5 py-1.5 ${compact ? "text-[13px]" : "text-sm"}`}>
+          <span className="mr-1.5 font-bold text-primary">狙い</span>
+          {card.focus}
+        </p>
+      )}
+      {!compact && <p className="mt-2 text-fg-2">{card.situation}</p>}
       <dl className={`flex flex-col gap-2 ${compact ? "mt-2 text-sm" : "mt-4 text-[15px]"}`}>
         <div>
           <dt className="meta">あなたの役</dt>

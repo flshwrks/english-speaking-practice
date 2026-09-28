@@ -34,6 +34,15 @@ async function main() {
   const cards = Object.entries(cardFile).flatMap(([scenarioId, list]) =>
     list.map((card, i) => ({ slug: `${scenarioId}-${String(i + 1).padStart(2, "0")}`, scenarioId, card })),
   );
+  // カードの表現も表現リストに入れる（すでにある表現はそのまま使う）。場面の説明はカードの見出し
+  await db()
+    .insert(t.expressions)
+    .values(
+      cards.flatMap(({ card }) =>
+        card.expressions.map((e) => ({ ...e, scene: card.title, source: "card", status: "queued" as const })),
+      ),
+    )
+    .onConflictDoNothing();
   await db()
     .insert(t.scenarioCards)
     .values(cards)

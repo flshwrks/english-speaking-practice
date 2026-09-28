@@ -1,7 +1,8 @@
 import { Check, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { Page, PageTitle, WeekTrack } from "@/components/ui";
+import { Meter, Page, PageTitle, WeekTrack } from "@/components/ui";
+import { cardProgress } from "@/lib/cards";
 import { EXPRESSION_CATEGORY_LABEL } from "@/lib/categories";
 import { getCycleWeeks } from "@/lib/lesson";
 import { getScenario } from "@/lib/scenarios";
@@ -21,7 +22,8 @@ const categoryLine = (w: Week) => w.categories.map((c) => EXPRESSION_CATEGORY_LA
 
 export default async function CurriculumPage() {
   await connection(); // 開始日（DB）と今日の日付で決まるため静的生成しない
-  const { profile, currentWeek, weeks } = await getCycleWeeks();
+  const [{ profile, currentWeek, weeks }, progress] = await Promise.all([getCycleWeeks(), cardProgress()]);
+  const cardsDone = (id: string) => progress.get(id) ?? { done: 0, total: 0 };
   const cycle = weeks[0]?.cycle ?? 1;
   const phases = [...new Set(weeks.map((w) => w.phase))];
   const current = weeks.find((w) => w.week === currentWeek);
@@ -55,14 +57,33 @@ export default async function CurriculumPage() {
           </p>
           <h2 className="mt-1 text-xl leading-snug font-bold">{current.theme}</h2>
           <p className="mt-2 max-w-[42em] text-fg-2">{current.focus}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {current.scenarioIds.map((id) => (
-              <Link key={id} href={`/session/new?scenario=${id}`} className="btn">
-                {getScenario(id)?.title ?? id}
-                <ChevronRight size={16} strokeWidth={1.75} />
-              </Link>
-            ))}
-          </div>
+          {/* 今週のシナリオと、それぞれのカード（ステップ1→5）をどこまで話したか */}
+          <ul className="mt-4 divide-y divide-line border-y border-line">
+            {current.scenarioIds.map((id) => {
+              const { done, total } = cardsDone(id);
+              return (
+                <li key={id}>
+                  <Link href={`/session/new?scenario=${id}`} className="row-link group flex items-center gap-4 py-3">
+                    <span className="min-w-0 flex-1 font-medium group-hover:text-primary">
+                      {getScenario(id)?.title ?? id}
+                    </span>
+                    {total > 0 && (
+                      <span className="flex w-28 shrink-0 flex-col gap-1">
+                        <span className="meta text-right tabular-nums">
+                          カード {done}/{total}
+                        </span>
+                        <Meter value={done / total} />
+                      </span>
+                    )}
+                    <ChevronRight size={16} strokeWidth={1.75} className="shrink-0 text-muted" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="meta mt-2">
+            カードはステップ1から順に少しずつ難しくなります。各シナリオ3枚までを今週の目安にしましょう。
+          </p>
           <p className="meta mt-3">表現: {categoryLine(current)}</p>
         </section>
       )}
@@ -112,6 +133,11 @@ export default async function CurriculumPage() {
                             className="font-medium underline underline-offset-4 hover:decoration-2"
                           >
                             {getScenario(id)?.title ?? id}
+                            {cardsDone(id).total > 0 && (
+                              <span className="meta ml-1 font-normal no-underline tabular-nums">
+                                {cardsDone(id).done}/{cardsDone(id).total}
+                              </span>
+                            )}
                           </Link>
                         ))}
                       </div>

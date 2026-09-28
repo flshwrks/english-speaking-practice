@@ -155,7 +155,7 @@ export function schedule(s: SrsState, grade: Grade, today: string): SrsUpdate {
 }
 
 /** 1回の出題数。復習が多い日は新規を減らして合計を保つ */
-const LESSON_LOAD = 5;
+export const LESSON_LOAD = 5;
 const MAX_NEW = 4;
 
 /**

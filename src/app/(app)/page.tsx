@@ -5,7 +5,7 @@ import { after, connection } from "next/server";
 import { db, t } from "@/db";
 import type { SessionStatus } from "@/db/schema";
 import { Badge, Section } from "@/components/ui";
-import { retryCandidate } from "@/lib/cards";
+import { cardFor, cardProgress, cardStep, retryCandidate } from "@/lib/cards";
 import { pickTodaysExpressions, weakExpressionCategories } from "@/lib/expressions";
 import { formatDateJst } from "@/lib/format";
 import { budgetStatus, getCurrentCurriculum, isReviewDue } from "@/lib/lesson";
@@ -53,7 +53,11 @@ export default async function Home() {
   });
   const pick = scenarios.find((s) => recommended.has(s.id)) ?? scenarios[0];
   // 準備画面と同じ選び方なので、ここで見せた表現がそのまま出題される
-  const expressions = pick ? await pickTodaysExpressions(pick, curriculum) : [];
+  // 準備画面と同じカード・同じ選び方なので、ここで見せたお題と表現がそのまま出る
+  const [card, progress] = await Promise.all([pick ? cardFor(pick) : null, cardProgress()]);
+  const expressions = pick ? await pickTodaysExpressions(pick, curriculum, card?.card) : [];
+  const step = card && cardStep(card);
+  const total = pick ? (progress.get(pick.id)?.total ?? 0) : 0;
   const thisWeek = scenarios.filter((s) => recommended.has(s.id) && s.id !== pick?.id);
   const others = scenarios.filter((s) => !recommended.has(s.id));
   const budgetRatio = budget.spentJpy / budget.budgetJpy;
@@ -136,7 +140,20 @@ export default async function Home() {
                 <h1 id="today" className="mt-0.5 text-[22px] leading-snug font-bold lg:text-[26px]">
                   {pick.title}
                 </h1>
-                <p className="mt-1.5 max-w-[38em] text-fg-2">{pick.brief}</p>
+                {card ? (
+                  <p className="mt-1.5 max-w-[38em] text-fg-2">
+                    <span className="font-medium text-fg">{card.card.title}</span>
+                    {step && total ? (
+                      <span className="meta ml-2 tabular-nums">
+                        ステップ {step}/{total}
+                      </span>
+                    ) : null}
+                    <br />
+                    <span className="text-sm">狙い: {card.card.focus}</span>
+                  </p>
+                ) : (
+                  <p className="mt-1.5 max-w-[38em] text-fg-2">{pick.brief}</p>
+                )}
                 {homework && !firstRun && (
                   <p className="mt-3 max-w-[38em] text-sm">
                     <span className="mr-2 font-bold text-accent">今日の宿題</span>

@@ -1,5 +1,5 @@
 /** 表現の出題と状態遷移（queued → new → attempted/correct → mastered）の唯一の置き場所。間隔反復の計算は srs.ts */
-import { and, asc, desc, eq, gte, inArray, lt, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, ne, notInArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
 import { LEARNING_STATUSES } from "@/db/schema";
@@ -12,6 +12,7 @@ import {
   isLeech,
   jstMidnight,
   LEECH_MISSES,
+  LESSON_LOAD,
   lessonSlots,
   reviewPriority,
   schedule,
@@ -103,7 +104,15 @@ function interleave(candidates: Expression[], categories: string[], n: number) {
  * - 新規: 自分で追加した表現 → シナリオのカテゴリ（先頭優先、カテゴリを交互に）→ 今週のカテゴリ → 登録順
  * 同じ日・同じシナリオ・同じ DB の状態なら必ず同じ組み合わせになる（ホームのプレビューと準備画面が一致する）
  */
-export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curriculum) {
+/**
+ * 今日の表現。お題カードがあれば、そのカードの表現（まだ出していないもの）を新しい表現の枠に先に入れる
+ * （場面にぴったり合う表現なので、会話の中で使う機会が自然にできる）。カードの表現はそのカードのときだけ出す
+ */
+export async function pickTodaysExpressions(
+  scenario: Scenario,
+  curriculum: Curriculum,
+  card?: { expressions: { text: string }[] } | null,
+) {
   const day = today();
   const categories = [...new Set([...scenario.categories, ...curriculum.categories])];
   const categoryRank = sql`coalesce(array_position(${`{${categories.join(",")}}`}::text[], ${t.expressions.category}), 999)`;
@@ -111,10 +120,11 @@ export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curr
     db()
       .select()
       .from(t.expressions)
-      .where(and(eq(t.expressions.status, "queued"), eq(t.expressions.kind, kind)))
+      .where(and(eq(t.expressions.status, "queued"), eq(t.expressions.kind, kind), ne(t.expressions.source, "card")))
       .orderBy(sql`case when ${t.expressions.source} <> 'seed' then 0 else 1 end`, categoryRank, asc(t.expressions.id))
       .limit(40);
-  const [due, learning, phrases, words] = await Promise.all([
+  const cardTexts = card?.expressions.map((e) => e.text) ?? [];
+  const [due, learning, phrases, words, cardRows] = await Promise.all([
     db()
       .select()
       .from(t.expressions)
@@ -126,22 +136,38 @@ export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curr
       .groupBy(t.expressions.kind),
     queued("phrase"),
     queued("word"),
+    cardTexts.length
+      ? db()
+          .select()
+          .from(t.expressions)
+          .where(and(eq(t.expressions.status, "queued"), inArray(t.expressions.text, cardTexts)))
+      : [],
   ]);
 
+  // お題カードの表現は、場面に合うので少なくとも2〜3個は出す（復習が非常に多いときだけ2個）。
+  // その分、復習の枠を減らす（1回の出題の総数は変えない）。残りの新しい枠はいつもの選び方で埋める
+  const cardCandidates = cardTexts.flatMap((text) => cardRows.filter((r) => r.text === text));
+  const base = lessonSlots(due.length);
+  const cardQuota = Math.min(cardCandidates.length, due.length >= 12 ? 2 : 3);
+  const reviewSlots = Math.min(base.reviews, LESSON_LOAD - cardQuota);
+  const slots = { reviews: reviewSlots, fresh: Math.max(cardQuota, base.fresh + base.reviews - reviewSlots) };
   // 休み中の苦手（leech）は期限が先なので due に入らず、休み明けのものは普通の復習として数える
-  const slots = lessonSlots(due.length);
   const relevant = new Set<string>(categories);
   const reviews = due
     .map((e) => ({ e, p: reviewPriority(e, day, relevant.has(e.category)) }))
     .sort((a, b) => b.p - a.p || a.e.id - b.e.id)
     .slice(0, slots.reviews)
     .map(({ e }) => e);
+  const fromCard = cardCandidates.slice(0, slots.fresh);
+  const taken = new Set(fromCard.map((e) => e.id));
   const learningByKind = { phrase: 0, word: 0, ...Object.fromEntries(learning.map((r) => [r.kind, r.n])) };
-  const fresh = splitFresh(slots.fresh, learningByKind);
+  const fresh = splitFresh(slots.fresh - fromCard.length, learningByKind);
+  const rest = (list: Expression[]) => list.filter((e) => !taken.has(e.id));
   return [
     ...[
-      ...interleave(phrases, scenario.categories, fresh.phrase),
-      ...interleave(words, scenario.categories, fresh.word),
+      ...fromCard,
+      ...interleave(rest(phrases), scenario.categories, fresh.phrase),
+      ...interleave(rest(words), scenario.categories, fresh.word),
     ].map((e) => ({ ...e, role: "new" as const })),
     ...reviews.map((e) => ({ ...e, role: "review" as const })),
   ];

@@ -9,7 +9,10 @@ import type { Scenario } from "./scenarios";
  * - 再挑戦では同じカードをもう一度使う
  */
 
-export type Card = { id: number; scenarioId: string; card: ScenarioCard; createdAt: Date };
+export type Card = { id: number; scenarioId: string; slug: string | null; card: ScenarioCard; createdAt: Date };
+
+/** カードの段階（シナリオの何枚目か）。data/cards.json の並び順＝ステップ1から少しずつ難しくなる */
+export const cardStep = (card: Pick<Card, "slug">) => Number(card.slug?.split("-").at(-1)) || null;
 
 /** そのシナリオのカードを出す順に: まだ話していないもの（用意した順）→ 話したもの（最後に話したのが古い順） */
 function cardsInOrder(scenarioId: string) {
@@ -18,6 +21,7 @@ function cardsInOrder(scenarioId: string) {
     .select({
       id: t.scenarioCards.id,
       scenarioId: t.scenarioCards.scenarioId,
+      slug: t.scenarioCards.slug,
       card: t.scenarioCards.card,
       createdAt: t.scenarioCards.createdAt,
     })
@@ -99,4 +103,20 @@ export async function cardUsage(cardId: number) {
     .from(t.sessions)
     .where(and(eq(t.sessions.cardId, cardId), eq(t.sessions.status, "done")));
   return { count: row?.count ?? 0, lastAt: row?.lastAt ? new Date(row.lastAt) : null };
+}
+
+/**
+ * シナリオごとのカードの進み具合: 用意した枚数と、話し終えたカードの枚数（カリキュラムで「何枚目まで進んだか」を見せる）
+ */
+export async function cardProgress() {
+  const rows = await db()
+    .select({
+      scenarioId: t.scenarioCards.scenarioId,
+      total: sql<number>`count(*)::int`,
+      done: sql<number>`count(*) filter (where exists (select 1 from ${t.sessions} where ${t.sessions.cardId} = ${t.scenarioCards.id} and ${t.sessions.status} = 'done'))::int`,
+    })
+    .from(t.scenarioCards)
+    .where(isNotNull(t.scenarioCards.slug))
+    .groupBy(t.scenarioCards.scenarioId);
+  return new Map(rows.map((r) => [r.scenarioId, { total: r.total, done: r.done }]));
 }

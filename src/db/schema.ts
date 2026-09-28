@@ -308,6 +308,10 @@ export type ScenarioCard = {
   partner: string;
   /** 重複よけ用の短い話題タグ（英語） */
   topic: string;
+  /** このカードで身につける力（日本語。シナリオ内でステップごとに少しずつ難しくなる） */
+  focus: string;
+  /** この場面で自然に使う表現。seed で表現リストにも入れ、この会話の「今日の表現」に優先して出す */
+  expressions: { text: string; meaning: string; kind: ExpressionKind; category: ExpressionCategory; example: string }[];
 };
 
 export const scenarioCards = pgTable("scenario_cards", {
