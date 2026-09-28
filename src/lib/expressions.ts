@@ -128,8 +128,8 @@ export async function pickTodaysExpressions(scenario: Scenario, curriculum: Curr
     queued("word"),
   ]);
 
-  // 苦手（leech）はドリルで扱うので、枠の数を決めるときには数えない（数えると新規の流入が止まり続ける）
-  const slots = lessonSlots(due.filter((e) => !isLeech(e)).length);
+  // 休み中の苦手（leech）は期限が先なので due に入らず、休み明けのものは普通の復習として数える
+  const slots = lessonSlots(due.length);
   const relevant = new Set<string>(categories);
   const reviews = due
     .map((e) => ({ e, p: reviewPriority(e, day, relevant.has(e.category)) }))
@@ -246,7 +246,7 @@ const gradeOf = (r: { used: boolean; correct: boolean }): Grade =>
   r.used ? (r.correct ? "correct" : "incorrect") : "unused";
 
 /** 使用結果の反映。target は sessionTargets の行（間隔反復の状態を含む） */
-export function recordUseQueries(
+function recordUseQueries(
   sessionId: number,
   target: SrsState,
   r: { used: boolean; correct: boolean; comment: string },
@@ -280,7 +280,7 @@ export function recordSpontaneousQueries(items: SrsState[]) {
   return items.map((s) => updateSrsQuery(s, "spontaneous"));
 }
 
-/** ドリルで正しく言えた表現を反映する（練習中の表現だけ。苦手扱いも解除される）。反映したら true */
+/** 言い直し練習（FB の指摘に紐づく表現）で正しく言えた表現を反映する（練習中の表現だけ。苦手扱いも解除される）。反映したら true */
 export async function recordDrillSuccess(expressionId: number) {
   const [s] = await db()
     .select(srsColumns)
@@ -291,7 +291,7 @@ export async function recordDrillSuccess(expressionId: number) {
   return true;
 }
 
-/** 苦手（一度も使えないまま3回続けて使わなかった）表現。会話の復習から外れている間にドリルで練習する */
+/** 苦手（一度も使えないまま3回続けて使わなかった）表現。2週間休んだあと優先度を上げて復習に戻る（週次レビュー用） */
 export function leechExpressions(limit = 10) {
   return db()
     .select()

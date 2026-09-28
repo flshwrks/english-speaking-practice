@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Turn } from "@/db/schema";
 import { turnDetectionFor, TURN_WAITS, type RealtimeUsage, type TranscriptionUsage, type TurnWait } from "@/lib/config";
-import { withPreviousLine } from "@/lib/conversation-prompt";
 import type { ExpressionPick } from "@/lib/expressions";
-import type { TranscriptionConfig } from "@/lib/session";
 import { saveUtterance } from "./audio-store";
 import { SAMPLE_RATE, toWav, trimSilence, UtteranceRecorder, voicedMs, voiceOnsetMs } from "./recorder";
 
@@ -159,7 +157,6 @@ export function useRealtimeSession() {
     turns: [] as LiveTurn[],
     usage: {} as NumTree,
     transcriptionUsage: { audioTokens: 0, textTokens: 0, outputTokens: 0, seconds: 0 } as TranscriptionUsage,
-    transcription: null as TranscriptionConfig | null,
     seq: 0,
     turnWait: "manual" as TurnWait,
     /**
@@ -167,7 +164,8 @@ export function useRealtimeSession() {
      * auto: 自動判定を一時停止中（応答が始まったら戻す） / manual: 手動で確定した発話（committed で会話に加える）
      * / flush: 終了時の送り切り（committed で終わり）
      */
-    ending: null as null | { mode: "auto" | "flush" } | { mode: "manual"; seq: number; latencyMs?: number },
+    ending: null as
+      null | { mode: "auto" | "flush" } | { mode: "manual"; seq: number; latencyMs?: number; startedDuringAi?: true },
     /** 手動モード: 自分の番が始まった位置（録音のサンプル位置）。AI 側の音声バッファもここで区切る */
     manualStart: 0,
     speech: new Map<string, { seq: number; startIdx: number; startMs: number; done?: boolean }>(),
@@ -178,6 +176,9 @@ export function useRealtimeSession() {
     aiSpeaking: false,
     /** AI が話し終えた録音位置（次の発話の話し始めまでの時間を測る起点） */
     aiStopPos: null as number | null,
+    /** AI の音声の再生が始まった録音位置と、手動モードでその再生中に声が出ていたか（次の発話に印を付ける） */
+    aiStartPos: null as number | null,
+    spokeDuringAi: false,
     uploads: [] as Promise<unknown>[],
     sessionId: 0,
     startedAt: 0,
@@ -242,7 +243,13 @@ export function useRealtimeSession() {
     return {
       turns: s.turns
         .filter((t) => t.text.trim() || (t.role === "user" && t.seq !== undefined))
-        .map(({ role, text, seq, latencyMs }) => ({ role, text: text.trim(), seq, latencyMs })),
+        .map(({ role, text, seq, latencyMs, startedDuringAi }) => ({
+          role,
+          text: text.trim(),
+          seq,
+          latencyMs,
+          startedDuringAi,
+        })),
       durationSec: s.startedAt ? (at - s.startedAt) / 1000 : 0,
       realtimeUsage: s.usage as RealtimeUsage,
       transcriptionUsage: s.transcriptionUsage,
@@ -298,22 +305,6 @@ export function useRealtimeSession() {
       uploadClip(sp.seq, s.recorder.slice(Math.max(sp.startIdx, end - MAX_CLIP), end), durationMs);
     },
     [uploadClip, takeLatency, patchTurn],
-  );
-
-  /** 相手の直前の発言を文字起こしの文脈に入れる（何への返答かが分かると聞き違いが減る） */
-  const updateTranscriptionContext = useCallback(
-    (line: string) => {
-      const tc = r.current.transcription;
-      if (!tc) return;
-      send({
-        type: "session.update",
-        session: {
-          type: "realtime",
-          audio: { input: { transcription: { ...tc, prompt: withPreviousLine(tc.prompt, line) } } },
-        },
-      });
-    },
-    [send],
   );
 
   /** 通話だけを閉じる（マイクと録音は残す） */
@@ -373,7 +364,9 @@ export function useRealtimeSession() {
             startIdx: s.recorder.position - PRE_ROLL,
             startMs: ev.audio_start_ms,
           });
-          updateTurns((ts) => [...ts, { role: "user", text: "", seq, ref: ev.item_id }]);
+          // AI の再生中に話し始めた（割り込み、または AI の声の回り込み）
+          const duringAi = s.aiSpeaking ? { startedDuringAi: true as const } : {};
+          updateTurns((ts) => [...ts, { role: "user", text: "", seq, ref: ev.item_id, ...duringAi }]);
           break;
         }
         case "input_audio_buffer.speech_stopped": {
@@ -390,7 +383,14 @@ export function useRealtimeSession() {
           if (ending?.mode === "manual") {
             updateTurns((ts) => [
               ...ts,
-              { role: "user", text: "", seq: ending.seq, latencyMs: ending.latencyMs, ref: ev.item_id },
+              {
+                role: "user",
+                text: "",
+                seq: ending.seq,
+                latencyMs: ending.latencyMs,
+                startedDuringAi: ending.startedDuringAi,
+                ref: ev.item_id,
+              },
             ]);
           }
           if (ending?.mode === "manual" || ending?.mode === "flush") s.ending = null;
@@ -417,11 +417,20 @@ export function useRealtimeSession() {
           setAiThinking(false);
           setAiSpeaking(true);
           s.aiStopPos = null;
+          s.aiStartPos = s.recorder?.position ?? null;
           break;
         case "output_audio_buffer.stopped":
           setAiSpeaking(false);
           // 再生が終わった位置から自分の番（応答の生成完了時点で一度区切っているが、再生中の無音を含めないよう区切り直す）
-          if (s.recorder) s.aiStopPos = s.recorder.position;
+          if (s.recorder) {
+            s.aiStopPos = s.recorder.position;
+            // 手動モードでは再生中の音声は切り出さないので、ここで再生中に声が出ていたかだけ確かめる
+            const from = s.aiStartPos ?? s.aiStopPos;
+            s.spokeDuringAi =
+              s.turnWait === "manual" &&
+              s.aiStopPos - from <= MAX_CLIP &&
+              voiceOnsetMs(s.recorder.slice(from, s.aiStopPos)) !== null;
+          }
           startManualTurn();
           break;
         case "output_audio_buffer.cleared":
@@ -438,7 +447,6 @@ export function useRealtimeSession() {
           break;
         case "response.output_audio_transcript.done":
           patchTurn(ev.response_id, (t) => ({ ...t, text: ev.transcript }));
-          updateTranscriptionContext(ev.transcript ?? "");
           break;
         case "response.done": {
           s.responding = false;
@@ -464,16 +472,7 @@ export function useRealtimeSession() {
           break;
       }
     },
-    [
-      updateTurns,
-      patchTurn,
-      finalizeSpeech,
-      finishEnding,
-      startManualTurn,
-      setAiSpeaking,
-      updateTranscriptionContext,
-      checkpoint,
-    ],
+    [updateTurns, patchTurn, finalizeSpeech, finishEnding, startManualTurn, setAiSpeaking, checkpoint],
   );
 
   /** 交代の方法を切り替える（会話中でも可）。選択は次回のために保存する */
@@ -509,7 +508,13 @@ export function useRealtimeSession() {
         const voiced = voicedMs(pcm);
         if (voiced < MIN_SPEECH_MS) return false;
         const seq = ++s.seq;
-        s.ending = { mode: "manual", seq, latencyMs: takeLatency() };
+        s.ending = {
+          mode: "manual",
+          seq,
+          latencyMs: takeLatency(),
+          ...(s.spokeDuringAi ? { startedDuringAi: true as const } : {}),
+        };
+        s.spokeDuringAi = false;
         s.manualStart = end;
         uploadClip(seq, pcm, voiced);
       } else {
@@ -573,6 +578,8 @@ export function useRealtimeSession() {
         awaiting: new Set(),
         responding: false,
         aiStopPos: null,
+        aiStartPos: null,
+        spokeDuringAi: false,
         uploads: [],
         sessionId: 0,
         startedAt: 0,
@@ -614,7 +621,6 @@ export function useRealtimeSession() {
         if (!res.ok) throw new Error(data.error ?? `開始できませんでした (${res.status})`);
         s.sessionId = data.sessionId;
         s.maxMinutes = data.maxMinutes;
-        s.transcription = data.transcription ?? null;
         setMaxMinutes(data.maxMinutes);
         if (cancelled()) throw new Error("cancelled");
 
@@ -745,6 +751,13 @@ export function useRealtimeSession() {
     }
   }, [payload, cleanup]);
 
+  // ページ離脱・アンマウントの処理は ref 経由で呼ぶ。下の effect を依存なし（マウント時の1回だけ）にして、
+  // コールバックの作り直しで後片付けが走り、会話中の通話を終わらせてしまうことがないようにする
+  const leave = useRef({ abandon, checkpoint });
+  useEffect(() => {
+    leave.current = { abandon, checkpoint };
+  }, [abandon, checkpoint]);
+
   useEffect(() => {
     setTurnWaitState(loadTurnWait());
     // 前回届かなかった終了の連絡を送り直す（終了済みならサーバーは何もしない）
@@ -756,16 +769,17 @@ export function useRealtimeSession() {
         // iOS などでは裏に回ると録音・再生が止まるので、戻ったら再開する
         void s.recorder?.resume();
         if (s.audio?.srcObject) void s.audio.play().catch(() => {});
-      } else checkpoint(true);
+      } else leave.current.checkpoint(true);
     };
-    window.addEventListener("pagehide", abandon);
+    const onPageHide = () => leave.current.abandon();
+    window.addEventListener("pagehide", onPageHide);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
-      window.removeEventListener("pagehide", abandon);
+      window.removeEventListener("pagehide", onPageHide);
       document.removeEventListener("visibilitychange", onVisibility);
-      abandon();
+      leave.current.abandon();
     };
-  }, [abandon, checkpoint]);
+  }, []);
 
   /** 画面の音量メーター用（録音していなければ 0） */
   const getLevel = useCallback(() => r.current.recorder?.level ?? 0, []);

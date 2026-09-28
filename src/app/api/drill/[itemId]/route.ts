@@ -1,23 +1,27 @@
 import { NextResponse } from "next/server";
+import { handler, jsonError, parseId } from "@/app/api/_lib/http";
 import { DRILL_MAX_SEC, DrillError, runDrill } from "@/lib/drill";
+import { wavBytes } from "@/lib/wav";
 
 export const maxDuration = 60;
 
-/** 上限秒数の WAV＋余裕。これを超える本文は読まずに断る */
-const MAX_BYTES = 44 + (DRILL_MAX_SEC + 2) * 16000 * 2;
+/** 上限秒数の WAV＋余裕 */
+const MAX_BYTES = wavBytes(DRILL_MAX_SEC + 2);
 
 /** 言い直し練習: 添削の改善後の文を読んだ WAV を受け取り、台本あり評価で採点して保存する */
-export async function POST(req: Request, { params }: { params: Promise<{ itemId: string }> }) {
-  const itemId = Number((await params).itemId);
-  if (!Number.isInteger(itemId) || itemId <= 0) return NextResponse.json({ error: "不正な添削です" }, { status: 400 });
-  if (Number(req.headers.get("content-length") ?? 0) > MAX_BYTES) {
-    return NextResponse.json({ error: `録音は${DRILL_MAX_SEC}秒までです` }, { status: 413 });
-  }
+export const POST = handler<{ itemId: string }>(async (req, params) => {
+  const itemId = parseId(params.itemId);
+  if (!itemId) return jsonError(400, "不正な添削です");
+  const tooLarge = () => jsonError(413, `録音は${DRILL_MAX_SEC}秒までです`);
+  // 申告された大きさで先に断り、読んだ後も実際の大きさで確かめる（content-length は省略・偽装できる）
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_BYTES) return tooLarge();
+  const wav = Buffer.from(await req.arrayBuffer());
+  if (wav.length > MAX_BYTES) return tooLarge();
   try {
-    return NextResponse.json(await runDrill(itemId, Buffer.from(await req.arrayBuffer())));
+    return NextResponse.json(await runDrill(itemId, wav));
   } catch (e) {
-    if (e instanceof DrillError) return NextResponse.json({ error: e.message }, { status: e.status });
+    if (e instanceof DrillError) return jsonError(e.status, e.message);
     console.error("drill failed", e);
-    return NextResponse.json({ error: "採点に失敗しました。もう一度どうぞ" }, { status: 500 });
+    return jsonError(500, "採点に失敗しました。もう一度どうぞ");
   }
-}
+});

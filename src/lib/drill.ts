@@ -5,7 +5,7 @@ import { azureConfigured } from "@/lib/azure";
 import { assessScripted } from "@/lib/azure-scripted";
 import { PRICING } from "@/lib/config";
 import { recordDrillSuccess } from "@/lib/expressions";
-import { SAMPLE_RATE } from "@/lib/client/recorder";
+import { wavSeconds } from "@/lib/wav";
 
 /** 1回の録音の上限（画面側はこの秒数で自動停止する） */
 export const DRILL_MAX_SEC = 15;
@@ -14,7 +14,6 @@ export const DRILL_CLEAR_SCORE = 80;
 /** 同じ添削で、直近 RATE_WINDOW_MIN 分に採点できる回数 */
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MIN = 10;
-const WAV_HEADER = 44;
 
 export type DrillResult = { scores: DrillScores; words: DrillWord[]; best: number };
 
@@ -28,16 +27,9 @@ export class DrillError extends Error {
 }
 
 /** 16kHz mono 16bit の WAV（recorder.ts の toWav の形式）で、長さが範囲内か */
-function wavSeconds(wav: Buffer) {
-  const ok =
-    wav.length > WAV_HEADER &&
-    wav.toString("ascii", 0, 4) === "RIFF" &&
-    wav.toString("ascii", 8, 12) === "WAVE" &&
-    wav.readUInt16LE(22) === 1 &&
-    wav.readUInt32LE(24) === SAMPLE_RATE &&
-    wav.readUInt16LE(34) === 16;
-  if (!ok) throw new DrillError("録音の形式が正しくありません", 400);
-  const sec = (wav.length - WAV_HEADER) / (SAMPLE_RATE * 2);
+function drillSeconds(wav: Buffer) {
+  const sec = wavSeconds(wav);
+  if (sec === null) throw new DrillError("録音の形式が正しくありません", 400);
   if (sec < 0.5) throw new DrillError("録音が短すぎます", 400);
   // 停止の遅れのぶん1秒だけ余裕を持たせる
   if (sec > DRILL_MAX_SEC + 1) throw new DrillError(`録音は${DRILL_MAX_SEC}秒までです`, 413);
@@ -49,7 +41,7 @@ const bestScore = sql<number | null>`max((${t.drillAttempts.scores}->>'score')::
 /** 添削1件の「改善後の文」を声に出したものを採点して保存する。お手本の文は DB から取る（画面から受け取らない） */
 export async function runDrill(feedbackItemId: number, wav: Buffer): Promise<DrillResult> {
   if (!azureConfigured()) throw new DrillError("発音評価（Azure）が設定されていません", 503);
-  const sec = wavSeconds(wav);
+  const sec = drillSeconds(wav);
   const d = db();
   const [[item], [past]] = await Promise.all([
     d

@@ -69,19 +69,27 @@ export function prune(tokens: string[]) {
   return { words: kept, fillers: tokens.length - words.length, repetitions };
 }
 
-/**
- * 学習者の発話が直前の AI の発言の拾い込み（スピーカーの音をマイクが拾った）らしいか。
- * 学習者の語の2語連続のうち半分以上が AI の発言にもあれば拾い込みとみなす（実データで AI の質問をほぼそのまま拾った回があった）
- */
-export function isEcho(userText: string, aiText: string) {
+/** 学習者の語の2語連続のうち、AI の発言にもあるものの割合（4組未満は 0） */
+function overlap(userText: string, aiText: string) {
   const bigrams = (text: string) => {
     const w = tokenize(text);
     return w.slice(1).map((x, i) => `${w[i]} ${x}`);
   };
   const user = bigrams(userText);
-  if (user.length < 4) return false;
+  if (user.length < 4) return 0;
   const ai = new Set(bigrams(aiText));
-  return user.filter((b) => ai.has(b)).length / user.length >= 0.5;
+  return user.filter((b) => ai.has(b)).length / user.length;
+}
+
+/**
+ * 学習者の発話が直前の AI の発言の拾い込み（スピーカーの音をマイクが拾った）らしいか。
+ * 確認のための言い換え（"So you need the deck two weeks earlier?"）は教えている話し方なので、語の重なりだけでは決めない:
+ * - AI の再生中に話し始めた発話（startedDuringAi）で、語の半分以上が AI の発言と同じなら拾い込み（割り込んで自分の言葉で話したものは残す）
+ * - 再生中かどうかの記録がない古い発話は、文字起こしと Azure の聞き取りの両方が8割以上 AI の発言と同じときだけ
+ */
+export function isEcho(turn: { text: string; heard?: string; startedDuringAi?: boolean }, aiText: string) {
+  if (turn.startedDuringAi !== undefined) return turn.startedDuringAi && overlap(turn.text, aiText) >= 0.5;
+  return turn.heard !== undefined && overlap(turn.text, aiText) >= 0.8 && overlap(turn.heard, aiText) >= 0.8;
 }
 
 /** 移動平均型の語彙の多様性（MATTR）。素の TTR と違って語数に左右されない。窓より短ければ素の TTR */
@@ -230,6 +238,7 @@ export function computeMetrics(input: {
   utterances: UtteranceData[];
   /** 会話中の学習者の発言（文字起こし）。latencyMs は AI が話し終えてから話し始めるまで */
   userTurns: { text: string; latencyMs?: number }[];
+  /** 発話ごとの誤りの集計。空なら誤り率・誤りのない節の割合は出さない */
   errorCounts: ErrorCount[];
   llmCefr: string;
   /** 前回までの会話の指標（新しい順） */
@@ -247,13 +256,16 @@ export function computeMetrics(input: {
   const m: SessionMetrics = {
     userWords: transcriptWords.length,
     lexicalDiversity: round2(mattr(transcriptWords)),
-    errorsPer100Words: round1(
-      share(
-        errorCounts.reduce((s, x) => s + x.errors, 0),
-        transcriptWords.length,
-        100,
-      ),
-    ),
+    // 分析 AI が誤りを数えなかった回は、定義の違う値を混ぜないよう null
+    errorsPer100Words: errorCounts.length
+      ? round1(
+          share(
+            errorCounts.reduce((s, x) => s + x.errors, 0),
+            transcriptWords.length,
+            100,
+          ),
+        )
+      : null,
     ...(clauses > 0 && {
       errorFreeClauseRatio: share(
         errorCounts.reduce((s, x) => s + Math.min(x.errorFreeClauses, x.clauses), 0),

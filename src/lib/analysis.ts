@@ -6,7 +6,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { BatchItem } from "drizzle-orm/batch";
-import { and, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, lt, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, t } from "@/db";
 import type { Homework, LearnerModel, SessionMetrics, Usage } from "@/db/schema";
@@ -22,7 +22,7 @@ import {
   sessionTargets,
 } from "./expressions";
 import { formatPhoneme, isWeakWord } from "./format";
-import { getProfile, topErrorPatterns, updateProfileQuery } from "./lesson";
+import { getProfile, updateProfileQuery } from "./lesson";
 import { computeMetrics, delivery, isEcho, tokenize, weakSounds, type ErrorCount, type WeakSound } from "./metrics";
 import { getScenario } from "./scenarios";
 
@@ -36,7 +36,7 @@ const LearnerModelSchema = z.object({
 });
 
 // 構造化出力でも enum・数値範囲は強制されないため、想定外の値は .catch() で既定値に置き換える
-const count = z.number().int().catch(0);
+const countField = z.number().int().catch(0);
 
 const AnalysisSchema = z.object({
   summary: z.string().describe("セッション全体の講評（日本語, 2〜3文）"),
@@ -66,9 +66,11 @@ const AnalysisSchema = z.object({
     .array(
       z.object({
         seq: z.number().int(),
-        clauses: count.describe("節（述語を持つまとまり）の数。言いさしの断片も1と数える"),
-        errorFreeClauses: count.describe("文法・語彙・コロケーションの誤りを含まない節の数"),
-        errors: count.describe("文法・語彙・コロケーションの誤りの総数（items に選ばなかったものも含めて漏れなく）"),
+        clauses: countField.describe("節（述語を持つまとまり）の数。言いさしの断片も1と数える"),
+        errorFreeClauses: countField.describe("文法・語彙・コロケーションの誤りを含まない節の数"),
+        errors: countField.describe(
+          "文法・語彙・コロケーションの誤りの総数（items に選ばなかったものも含めて漏れなく）",
+        ),
       }),
     )
     .describe(
@@ -252,13 +254,21 @@ export async function buildAnalysisInput(sessionId: number) {
         level: t.sessions.level,
         turns: t.sessions.turns,
         usage: t.sessions.usage,
+        status: t.sessions.status,
+        analysisStartedAt: t.sessions.analysisStartedAt,
+        homeworkGiven: t.sessions.homeworkGiven,
       })
       .from(t.sessions)
       .where(eq(t.sessions.id, sessionId)),
     getProfile(),
     d.select().from(t.utterances).where(eq(t.utterances.sessionId, sessionId)),
     sessionTargets([sessionId]),
-    topErrorPatterns(50),
+    // ミスの型ごとの過去の回数（明確な誤りのみ。この会話の分は再分析で二重に数えないよう除く）
+    d
+      .select({ key: t.feedbackItems.patternKey, n: count() })
+      .from(t.feedbackItems)
+      .where(and(gte(t.feedbackItems.severity, ERROR_MIN_SEVERITY), ne(t.feedbackItems.sessionId, sessionId)))
+      .groupBy(t.feedbackItems.patternKey),
     practicedExpressions(sessionId),
     // 前回までの会話（新しい順）: CEFR の中央値・難易度の判定・宿題に使う
     d
@@ -286,12 +296,19 @@ export async function buildAnalysisInput(sessionId: number) {
   if (!session) throw new Error("session not found");
   const model = profile.learnerModel;
   const scenario = getScenario(session.scenarioId);
-  const homework: TopPoint | null = recent[0]?.topPoints?.[0] ?? null;
+  // 宿題は会話の開始時に実際に渡したもの。記録のない古い会話は前回の最重要ポイント
+  const homework: TopPoint | null = session.homeworkGiven ?? recent[0]?.topPoints?.[0] ?? null;
   // AI の声を拾っただけの発話は、添削にも指標にも使わない
+  const heardBySeq = new Map(allUtterances.map((u) => [u.seq, u.heard]));
   const echoes = new Set<number>();
   session.turns.forEach((turn, i) => {
     const prev = session.turns[i - 1];
-    if (turn.role === "user" && prev?.role === "assistant" && isEcho(turn.text, prev.text)) echoes.add(turn.seq!);
+    if (
+      turn.role === "user" &&
+      prev?.role === "assistant" &&
+      isEcho({ ...turn, heard: heardBySeq.get(turn.seq!) }, prev.text)
+    )
+      echoes.add(turn.seq!);
   });
   const userTurns = session.turns.filter((x) => x.role === "user" && !echoes.has(x.seq!));
   const utterances = allUtterances.filter((u) => !echoes.has(u.seq));
@@ -302,7 +319,7 @@ export async function buildAnalysisInput(sessionId: number) {
   const counts = new Map<string, number>();
   for (const p of patterns) {
     const key = canonicalPatternKey(p.key);
-    counts.set(key, (counts.get(key) ?? 0) + p.count);
+    counts.set(key, (counts.get(key) ?? 0) + p.n);
   }
   const catalogue = ERROR_PATTERNS.map(
     (p) => `- ${p.key} (${p.category}): ${p.label}${counts.get(p.key) ? ` — seen ${counts.get(p.key)}x before` : ""}`,
@@ -358,11 +375,33 @@ ${transcript}`;
 
 export type AnalysisInput = Awaited<ReturnType<typeof buildAnalysisInput>>;
 
+type Tokens = { inputTokens: number; outputTokens: number };
+
+/** 応答は受け取れたが使えなかった失敗。費用は発生しているので使ったトークン数を持たせる */
+export class AnalysisError extends Error {
+  constructor(
+    message: string,
+    readonly tokens: Tokens,
+  ) {
+    super(message);
+  }
+}
+
+/** Claude のトークン数を費用の記録に足す（やり直しや失敗した回の分も積み上げる） */
+function addClaudeTokens(u: Usage | null, tokens: Tokens): Usage {
+  return {
+    realtimeUsd: u?.realtimeUsd ?? 0,
+    azureSeconds: u?.azureSeconds ?? 0,
+    claudeInputTokens: (u?.claudeInputTokens ?? 0) + tokens.inputTokens,
+    claudeOutputTokens: (u?.claudeOutputTokens ?? 0) + tokens.outputTokens,
+  };
+}
+
 /**
  * 分析 AI を呼ぶ（通信エラー・429・5xx は SDK が2回まで再試行する）。
  * 考える量が多いと 16000 トークンでは切れる（実測）ので、上限を上げてストリーミングで受ける（非ストリーミングは SDK が拒否する）
  */
-export async function callAnalysisModel(userText: string) {
+export async function callAnalysisModel(userText: string): Promise<{ analysis: Analysis } & Tokens> {
   const response = await new Anthropic().messages
     .stream({
       model: PRICING.claude.model,
@@ -373,11 +412,13 @@ export async function callAnalysisModel(userText: string) {
       messages: [{ role: "user", content: userText }],
     })
     .finalMessage();
-  if (response.stop_reason === "refusal") throw new Error("分析が拒否されました");
-  if (response.stop_reason === "max_tokens") throw new Error("分析結果が長すぎて途中で切れました");
+  const tokens = { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens };
+  const fail = (message: string) => new AnalysisError(message, tokens);
+  if (response.stop_reason === "refusal") throw fail("分析が拒否されました");
+  if (response.stop_reason === "max_tokens") throw fail("分析結果が長すぎて途中で切れました");
   const analysis = response.parsed_output;
-  if (!analysis) throw new Error(`分析結果を解析できませんでした (stop_reason: ${response.stop_reason})`);
-  return { analysis, inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens };
+  if (!analysis) throw fail(`分析結果を解析できませんでした (stop_reason: ${response.stop_reason})`);
+  return { analysis, ...tokens };
 }
 
 const normText = (s: string) => tokenize(s).join(" ");
@@ -385,7 +426,7 @@ const normText = (s: string) => tokenize(s).join(" ");
 /**
  * 分析結果の決定的な後処理と、指標・次回の難易度の計算（DB には書かない）。
  * - 存在しない（または AI の声を拾っただけの）発話への指摘、同じ箇所への重複指摘、直していない「言い換え」は除く
- * - 誤りの集計は発話ごとに1つ。なければ指導項目（発音・抑揚以外の重大度2以上）で代用する
+ * - 誤りの集計は発話ごとに1つ（なければ誤り率は null。指導項目の数で代用すると定義が混ざる）
  */
 export function finalizeAnalysis(input: AnalysisInput, a: Analysis) {
   const { session, profile, utterances, userTurns, recent, homework } = input;
@@ -413,28 +454,24 @@ export function finalizeAnalysis(input: AnalysisInput, a: Analysis) {
       errors: Math.max(0, e.errors),
     });
   }
-  const errorCounts: ErrorCount[] = bySeq.size
-    ? [...bySeq.values()]
-    : [
-        {
-          clauses: 0,
-          errorFreeClauses: 0,
-          errors: items.filter(
-            (i) => i.severity >= ERROR_MIN_SEVERITY && i.category !== "pronunciation" && i.category !== "prosody",
-          ).length,
-        },
-      ];
+  const errorCounts: ErrorCount[] = [...bySeq.values()];
 
   const previous = recent.flatMap((r) => (r.metrics ? [r.metrics] : []));
   const metrics = computeMetrics({ utterances, userTurns, errorCounts, llmCefr: a.estimatedCefr, previous });
 
-  // 難易度: 今の難易度で続けて行った会話だけを根拠にする（変えた直後に続けて動きすぎないように）
+  // 難易度: 今の難易度で続けて行った会話だけを根拠にする（変えた直後に続けて動きすぎないように）。
+  // 完了した会話が今回より前に1つもなければレベル診断
   const sameLevel: SessionMetrics[] = [];
   for (const r of recent) {
     if (r.level !== session.level || !r.metrics) break;
     sameLevel.push(r.metrics);
   }
-  const level = decideLevel({ current: profile.level, suggestion: a.levelAdjustment, recent: [metrics, ...sameLevel] });
+  const level = decideLevel({
+    current: profile.level,
+    suggestion: a.levelAdjustment,
+    recent: [metrics, ...sameLevel],
+    isFirstEver: recent.length === 0,
+  });
 
   return {
     ...a,
@@ -458,85 +495,108 @@ export type FinalAnalysis = ReturnType<typeof finalizeAnalysis>;
 
 /**
  * 保存: 1つのトランザクションにまとめ、途中で失敗しても半端に反映されないようにする。
- * 同じ会話を再分析しても重複しないよう、この会話の指摘は入れ替え、ミスの型の回数は前回分を引いてから足す。
- * 難易度・学習者モデル・表現の間隔反復は、まだ完了していない会話のときだけ進める
+ * - 通常（分析中の会話）: 開始時の印（analysisStartedAt）が変わっていないことを条件に保存の権利を取る。
+ *   止まったとみなされて別の分析に引き継がれていたら何も書かない（難易度・表現の間隔反復・学習者モデルの二重反映を防ぐ）
+ * - 再分析（完了済みの会話。スクリプトから）: 講評・指標・指摘だけ入れ替え、難易度・間隔反復・学習者モデル・ミスの型は進めない。
+ *   言い直し練習の記録が付いた指摘があれば、指摘は入れ替えない（id が変わると記録が宙に浮く）
+ * 保存したら true
  */
-export async function persistAnalysis(
-  input: AnalysisInput,
-  r: FinalAnalysis,
-  tokens: { inputTokens: number; outputTokens: number },
-) {
+export async function persistAnalysis(input: AnalysisInput, r: FinalAnalysis, tokens: Tokens) {
   const d = db();
   const { session, profile, targets, practiced } = input;
   const sessionId = session.id;
-  const [current] = await d.select({ status: t.sessions.status }).from(t.sessions).where(eq(t.sessions.id, sessionId));
-  const firstRun = current?.status !== "done";
+  const rerun = session.status === "done";
+  let guard = eq(t.sessions.id, sessionId);
+  let replaceItems = true;
+  if (rerun) {
+    const [{ n }] = await d
+      .select({ n: count() })
+      .from(t.drillAttempts)
+      .innerJoin(t.feedbackItems, eq(t.feedbackItems.id, t.drillAttempts.feedbackItemId))
+      .where(eq(t.feedbackItems.sessionId, sessionId));
+    replaceItems = n === 0;
+    if (!replaceItems) console.warn(`session ${sessionId}: 言い直し練習の記録があるため、指摘は入れ替えずに残します`);
+  } else {
+    if (session.status !== "analyzing" || !session.analysisStartedAt)
+      throw new Error(`分析中の会話ではないため保存しません (status: ${session.status})`);
+    // 印を今の時刻に付け替えられたら保存の権利を取れた（付け替えたので、保存中に止まったとみなされることもない）
+    const token = new Date();
+    const [claimed] = await d
+      .update(t.sessions)
+      .set({ analysisStartedAt: token })
+      .where(
+        and(
+          eq(t.sessions.id, sessionId),
+          eq(t.sessions.status, "analyzing"),
+          eq(t.sessions.analysisStartedAt, session.analysisStartedAt),
+        ),
+      )
+      .returning({ id: t.sessions.id });
+    if (!claimed) {
+      console.warn(`session ${sessionId}: 別の分析が引き継いだため、この結果は保存しません`);
+      return false;
+    }
+    guard = and(
+      eq(t.sessions.id, sessionId),
+      eq(t.sessions.status, "analyzing"),
+      eq(t.sessions.analysisStartedAt, token),
+    )!;
+  }
 
-  const usage: Usage = {
-    realtimeUsd: session.usage?.realtimeUsd ?? 0,
-    azureSeconds: session.usage?.azureSeconds ?? 0,
-    claudeInputTokens: tokens.inputTokens,
-    claudeOutputTokens: tokens.outputTokens,
-  };
+  const usage = addClaudeTokens(session.usage, tokens);
   const spontaneousIds = new Set(r.spontaneousExpressionIds);
-  // ミスの型として数えるのは明確な誤り（重大度2以上）で、カタログの型に当てはまるものだけ
+  // ミスの型の一覧に載せるのは明確な誤り（重大度2以上）で、カタログの型に当てはまるものだけ。回数は feedback_items から数える
   const patternKeys = new Set(
     r.items.filter((i) => i.severity >= ERROR_MIN_SEVERITY && i.patternKey !== "other").map((i) => i.patternKey),
   );
 
-  const writes: BatchItem<"pg">[] = [
-    d
-      .update(t.errorPatterns)
-      .set({ count: sql`greatest(${t.errorPatterns.count} - 1, 0)` })
-      .where(
-        inArray(
-          t.errorPatterns.key,
-          d
-            .selectDistinct({ key: t.feedbackItems.patternKey })
-            .from(t.feedbackItems)
-            .where(and(eq(t.feedbackItems.sessionId, sessionId), gte(t.feedbackItems.severity, ERROR_MIN_SEVERITY))),
+  const writes: BatchItem<"pg">[] = [];
+  if (replaceItems) {
+    writes.push(d.delete(t.feedbackItems).where(eq(t.feedbackItems.sessionId, sessionId)));
+    if (r.items.length) {
+      writes.push(
+        d.insert(t.feedbackItems).values(
+          r.items.map((i) => ({
+            sessionId,
+            seq: i.seq,
+            category: i.category,
+            original: i.original,
+            improved: i.improved,
+            explanation: i.explanation,
+            severity: i.severity,
+            patternKey: i.patternKey,
+            keyExpression: i.keyExpression,
+          })),
         ),
-      ),
-    d.delete(t.feedbackItems).where(eq(t.feedbackItems.sessionId, sessionId)),
-  ];
-  if (r.items.length) {
-    writes.push(
-      d.insert(t.feedbackItems).values(
-        r.items.map((i) => ({
-          sessionId,
-          seq: i.seq,
-          category: i.category,
-          original: i.original,
-          improved: i.improved,
-          explanation: i.explanation,
-          severity: i.severity,
-          patternKey: i.patternKey,
-          keyExpression: i.keyExpression,
-        })),
-      ),
-    );
+      );
+    }
   }
-  if (patternKeys.size) {
-    writes.push(
-      d
-        .insert(t.errorPatterns)
-        .values(
-          [...patternKeys].map((key) => {
-            const p = errorPattern(key)!;
-            return { key, label: p.label, category: p.category, count: 1 };
-          }),
-        )
-        .onConflictDoUpdate({
-          target: t.errorPatterns.key,
-          set: { count: sql`${t.errorPatterns.count} + 1`, lastSeenAt: sql`now()`, resolved: false },
-        }),
-    );
-  }
-  if (firstRun) {
+  if (!rerun) {
+    if (patternKeys.size) {
+      writes.push(
+        d
+          .insert(t.errorPatterns)
+          .values(
+            [...patternKeys].map((key) => {
+              const p = errorPattern(key)!;
+              return { key, label: p.label, category: p.category };
+            }),
+          )
+          .onConflictDoUpdate({ target: t.errorPatterns.key, set: { lastSeenAt: sql`now()`, resolved: false } }),
+      );
+    }
     writes.push(
       ...recordTargetsQueries(sessionId, targets, r.targetExpressions),
       ...recordSpontaneousQueries(practiced.filter((p) => spontaneousIds.has(p.id))),
     );
+    if (r.level !== profile.level || r.learnerModel) {
+      writes.push(
+        updateProfileQuery({
+          ...(r.level !== profile.level ? { level: r.level } : {}),
+          ...(r.learnerModel ? { learnerModel: r.learnerModel } : {}),
+        }),
+      );
+    }
   }
   if (r.suggestedExpressions.length) {
     writes.push(
@@ -544,14 +604,6 @@ export async function persistAnalysis(
         .insert(t.expressions)
         .values(r.suggestedExpressions.map((e) => ({ ...e, source: "feedback", status: "suggested" as const })))
         .onConflictDoNothing(),
-    );
-  }
-  if (firstRun && (r.level !== profile.level || r.learnerModel)) {
-    writes.push(
-      updateProfileQuery({
-        ...(r.level !== profile.level ? { level: r.level } : {}),
-        ...(r.learnerModel ? { learnerModel: r.learnerModel } : {}),
-      }),
     );
   }
 
@@ -568,9 +620,10 @@ export async function persistAnalysis(
         costUsd: sessionCostUsd(usage),
         error: null,
       })
-      .where(eq(t.sessions.id, sessionId)),
+      .where(guard),
     ...writes,
   ]);
+  return true;
 }
 
 export async function analyzeSession(sessionId: number) {
@@ -579,15 +632,25 @@ export async function analyzeSession(sessionId: number) {
   await persistAnalysis(input, finalizeAnalysis(input, analysis), tokens);
 }
 
-/** 分析を実行し、失敗したらセッションをエラー状態にする（after() から呼ぶ） */
+/**
+ * 分析を実行し、失敗したらセッションをエラー状態にする（after() から呼ぶ）。
+ * 応答を受け取ってから失敗した回の Claude の費用も記録する。完了済みの会話はエラーに戻さない
+ */
 export async function runAnalysis(sessionId: number) {
   try {
     await analyzeSession(sessionId);
   } catch (e) {
     console.error("analysis failed", e);
-    await db()
+    const d = db();
+    let cost = {};
+    if (e instanceof AnalysisError) {
+      const [s] = await d.select({ usage: t.sessions.usage }).from(t.sessions).where(eq(t.sessions.id, sessionId));
+      const usage = addClaudeTokens(s?.usage ?? null, e.tokens);
+      cost = { usage, costUsd: sessionCostUsd(usage) };
+    }
+    await d
       .update(t.sessions)
-      .set({ status: "error", error: e instanceof Error ? e.message : String(e) })
-      .where(eq(t.sessions.id, sessionId));
+      .set({ status: "error", error: e instanceof Error ? e.message : String(e), ...cost })
+      .where(and(eq(t.sessions.id, sessionId), ne(t.sessions.status, "done")));
   }
 }

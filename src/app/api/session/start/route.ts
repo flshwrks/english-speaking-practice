@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { startSession, StartInput } from "@/lib/session";
 import { handler, jsonError, parseBody } from "@/app/api/_lib/http";
 
+/** 開始時に締めた放置セッションの分析（after）もこの実行時間の中で走る */
+export const maxDuration = 300;
+
 export const POST = handler(async (req) => {
   const body = await parseBody(req, StartInput);
   if (body.error) return body.error;

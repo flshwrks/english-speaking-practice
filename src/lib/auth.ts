@@ -61,14 +61,17 @@ const LOGIN_MAX_FAILURES = 5;
 const FAILURE_DELAY_MS = 1000;
 
 /**
- * ログインの試行。ロック中は照合せずに "locked"。失敗は記録して1秒待たせ、成功したら失敗の記録を消す。
+ * ログインの試行。先に試行を1件記録してから数える（同時に大量に試されても、数える前にすり抜けられない）。
+ * ロック中は照合せずに "locked"。成功したら記録を消し、失敗は1秒待たせる。
  * パスワードは HMAC どうしで比べる（長さや一致位置で時間が変わらないように）
  */
 export async function attemptLogin(password: string): Promise<"ok" | "wrong" | "locked"> {
   const [{ db, t }, { count, gte, lt, sql }] = await Promise.all([import("@/db"), import("drizzle-orm")]);
+  await db().insert(t.loginFailures).values({});
   const recent = sql`now() - make_interval(mins => ${LOGIN_WINDOW_MIN})`;
   const [{ n }] = await db().select({ n: count() }).from(t.loginFailures).where(gte(t.loginFailures.at, recent));
-  if (n >= LOGIN_MAX_FAILURES) return "locked";
+  // 今回の1件を含めて数えるので、それより前の失敗が上限に達していればロック
+  if (n > LOGIN_MAX_FAILURES) return "locked";
 
   const expected = process.env.APP_PASSWORD;
   if (expected && (await hmac(password)) === (await hmac(expected))) {
@@ -76,7 +79,6 @@ export async function attemptLogin(password: string): Promise<"ok" | "wrong" | "
     return "ok";
   }
   await Promise.all([
-    db().insert(t.loginFailures).values({}),
     db()
       .delete(t.loginFailures)
       .where(lt(t.loginFailures.at, sql`now() - interval '1 day'`)),

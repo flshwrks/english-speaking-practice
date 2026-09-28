@@ -29,8 +29,8 @@ import { attachToSession, getPicked, markShownQuery } from "./expressions";
 import { budgetStatus, getCurrentCurriculum, topErrorPatterns } from "./lesson";
 import { getScenario, speechSpeed } from "./scenarios";
 
-/** 会話中の文字起こしの設定。ブラウザも受け取り、相手の直前の発言を prompt に足して更新する */
-export type TranscriptionConfig = { model: string; language: string; prompt: string };
+/** 会話中の文字起こしの設定 */
+type TranscriptionConfig = { model: string; language: string; prompt: string };
 
 /** Realtime API の一時トークンを発行する。ブラウザにはこれだけを渡し、API キーはサーバーに置く */
 async function createClientSecret(opts: {
@@ -117,7 +117,7 @@ export const EndInput = z.object({
 export type EndInput = z.infer<typeof EndInput>;
 
 export type StartResult =
-  | { ok: true; sessionId: number; clientSecret: string; maxMinutes: number; transcription: TranscriptionConfig }
+  | { ok: true; sessionId: number; clientSecret: string; maxMinutes: number }
   | { ok: false; reason: "budget" | "budget_hard_cap" | "unknown_scenario" };
 
 /** 前回（分析済みの直近セッション）のフィードバックで一番大事だった改善点 */
@@ -141,14 +141,17 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
     getPicked(input.picks),
     topErrorPatterns(3),
     lastHomework(),
-    // 前回の会話が終了の連絡なしに残っていたら、ここで締めて費用を予算に反映する
-    sweepStaleSessions(),
+    // 前回の会話が終了の連絡なしに残っていたら、ここで締めて費用を予算に反映する（失敗しても開始は止めない）
+    sweepStaleSessions().catch((e) => {
+      console.error("sweep stale sessions failed", e);
+      return 0;
+    }),
   ]);
   // 「それでも始める」で超えられるのは予算の一定倍まで
   if (budget.spentJpy >= budget.budgetJpy * BUDGET_HARD_CAP_RATIO) return { ok: false, reason: "budget_hard_cap" };
   if (budget.exceeded && !input.force) return { ok: false, reason: "budget" };
 
-  const transcription = {
+  const transcription: TranscriptionConfig = {
     model: TRANSCRIBE_MODEL,
     language: "en",
     prompt: buildTranscriptionPrompt({ scenario, profile }),
@@ -169,11 +172,11 @@ export async function startSession(input: z.infer<typeof StartInput>): Promise<S
   const maxMinutes = sessionMinutes(input.minutes);
   const [session] = await db()
     .insert(t.sessions)
-    .values({ scenarioId: scenario.id, level: profile.level, maxMinutes })
+    .values({ scenarioId: scenario.id, level: profile.level, maxMinutes, homeworkGiven: homework })
     .returning({ id: t.sessions.id });
   if (expressions.length) await attachToSession(session.id, expressions);
 
-  return { ok: true, sessionId: session.id, clientSecret, maxMinutes, transcription };
+  return { ok: true, sessionId: session.id, clientSecret, maxMinutes };
 }
 
 const maxMinutesOf = (s: { maxMinutes: number | null }) => s.maxMinutes ?? settings().sessionMaxMinutes;

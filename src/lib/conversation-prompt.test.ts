@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildInstructions, buildTranscriptionPrompt, withPreviousLine } from "./conversation-prompt";
+import { buildInstructions, buildTranscriptionPrompt } from "./conversation-prompt";
 import { SCENARIOS } from "./scenarios";
 
 const profile = {
@@ -53,6 +53,4 @@ test("buildTranscriptionPrompt: 今日の表現を含めず、日本語のプロ
   assert.doesNotMatch(p, /on track/);
   const ja = buildTranscriptionPrompt({ scenario, profile: { ...profile, about: "大学生です" } });
   assert.doesNotMatch(ja, /About the learner/);
-  assert.match(withPreviousLine("P.", " How is it going? "), /just said: "How is it going\?"/);
-  assert.equal(withPreviousLine("P.", " "), "P.");
 });

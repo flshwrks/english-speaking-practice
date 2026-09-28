@@ -4,19 +4,17 @@ import { handler, jsonError, parseId } from "@/app/api/_lib/http";
 import { db, t } from "@/db";
 import { assessPronunciation, azureConfigured, EMPTY_ASSESSMENT } from "@/lib/azure";
 import { acceptsUtterance } from "@/lib/session";
+import { wavBytes, wavSeconds } from "@/lib/wav";
 
 export const maxDuration = 60;
 
-/** 1発話の上限（ブラウザ側の切り出しは最大60秒）。16kHz mono 16bit + ヘッダ */
-const MAX_WAV_BYTES = 44 + 16000 * 2 * 65;
+/** 1発話の上限（ブラウザ側の切り出しは最大60秒） */
+const MAX_WAV_BYTES = wavBytes(65);
 
 const Query = z.object({
   seq: z.coerce.number().int().positive().max(100_000),
   durationMs: z.coerce.number().int().nonnegative().max(120_000).catch(0),
 });
-
-const isWav = (b: Buffer) =>
-  b.length > 44 && b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WAVE";
 
 /** 発話1つ分の WAV を受け取り、Azure で発音評価して保存する（会話と並行して呼ばれる） */
 export const POST = handler<{ id: string }>(async (req, params) => {
@@ -33,7 +31,7 @@ export const POST = handler<{ id: string }>(async (req, params) => {
 
   const wav = Buffer.from(await req.arrayBuffer());
   if (wav.length > MAX_WAV_BYTES) return jsonError(413, "too_large");
-  if (!isWav(wav)) return jsonError(400, "invalid_wav");
+  if (wavSeconds(wav) === null) return jsonError(400, "invalid_wav");
 
   const assessment = azureConfigured()
     ? await assessPronunciation(wav).catch((e) => {

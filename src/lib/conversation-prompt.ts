@@ -107,9 +107,3 @@ export function buildTranscriptionPrompt(opts: { scenario: Scenario; profile: Pr
     .filter(Boolean)
     .join(" ");
 }
-
-/** 直前の相手の発言を文字起こしの文脈に足す（何への返答かが分かると聞き違いが減る） */
-export function withPreviousLine(prompt: string, line: string) {
-  const last = line.trim().slice(-400);
-  return last ? `${prompt} The other speaker just said: "${last}"` : prompt;
-}

@@ -34,7 +34,7 @@ function fluencyScore(m: SessionMetrics) {
 /** 正確さ: 誤りのない節の割合（70% が中立）。古い会話は 100語あたりの誤り（3件が中立） */
 function accuracyScore(m: SessionMetrics) {
   if (m.errorFreeClauseRatio !== undefined) return clamp((m.errorFreeClauseRatio - 0.7) / 0.15);
-  return m.userWords ? clamp((3 - m.errorsPer100Words) / 2) : null;
+  return m.userWords && m.errorsPer100Words !== null ? clamp((3 - m.errorsPer100Words) / 2) : null;
 }
 
 /** 発話量が少ない会話は指標が当てにならないので割り引く（150語で満額、40語未満は無視） */
@@ -64,20 +64,25 @@ const STRONG = 0.6;
 
 /**
  * 次回の難易度を決める。recent は新しい順で、今回の会話を先頭に含める。
- * 呼び出し側は「今の難易度で行った会話」だけを渡すのが望ましい（変更のたびに根拠が積み直しになり、
- * 続けて2段上がる・下がることがなくなる）。
+ * 呼び出し側は「今の難易度で行った会話」だけを渡す（変更のたびに根拠が積み直しになり、続けて動きすぎない）。
+ * isFirstEver は、これまでに完了した会話が1つもない（今回がレベル診断）とき true。
+ * 診断以外は、今の難易度で2回以上話すまで動かさない（変えた直後の1回で ±2 動くことがないように）。
  */
-export function decideLevel(input: { current: number; suggestion: LevelSuggestion; recent: SessionMetrics[] }): number {
-  const { current, suggestion, recent } = input;
+export function decideLevel(input: {
+  current: number;
+  suggestion: LevelSuggestion;
+  recent: SessionMetrics[];
+  isFirstEver: boolean;
+}): number {
+  const { current, suggestion, recent, isFirstEver } = input;
   const scores = recent.slice(0, 8).map((m, i) => sessionScore(m, i === 0 ? suggestion : undefined));
-  if (!scores.length) scores.push(0.3 * SUGGESTION_SCORE[suggestion]);
 
   let delta = 0;
-  if (scores.length === 1) {
+  if (isFirstEver) {
     // 初回（レベル診断）: 積み上げる根拠がないので、今回の結果で初期値を合わせる
-    const s = scores[0];
+    const s = scores[0] ?? 0.3 * SUGGESTION_SCORE[suggestion];
     delta = Math.sign(s) * (Math.abs(s) >= STRONG ? 2 : Math.abs(s) >= CALIBRATE ? 1 : 0);
-  } else {
+  } else if (scores.length >= 2) {
     // 古い順に指数移動平均
     const ema = scores.reduceRight((acc, s) => ALPHA * s + (1 - ALPHA) * acc);
     const [s0, s1] = scores;

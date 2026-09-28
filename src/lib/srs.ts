@@ -5,8 +5,9 @@
  * - ease（1.3〜3.0）: 表現ごとの覚えやすさ。自発的に使えたら上げ、誤用で下げる
  * - 使わなかった（出題されたが口から出なかった）は「忘れた」証拠にならない（話の流れで使う場面がないことも多い）。
  *   S は変えず、1→2→4日と間を空けて出し直す。一度も使えないまま3回続いたら「苦手（leech）」として
- *   会話の復習から2週間外し、ドリルで練習してもらう（ドリルで言えたら会話の復習に戻す）
- * - ドリル（台本ありの言い直し）で言えたら S を 1.5 倍。会話で使えたわけではないので習得の回数には数えない
+ *   2週間休ませる（枠を詰まらせない）。休みが明けたら優先度を上げた普通の復習として戻し、
+ *   使わなかった回数も数え直す（また3回続けば再び休ませる）
+ * - 言い直し練習（FB の指摘に紐づく表現）で言えたら S を 1.5 倍・苦手も解除。会話で使えたわけではないので習得の回数には数えない
  * - 習得: 3回以上間隔をあけて正しく使え、S が21日以上（Anki の「成熟」と同じ基準）。
  *   または、一度正しく使えた表現を、日をおいて促されずに使えたとき（別の場面で自分から出せた＝使える語彙になった）
  * - 日付はすべて日本時間の日単位で扱う（同じ日の中で出題が変わらないように）
@@ -41,9 +42,10 @@ const LAPSE_FACTOR = 0.5;
 const DRILL_FACTOR = 1.5;
 /** 使わなかったときの出し直しまでの日数の上限 */
 const MISS_MAX_DAYS = 4;
-/** 一度も使えないまま続けて使わなかった回数がこれに達したら苦手（leech）。会話の復習から LEECH_REST_DAYS 日外す */
+/** 一度も使えないまま続けて使わなかった回数がこれに達したら苦手（leech）。LEECH_REST_DAYS 日休ませる */
 export const LEECH_MISSES = 3;
 const LEECH_REST_DAYS = 14;
+const LEECH_BOOST = 2;
 export const MASTERY = { reps: 3, intervalDays: 21 } as const;
 
 /** 日付（YYYY-MM-DD）の差（日） */
@@ -99,7 +101,8 @@ export function schedule(s: SrsState, grade: Grade, today: string): SrsUpdate {
   const base = { status: s.status, ease: s.ease, reps, lapses: s.lapses, lastPracticedAt: jstMidnight(today) };
 
   if (grade === "unused") {
-    const misses = s.misses + 1;
+    // 休み明けの苦手は数え直す（数えたままだと、戻るたびに1回で休みに入り、二度と普通の復習に戻らない）
+    const misses = (isLeech(s) ? 0 : s.misses) + 1;
     const days = isLeech({ reps, misses }) ? LEECH_REST_DAYS : Math.min(MISS_MAX_DAYS, 2 ** (misses - 1));
     return { ...base, intervalDays: s.intervalDays, misses, nextReviewAt: dueOn(today, days) };
   }
@@ -169,8 +172,10 @@ export function lessonSlots(dueCount: number) {
 
 /**
  * 復習の優先度: 忘れかけている（想起確率が低い）ほど高い。今日のシナリオ・今週のカテゴリに合う表現は使う場面が
- * 作られやすいので 1.5 倍。使わずに終わることが続く表現は、枠を詰まらせないよう下げる
+ * 作られやすいので 1.5 倍。使わずに終わることが続く表現は、枠を詰まらせないよう下げる。
+ * ただし休み明けの苦手は、今度こそ使う場面を作るため 2 倍にする
  */
 export function reviewPriority(s: SrsState, today: string, relevant: boolean) {
-  return ((1 - retrievability(s, today)) * (relevant ? 1.5 : 1)) / (1 + s.misses);
+  const base = (1 - retrievability(s, today)) * (relevant ? 1.5 : 1);
+  return isLeech(s) ? base * LEECH_BOOST : base / (1 + s.misses);
 }

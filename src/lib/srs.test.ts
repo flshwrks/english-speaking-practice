@@ -78,6 +78,26 @@ test("使わなかった: S は変えず 1→2→4日で出し直し、3回で�
   assert.equal(due(u), "2026-10-05");
 });
 
+test("休み明けの苦手: 優先度を上げた普通の復習に戻り、使わなかった回数は数え直す", () => {
+  const rested = {
+    ...fresh,
+    misses: 3,
+    lastPracticedAt: jstMidnight("2026-10-01"),
+    nextReviewAt: jstMidnight("2026-10-15"),
+  };
+  const plain = { ...rested, misses: 0 };
+  assert.ok(reviewPriority(rested, "2026-10-15", false) > reviewPriority(plain, "2026-10-15", false));
+  const u = schedule(rested, "unused", "2026-10-15");
+  assert.equal(u.misses, 1);
+  assert.ok(!isLeech(u));
+  assert.equal(due(u), "2026-10-16");
+  // また3回続けて使わなければ再び休ませる
+  const u2 = schedule({ ...rested, ...u }, "unused", "2026-10-16");
+  const u3 = schedule({ ...rested, ...u2 }, "unused", "2026-10-18");
+  assert.ok(isLeech(u3));
+  assert.equal(due(u3), "2026-11-01");
+});
+
 test("誤用: S を半分・ease を下げ、翌日に出し直す。使えていた表現なら lapse", () => {
   const learned = {
     ...fresh,

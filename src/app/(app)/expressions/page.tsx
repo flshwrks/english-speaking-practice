@@ -7,7 +7,7 @@ import { ActionButton } from "@/components/action-button";
 import { ExpressionEntry } from "@/components/expression-card";
 import { EmptyState, Page, PageTitle, type Tone } from "@/components/ui";
 import { formatDateJst } from "@/lib/format";
-import { LEECH_MISSES } from "@/lib/srs";
+import { isLeech } from "@/lib/srs";
 import { addManualExpression, expressionAction } from "../actions";
 
 const TABS: { key: string; label: string; statuses: readonly ExpressionStatus[]; empty: string }[] = [
@@ -148,8 +148,7 @@ export default async function ExpressionsPage({ searchParams }: PageProps<"/expr
         <div className="divide-y divide-line">
           {list.map((e) => {
             // 苦手: 一度も使えないまま何度も出題を見送った表現（leechExpressions と同じ条件）
-            const leech =
-              (LEARNING_STATUSES as readonly string[]).includes(e.status) && e.reps === 0 && e.misses >= LEECH_MISSES;
+            const leech = (LEARNING_STATUSES as readonly string[]).includes(e.status) && isLeech(e);
             return (
               <ExpressionEntry
                 key={e.id}

@@ -40,6 +40,11 @@ export default async function ProgressPage() {
     value: s.metrics?.medianLatencyMs == null ? null : s.metrics.medianLatencyMs / 1000,
   }));
   const hasLatency = latency.some((p) => p.value !== null);
+  // 誤りのない節の割合（%）。難易度の調整に使う正確さの指標。数え始める前の会話は null
+  const errorFree = sessions.map((s) => ({
+    label: formatDateJst(s.startedAt),
+    value: s.metrics?.errorFreeClauseRatio == null ? null : Math.round(s.metrics.errorFreeClauseRatio * 100),
+  }));
   const n = (st: string) => statusCounts.find((c) => c.status === st)?.n ?? 0;
   const totalMin = Math.round(sessions.reduce((s, x) => s + x.durationSec, 0) / 60);
   const calendar = calendarWeeks(practice.byDay, practice.today);
@@ -85,8 +90,9 @@ export default async function ProgressPage() {
               ]}
             />
           </div>
-          <div className={`mt-6 grid gap-6 sm:grid-cols-2 ${hasLatency ? "xl:grid-cols-3" : ""}`}>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2">
             <TrendChart title="話す速さ" unit="wpm" points={series("wpm")} />
+            <TrendChart title="誤りのない節の割合" unit="%" points={errorFree} />
             <TrendChart title="誤り（100語あたり）" points={series("errorsPer100Words")} higherIsBetter={false} />
             {hasLatency && <TrendChart title="話し始めるまで" unit="秒" points={latency} higherIsBetter={false} />}
           </div>

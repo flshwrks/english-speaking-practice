@@ -109,6 +109,8 @@ export type Turn = {
   seq?: number;
   /** user ターンのみ: AI が話し終えてから声を出し始めるまでの時間（AI の番の直後の発話だけ。2026-09-28 以降） */
   latencyMs?: number;
+  /** user ターンのみ: AI の音声の再生中に話し始めた（AI の声の回り込み＝エコーの手がかり。2026-09-28 以降） */
+  startedDuringAi?: boolean;
 };
 
 export type Usage = {
@@ -133,6 +135,8 @@ export const sessions = pgTable("sessions", {
   metrics: jsonb("metrics").$type<SessionMetrics>(),
   /** 前回の最重要ポイント（宿題）を今回の会話で生かせたか。前回がなければ null */
   homework: jsonb("homework").$type<Homework>(),
+  /** 会話 AI に渡した前回の最重要ポイント（開始時に記録。homework の判定の基準） */
+  homeworkGiven: jsonb("homework_given").$type<{ title: string; detail: string }>(),
   error: text("error"),
   startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
   /** 選んだ会話の長さ（分）。サーバー側の時間制限に使う（null は古いセッション: 設定の上限を使う） */
@@ -154,7 +158,8 @@ export type SessionMetrics = {
   speakingSec: number;
   wpm: number;
   lexicalDiversity: number;
-  errorsPer100Words: number;
+  /** 分析 AI が発話ごとに数えた文法・語彙の誤りの 100語あたりの数。数えられなかった回は null */
+  errorsPer100Words: number | null;
   accuracy: number | null;
   fluency: number | null;
   prosody: number | null;

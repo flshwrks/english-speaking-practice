@@ -41,7 +41,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </label>
           {error && (
             <p className="text-sm text-accent">
-              {error === "locked" ? "試行回数が多すぎます。しばらくしてからお試しください" : "パスワードが違います"}
+              {error === "locked"
+                ? "試行回数が多すぎるため、ログインを一時停止しています。15分ほどしてからお試しください"
+                : "パスワードが違います"}
             </p>
           )}
           <button className="btn-primary mt-2 py-3">ログイン</button>

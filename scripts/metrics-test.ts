@@ -79,6 +79,16 @@ const m = computeMetrics({
 assert.equal(m.fluency, 87.1);
 assert.equal(m.errorsPer100Words, 50);
 assert.equal(m.errorFreeClauseRatio, 0.75);
+// 誤りを数えなかった回は誤り率を出さない（指導項目の数などで代用しない）
+const noCounts = computeMetrics({
+  utterances: [long],
+  userTurns: [{ text: "one two" }],
+  errorCounts: [],
+  llmCefr: "B1",
+  previous: [],
+});
+assert.equal(noCounts.errorsPer100Words, null);
+assert.equal(noCounts.errorFreeClauseRatio, undefined);
 
 // CEFR: 分析 AI の判定は実測の目安から ±1 段階まで。表示は直近の中央値（偶数個なら低いほう）
 const base = { userWords: 200, wpm: 80, pron: 60, errorFreeClauseRatio: 0.3 } as SessionMetrics; // 実測は A2
@@ -101,13 +111,20 @@ assert.deepEqual(sounds[0], {
   examples: ["really", "problem", "right"],
 });
 
-// AI の声の拾い込み
+// AI の声の拾い込み: 再生中に話し始めて AI の発言をなぞったものだけ。確認の言い換えは残す
+const ai = "How do you usually get input from everyone during the meeting?";
+const echoed = "So, could you elaborate on how you usually get input from everyone during the meeting?";
+assert.ok(isEcho({ text: echoed, startedDuringAi: true }, ai));
+assert.ok(!isEcho({ text: echoed, startedDuringAi: false }, ai));
 assert.ok(
-  isEcho(
-    "So, could you elaborate on how you usually get input from everyone during the meeting?",
-    "How do you usually get input from everyone during the meeting?",
-  ),
+  !isEcho({ text: "Sorry, I usually ask each person for their opinions one by one.", startedDuringAi: true }, ai),
 );
-assert.ok(!isEcho("I usually ask each person for their opinions one by one.", "How do you usually get input?"));
+const confirm = "So you need the deck two weeks earlier with the same scope?";
+assert.ok(
+  !isEcho({ text: confirm, startedDuringAi: false }, "We need the deck two weeks earlier with the same scope."),
+);
+// 記録のない古い発話: 文字起こしと Azure の聞き取りの両方がほぼ同じときだけ
+assert.ok(isEcho({ text: ai, heard: "how do you usually get input from everyone during the meeting" }, ai));
+assert.ok(!isEcho({ text: echoed, heard: "so there's some bad future collaborate on the what do you say" }, ai));
 
 console.log("metrics: all tests passed");
